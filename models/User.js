@@ -1,0 +1,75 @@
+import mongoose from "mongoose";
+
+const UserSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Full name is required"],
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: [true, "Email address is required"],
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
+    mobile: {
+      type: String,
+      trim: true,
+      // Sparse index allows multiple nulls/undefined values for users registering via Google OAuth
+      sparse: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      // Required only if not registering via Google OAuth
+      required: function () {
+        return !this.googleId;
+      },
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
+    accountType: {
+      type: String,
+      enum: ["Individual User", "Commercial Partner"],
+      default: "Individual User",
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin", "warehouse", "logistics"],
+      default: "user",
+    },
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE"],
+      default: "ACTIVE",
+    },
+    selectedPlan: {
+      bedType: { type: String },
+      planName: { type: String },
+      price: { type: Number },
+      duration: { type: String },
+      subscriptionType: { type: String, enum: ["monthly", "weekly"], default: "monthly" },
+      securityDeposit: { type: Number, default: 0 },
+      gst: { type: Number, default: 0 },
+      totalPrice: { type: Number, default: 0 },
+      startDate: { type: Date, default: Date.now },
+      isCustom: { type: Boolean, default: false },
+      color: { type: String },
+      fabric: { type: String },
+      print: { type: String },
+    },
+  },
+  { timestamps: true }
+);
+
+// Ensure compilation matches across Next.js API reloads
+export default mongoose.models.User || mongoose.model("User", UserSchema);

@@ -1,0 +1,3729 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  Users,
+  LayoutDashboard,
+  BarChart3,
+  Tag,
+  Package,
+  UserCheck,
+  FileText,
+  HelpCircle,
+  RefreshCcw,
+  LogOut,
+  Home,
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Check,
+  X,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  AlertCircle,
+  MapPin,
+  Phone,
+  Mail,
+  Inbox,
+  Bell,
+  ChevronRight,
+  ShieldAlert,
+  Copy
+} from "lucide-react";
+
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState("Dashboard");
+  const [sessionUser, setSessionUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [seedingLoading, setSeedingLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeSubscriptions: 0,
+    totalRevenue: 0,
+    monthlyGrowth: 0,
+    connectionRequests: 0,
+    quotationRequests: 0,
+    totalQuotes: 0,
+    supportTickets: 0
+  });
+
+  // Data lists
+  const [usersList, setUsersList] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [ordersList, setOrdersList] = useState([]);
+  const [staffList, setStaffList] = useState([]);
+  const [quotesList, setQuotesList] = useState([]);
+  const [ticketsList, setTicketsList] = useState([]);
+  const [plansList, setPlansList] = useState([]);
+
+
+  // Filter States
+  const [userSearch, setUserSearch] = useState("");
+  const [userTypeFilter, setUserTypeFilter] = useState("ALL");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
+  const [staffTypeFilter, setStaffTypeFilter] = useState("WH"); // WH or LP
+  const [staffStatusFilter, setStaffStatusFilter] = useState("ALL");
+  const [quoteTypeTab, setQuoteTypeTab] = useState("connection"); // connection or quotation
+  const [ticketStatusFilter, setTicketStatusFilter] = useState("ALL");
+  const [ticketPriorityFilter, setTicketPriorityFilter] = useState("ALL");
+
+  // Modals / Forms States
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryForm, setCategoryForm] = useState({ id: "", name: "", description: "", pricePerItem: "", status: "ACTIVE", totalStock: 100, availableStock: 100, rentedStock: 0, laundryStock: 0 });
+
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [staffForm, setStaffForm] = useState({ name: "", email: "", mobile: "", role: "WH", status: "PENDING" });
+  const [transferForm, setTransferForm] = useState({ categoryId: "", fromState: "laundryStock", toState: "availableStock", qty: 5 });
+
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [ticketForm, setTicketForm] = useState({ subject: "", userName: "", userEmail: "", priority: "MEDIUM", status: "OPEN" });
+
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [planForm, setPlanForm] = useState({ id: "", bedType: "single", name: "", duration: "", price: "", originalPrice: "", discount: "", features: "", cta: "Choose Plan", popular: false, badge: "" });
+
+  // Custom Selection Modals States
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedQuote, setSelectedQuote] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Email replies state
+  const [replySubject, setReplySubject] = useState("");
+  const [replyMessage, setReplyMessage] = useState("");
+  const [replySending, setReplySending] = useState(false);
+  const [ticketReplies, setTicketReplies] = useState({});
+
+  // Quote replies state
+  const [quoteReplySubject, setQuoteReplySubject] = useState("");
+  const [quoteReplyMessage, setQuoteReplyMessage] = useState("");
+  const [quoteReplySending, setQuoteReplySending] = useState(false);
+
+  // User edit form state
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userStatusFilter, setUserStatusFilter] = useState("ALL");
+  const [userPlanFilter, setUserPlanFilter] = useState("ALL");
+  const [userForm, setUserForm] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    address: "",
+    password: "",
+    accountType: "Individual User",
+    status: "ACTIVE",
+    role: "user",
+    selectedPlan: {
+      bedType: "",
+      planName: "",
+      price: "",
+      duration: "",
+      startDate: ""
+    }
+  });
+
+
+  // Order edit form state
+  const [orderForm, orderFormSet] = useState({
+    userName: "",
+    email: "",
+    phone: "",
+    bundleName: "",
+    finalPrice: 0,
+    status: "ACTIVE",
+    deliveryAddress: "",
+    startDate: "",
+    endDate: ""
+  });
+
+  // Load ticket replies from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("closet_rush_ticket_replies");
+      if (stored) {
+        setTicketReplies(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  // Load user session
+  const fetchSession = async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated && data.user.role === "admin") {
+          setSessionUser(data.user);
+        } else {
+          setSessionUser(null);
+        }
+      }
+    } catch (err) {
+      console.error("Session check error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch Dashboard Stats & DB Data
+  const fetchData = async () => {
+    try {
+      const statsRes = await fetch("/api/admin/stats");
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(statsData);
+      }
+
+      const usersRes = await fetch("/api/admin/users");
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsersList(usersData.users || []);
+      }
+
+      const catRes = await fetch("/api/admin/categories");
+      if (catRes.ok) {
+        const catData = await catRes.json();
+        setCategoriesList(catData.categories || []);
+      }
+
+      const ordersRes = await fetch("/api/admin/orders");
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        setOrdersList(ordersData.orders || []);
+      }
+
+      const staffRes = await fetch("/api/admin/staff");
+      if (staffRes.ok) {
+        const staffData = await staffRes.json();
+        setStaffList(staffData.staff || []);
+      }
+
+      const quotesRes = await fetch("/api/admin/quotes");
+      if (quotesRes.ok) {
+        const quotesData = await quotesRes.json();
+        setQuotesList(quotesData.quotes || []);
+      }
+
+      const ticketsRes = await fetch("/api/admin/tickets");
+      if (ticketsRes.ok) {
+        const ticketsData = await ticketsRes.json();
+        setTicketsList(ticketsData.tickets || []);
+      }
+
+      const plansRes = await fetch("/api/admin/plans");
+      if (plansRes.ok) {
+        const plansData = await plansRes.json();
+        setPlansList(plansData.plans || []);
+      }
+
+
+    } catch (err) {
+      console.error("Error fetching admin data:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSession();
+  }, []);
+
+  useEffect(() => {
+    if (sessionUser) {
+      fetchData();
+    }
+  }, [sessionUser]);
+
+  useEffect(() => {
+    if (categoriesList.length > 0 && !transferForm.categoryId) {
+      setTransferForm(prev => ({ ...prev, categoryId: categoriesList[0]._id }));
+    }
+  }, [categoriesList]);
+
+  const handleStockTransfer = async (e) => {
+    e.preventDefault();
+    const cat = categoriesList.find(c => c._id === transferForm.categoryId);
+    if (!cat) return;
+
+    const qty = Number(transferForm.qty);
+    if (qty <= 0) {
+      alert("Quantity must be greater than 0");
+      return;
+    }
+
+    const currentFromVal = cat[transferForm.fromState] || 0;
+    if (currentFromVal < qty) {
+      alert(`Insufficient stock in ${transferForm.fromState}. Only ${currentFromVal} available.`);
+      return;
+    }
+
+    const updatedFrom = currentFromVal - qty;
+    const updatedTo = (cat[transferForm.toState] || 0) + qty;
+
+    try {
+      const res = await fetch("/api/admin/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryId: cat._id,
+          [transferForm.fromState]: updatedFrom,
+          [transferForm.toState]: updatedTo
+        })
+      });
+
+      if (res.ok) {
+        alert("Stock successfully transferred!");
+        fetchData();
+      } else {
+        const data = await res.json();
+        alert("Transfer failed: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Transfer failed: " + err.message);
+    }
+  };
+
+  // Seeder Trigger
+  const triggerSeeder = async () => {
+    setSeedingLoading(true);
+    try {
+      const res = await fetch("/api/admin/seed");
+      if (res.ok) {
+        alert("Database successfully seeded with ClosetRush mock data!");
+        await fetchSession();
+        await fetchData();
+      } else {
+        const err = await res.json();
+        alert("Seeding failed: " + err.error);
+      }
+    } catch (err) {
+      alert("Seeding failed: " + err.message);
+    } finally {
+      setSeedingLoading(false);
+    }
+  };
+
+  // User Actions
+  const toggleUserStatus = async (userId, currentStatus) => {
+    const nextStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, status: nextStatus })
+      });
+      if (res.ok) {
+        setUsersList(usersList.map(u => u._id === userId ? { ...u, status: nextStatus } : u));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    try {
+      const res = await fetch(`/api/admin/users?userId=${userId}`, { method: "DELETE" });
+      if (res.ok) {
+        setUsersList(usersList.filter(u => u._id !== userId));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    const isEdit = !!selectedUser;
+    const method = isEdit ? "PUT" : "POST";
+    
+    const body = {
+      name: userForm.name,
+      email: userForm.email,
+      mobile: userForm.mobile || undefined,
+      address: userForm.address || "",
+      accountType: userForm.accountType,
+      status: userForm.status,
+      role: userForm.role,
+      selectedPlan: {
+        bedType: userForm.selectedPlan?.bedType || "",
+        planName: userForm.selectedPlan?.planName || "",
+        price: userForm.selectedPlan?.price !== "" && userForm.selectedPlan?.price !== undefined ? Number(userForm.selectedPlan.price) : 0,
+        duration: userForm.selectedPlan?.duration || "",
+        startDate: userForm.selectedPlan?.startDate ? new Date(userForm.selectedPlan.startDate) : new Date()
+      }
+    };
+
+    if (isEdit) {
+      body.userId = selectedUser._id;
+    }
+    if (userForm.password) {
+      body.password = userForm.password;
+    }
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (isEdit) {
+          setUsersList(usersList.map(u => u._id === selectedUser._id ? data.user : u));
+          alert("Customer details updated successfully!");
+        } else {
+          setUsersList([data.user, ...usersList]);
+          alert("Customer account created successfully!");
+        }
+        setShowUserModal(false);
+        setSelectedUser(null);
+      } else {
+        const err = await res.json();
+        alert("Operation failed: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Operation failed: " + err.message);
+    }
+  };
+
+  // Category Actions
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    const isEdit = !!categoryForm.id;
+    const method = isEdit ? "PUT" : "POST";
+    const body = isEdit
+      ? {
+          categoryId: categoryForm.id,
+          name: categoryForm.name,
+          description: categoryForm.description,
+          pricePerItem: Number(categoryForm.pricePerItem),
+          status: categoryForm.status,
+          totalStock: Number(categoryForm.totalStock),
+          availableStock: Number(categoryForm.availableStock),
+          rentedStock: Number(categoryForm.rentedStock),
+          laundryStock: Number(categoryForm.laundryStock)
+        }
+      : {
+          name: categoryForm.name,
+          description: categoryForm.description,
+          pricePerItem: Number(categoryForm.pricePerItem),
+          status: categoryForm.status,
+          totalStock: Number(categoryForm.totalStock),
+          availableStock: Number(categoryForm.availableStock),
+          rentedStock: Number(categoryForm.rentedStock),
+          laundryStock: Number(categoryForm.laundryStock)
+        };
+
+    try {
+      const res = await fetch("/api/admin/categories", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        setShowCategoryModal(false);
+        setCategoryForm({ id: "", name: "", description: "", pricePerItem: "", status: "ACTIVE", totalStock: 100, availableStock: 100, rentedStock: 0, laundryStock: 0 });
+        fetchData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to save category");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleEditCategory = (cat) => {
+    setCategoryForm({
+      id: cat._id,
+      name: cat.name,
+      description: cat.description || "",
+      pricePerItem: cat.pricePerItem,
+      status: cat.status,
+      totalStock: cat.totalStock !== undefined ? cat.totalStock : 100,
+      availableStock: cat.availableStock !== undefined ? cat.availableStock : 100,
+      rentedStock: cat.rentedStock !== undefined ? cat.rentedStock : 0,
+      laundryStock: cat.laundryStock !== undefined ? cat.laundryStock : 0
+    });
+    setShowCategoryModal(true);
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!confirm("Are you sure you want to delete this category?")) return;
+    try {
+      const res = await fetch(`/api/admin/categories?categoryId=${categoryId}`, { method: "DELETE" });
+      if (res.ok) {
+        setCategoriesList(categoriesList.filter(c => c._id !== categoryId));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Plan Actions
+  const handleSavePlan = async (e) => {
+    e.preventDefault();
+    const isEdit = !!planForm.id;
+    const method = isEdit ? "PUT" : "POST";
+    const body = {
+      bedType: planForm.bedType,
+      name: planForm.name,
+      duration: planForm.duration,
+      price: Number(planForm.price),
+      originalPrice: planForm.originalPrice ? Number(planForm.originalPrice) : null,
+      discount: planForm.discount || null,
+      features: planForm.features.split("\n").map(f => f.trim()).filter(Boolean),
+      cta: planForm.cta || "Choose Plan",
+      popular: !!planForm.popular,
+      badge: planForm.badge || null
+    };
+
+    if (isEdit) {
+      body.planId = planForm.id;
+    }
+
+    try {
+      const res = await fetch("/api/admin/plans", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        setShowPlanModal(false);
+        setPlanForm({ id: "", bedType: "single", name: "", duration: "", price: "", originalPrice: "", discount: "", features: "", cta: "Choose Plan", popular: false, badge: "" });
+        fetchData();
+        alert(isEdit ? "Plan updated successfully!" : "Plan created successfully!");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to save plan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error: " + err.message);
+    }
+  };
+
+  const handleEditPlan = (plan) => {
+    setPlanForm({
+      id: plan._id,
+      bedType: plan.bedType || "single",
+      name: plan.name || "",
+      duration: plan.duration || "",
+      price: plan.price || "",
+      originalPrice: plan.originalPrice || "",
+      discount: plan.discount || "",
+      features: plan.features ? plan.features.join("\n") : "",
+      cta: plan.cta || "Choose Plan",
+      popular: !!plan.popular,
+      badge: plan.badge || ""
+    });
+    setShowPlanModal(true);
+  };
+
+  const handleDeletePlan = async (planId) => {
+    if (!confirm("Are you sure you want to delete this plan?")) return;
+    try {
+      const res = await fetch(`/api/admin/plans?planId=${planId}`, { method: "DELETE" });
+      if (res.ok) {
+        setPlansList(plansList.filter(p => p._id !== planId));
+        alert("Plan deleted successfully!");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete plan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error: " + err.message);
+    }
+  };
+
+  // Order Actions
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: newStatus })
+      });
+      if (res.ok) {
+        setOrdersList(ordersList.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveOrder = async (e) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: selectedOrder._id,
+          userName: orderForm.userName,
+          email: orderForm.email,
+          phone: orderForm.phone,
+          bundleName: orderForm.bundleName,
+          finalPrice: Number(orderForm.finalPrice),
+          status: orderForm.status,
+          deliveryAddress: orderForm.deliveryAddress,
+          startDate: orderForm.startDate,
+          endDate: orderForm.endDate
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrdersList(ordersList.map(o => o._id === selectedOrder._id ? data.order : o));
+        setSelectedOrder(null);
+        fetchData();
+        alert("Order details updated successfully!");
+      } else {
+        const err = await res.json();
+        alert("Update failed: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Update failed: " + err.message);
+    }
+  };
+
+  // Staff Approvals Actions
+  const updateStaffStatus = async (staffId, status) => {
+    try {
+      const res = await fetch("/api/admin/staff", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId, status })
+      });
+      if (res.ok) {
+        setStaffList(staffList.map(s => s._id === staffId ? { ...s, status } : s));
+        fetchData(); // reload users/staff to reflect user creation if approved
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateStaff = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/admin/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(staffForm)
+      });
+      if (res.ok) {
+        setShowStaffModal(false);
+        setStaffForm({ name: "", email: "", mobile: "", role: "WH", status: "PENDING" });
+        fetchData();
+        alert("Staff registration added successfully!");
+      } else {
+        const err = await res.json();
+        alert("Addition failed: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Addition failed: " + err.message);
+    }
+  };
+
+  // Quotes Actions
+  const updateQuoteStatus = async (quoteId, status) => {
+    try {
+      const res = await fetch("/api/admin/quotes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quoteId, status })
+      });
+      if (res.ok) {
+        setQuotesList(quotesList.map(q => q._id === quoteId ? { ...q, status } : q));
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Ticket Actions
+  const handleCreateTicket = async (e) => {
+    e.preventDefault();
+    const randomId = "TKT" + Math.floor(100 + Math.random() * 900);
+    try {
+      const res = await fetch("/api/admin/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticketId: randomId,
+          subject: ticketForm.subject,
+          userName: ticketForm.userName,
+          userEmail: ticketForm.userEmail,
+          priority: ticketForm.priority,
+          status: ticketForm.status
+        })
+      });
+      if (res.ok) {
+        setShowTicketModal(false);
+        setTicketForm({ subject: "", userName: "", userEmail: "", priority: "MEDIUM", status: "OPEN" });
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const updateTicketStatus = async (ticketId, status) => {
+    try {
+      const res = await fetch("/api/admin/tickets", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId, status })
+      });
+      if (res.ok) {
+        setTicketsList(ticketsList.map(t => t._id === ticketId ? { ...t, status } : t));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const updateTicketPriority = async (ticketId, priority) => {
+    try {
+      const res = await fetch("/api/admin/tickets", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId, priority })
+      });
+      if (res.ok) {
+        setTicketsList(ticketsList.map(t => t._id === ticketId ? { ...t, priority } : t));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        window.location.href = "/";
+      }
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-alabaster-linen text-charcoal-ink">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCcw className="h-10 w-10 animate-spin text-linen-gold" />
+          <p className="text-xs font-bold tracking-widest uppercase text-charcoal-ink/60">Authenticating ClosetRush Admin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated as admin check
+  if (!sessionUser) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-alabaster-linen px-4 text-center text-charcoal-ink">
+        <div className="max-w-md bg-white border border-black/10 rounded-none p-8 shadow-sm">
+          <ShieldAlert className="mx-auto h-16 w-16 text-rose-500 mb-4 animate-pulse" />
+          <h1 className="text-2xl font-serif font-bold mb-2 tracking-tight text-charcoal-ink">Access Denied</h1>
+          <p className="text-charcoal-ink/60 text-xs mb-6 leading-relaxed font-semibold">
+            You are not authorized to view the administration panel. Please login using an administrator account.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={triggerSeeder}
+              disabled={seedingLoading}
+              className="w-full py-3 px-6 rounded-none bg-linen-gold hover:bg-charcoal-ink hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer"
+            >
+              {seedingLoading ? "Seeding Database..." : "Seed Admin DB Account"}
+            </button>
+            <div className="flex gap-4">
+              <Link
+                href="/login"
+                className="flex-1 text-center py-3 px-6 rounded-none bg-charcoal-ink hover:bg-charcoal-ink/90 text-white font-bold text-xs uppercase tracking-widest transition-all"
+              >
+                Go to Login
+              </Link>
+              <Link
+                href="/"
+                className="flex-1 text-center py-3 px-6 rounded-none bg-transparent hover:bg-charcoal-ink/05 text-charcoal-ink font-bold text-xs uppercase tracking-widest transition-all border border-black/20"
+              >
+                Back to Home
+              </Link>
+            </div>
+          </div>
+          <div className="mt-6 text-2xs text-left text-charcoal-ink/70 bg-alabaster-linen p-4 rounded-none border border-black/10 leading-relaxed font-semibold">
+            <p className="font-extrabold uppercase mb-1 text-charcoal-ink">Seeded Credentials:</p>
+            <p><strong>Email:</strong> admin@closetrush.com</p>
+            <p><strong>Password:</strong> adminpassword</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Sidebar items
+  const sidebarItems = [
+    { name: "Dashboard", icon: LayoutDashboard },
+    { name: "Analytics", icon: BarChart3 },
+    { name: "Categories", icon: Tag },
+    { name: "Plans", icon: DollarSign },
+    { name: "Inventory", icon: Package },
+    { name: "Customer Dashboard", icon: Users },
+    { name: "Staff Approvals", icon: UserCheck },
+    { name: "Quotes", icon: FileText },
+    { name: "Support Tickets", icon: HelpCircle },
+    { name: "Refunds", icon: RefreshCcw }
+  ];
+
+  return (
+    <div className="flex h-screen bg-alabaster-linen text-charcoal-ink font-sans antialiased overflow-hidden">
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white border-r border-black/05 flex flex-col justify-between shrink-0 z-20">
+        <div>
+          {/* Sidebar Header */}
+          <div className="p-6 border-b border-black/05 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-xl font-serif font-bold bg-gradient-to-r from-linen-gold to-charcoal-ink bg-clip-text text-transparent">
+                ClosetRush
+              </span>
+            </Link>
+            <span className="text-[9px] font-bold bg-linen-gold/15 text-linen-gold border border-linen-gold/25 px-1.5 py-0.5 rounded-none uppercase tracking-wider">
+              Admin
+            </span>
+          </div>
+
+          {/* User badge */}
+          <div className="p-4 mx-3 my-4 bg-alabaster-linen border border-black/05 rounded-none flex items-center gap-3">
+            <div className="h-10 w-10 rounded-none bg-linen-gold text-white flex items-center justify-center font-bold text-sm uppercase font-serif">
+              {sessionUser.name.charAt(0)}
+            </div>
+            <div className="overflow-hidden">
+              <h4 className="text-xs font-bold text-charcoal-ink truncate">{sessionUser.name}</h4>
+              <p className="text-[10px] text-linen-gold font-extrabold uppercase tracking-widest">{sessionUser.role}</p>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="px-3 space-y-1">
+            {sidebarItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.name;
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveTab(item.name)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-none text-xs font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${isActive
+                      ? "bg-linen-gold/10 text-linen-gold border border-linen-gold/20"
+                      : "text-charcoal-ink/65 hover:bg-black/02 hover:text-charcoal-ink border border-transparent"
+                    }`}
+                >
+                  <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-linen-gold" : "text-charcoal-ink/40"}`} />
+                  <span>{item.name}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-black/05 space-y-2">
+          <Link
+            href="/"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-none text-xs font-bold uppercase tracking-wider text-charcoal-ink/60 hover:bg-black/02 hover:text-charcoal-ink border border-transparent transition-all"
+          >
+            <Home className="h-4.5 w-4.5 text-charcoal-ink/40" />
+            <span>Go to Home</span>
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-none text-xs font-bold uppercase tracking-wider text-rose-500 hover:bg-rose-50 hover:text-rose-700 border border-transparent transition-all cursor-pointer"
+          >
+            <LogOut className="h-4.5 w-4.5 text-rose-500" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col min-w-0 bg-alabaster-linen overflow-y-auto">
+        {/* Top Navbar */}
+        <header className="h-16 border-b border-black/05 px-8 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+          <div className="flex items-center gap-2">
+            <span className="text-charcoal-ink/40 font-bold text-xs uppercase tracking-wider">Admin</span>
+            <span className="text-black/10 text-xs">/</span>
+            <span className="text-charcoal-ink font-bold text-xs uppercase tracking-wider">{activeTab}</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={triggerSeeder}
+              disabled={seedingLoading}
+              className="py-1.5 px-3.5 rounded-none bg-transparent hover:bg-black/05 text-charcoal-ink/75 border border-black/10 text-2xs font-extrabold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCcw className={`h-3 w-3 text-charcoal-ink/50 ${seedingLoading ? "animate-spin" : ""}`} />
+              Reset Seeder Data
+            </button>
+            <span className="h-4 w-px bg-black/10" />
+            <div className="text-2xs font-bold uppercase tracking-wider text-charcoal-ink/40">
+              Session Expires in: <span className="text-linen-gold font-extrabold">7d</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Container */}
+        <div className="p-8 flex-1">
+          {/* TAB: DASHBOARD */}
+          {activeTab === "Dashboard" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h1 className="text-2xl font-serif font-bold text-charcoal-ink mb-1">Admin Dashboard</h1>
+                <p className="text-xs text-charcoal-ink/50 font-semibold uppercase tracking-wider">Comprehensive system management and analytics overview</p>
+              </div>
+
+              {/* KPI Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Metric 1 */}
+                <div className="bg-white border border-black/10 rounded-none p-6 relative overflow-hidden group hover:border-linen-gold/50 transition-all duration-200">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-linen-gold/5 rounded-none blur-2xl transition-all" />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xs font-bold uppercase text-charcoal-ink/40 tracking-widest">Total Users</span>
+                    <div className="p-2.5 rounded-none bg-linen-gold/10 text-linen-gold">
+                      <Users className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-serif font-bold text-charcoal-ink mb-1">{stats.totalUsers}</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-charcoal-ink/40">Registered Accounts</p>
+                </div>
+
+                {/* Metric 2 */}
+                <div className="bg-white border border-black/10 rounded-none p-6 relative overflow-hidden group hover:border-linen-gold/50 transition-all duration-200">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-linen-gold/5 rounded-none blur-2xl transition-all" />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xs font-bold uppercase text-charcoal-ink/40 tracking-widest">Active Subscriptions</span>
+                    <div className="p-2.5 rounded-none bg-linen-gold/10 text-linen-gold">
+                      <Package className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-serif font-bold text-charcoal-ink mb-1">{stats.activeSubscriptions}</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-linen-gold">Ongoing Bedding Swaps</p>
+                </div>
+
+                {/* Metric 3 */}
+                <div className="bg-white border border-black/10 rounded-none p-6 relative overflow-hidden group hover:border-linen-gold/50 transition-all duration-200">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-linen-gold/5 rounded-none blur-2xl transition-all" />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xs font-bold uppercase text-charcoal-ink/40 tracking-widest">Total Revenue</span>
+                    <div className="p-2.5 rounded-none bg-linen-gold/10 text-linen-gold">
+                      <DollarSign className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-serif font-bold text-charcoal-ink mb-1">₹{stats.totalRevenue}</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-charcoal-ink/40">Aggregated Plan Charges</p>
+                </div>
+
+                {/* Metric 4 */}
+                <div className="bg-white border border-black/10 rounded-none p-6 relative overflow-hidden group hover:border-linen-gold/50 transition-all duration-200">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-linen-gold/5 rounded-none blur-2xl transition-all" />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xs font-bold uppercase text-charcoal-ink/40 tracking-widest">Monthly Growth</span>
+                    <div className="p-2.5 rounded-none bg-linen-gold/10 text-linen-gold">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-serif font-bold text-charcoal-ink mb-1">{stats.monthlyGrowth}%</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-linen-gold">
+                    Month-over-month Change
+                  </p>
+                </div>
+              </div>              {/* Navigation Dashboard Sections Toggle */}
+              <div className="bg-white border border-black/10 rounded-none p-6 shadow-sm">
+                <h3 className="text-sm font-serif font-bold text-charcoal-ink mb-4 uppercase tracking-wider">Control Quick Links</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <button onClick={() => setActiveTab("Customer Dashboard")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Customers</span>
+                    <span className="text-xl font-serif font-bold text-linen-gold mt-2">{usersList.length}</span>
+                  </button>
+                  <button onClick={() => setActiveTab("Categories")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Bundles / Cats</span>
+                    <span className="text-xl font-serif font-bold text-linen-gold mt-2">{categoriesList.length}</span>
+                  </button>
+                  <button onClick={() => setActiveTab("Quotes")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Quotes</span>
+                    <span className="text-xl font-serif font-bold text-linen-gold mt-2">{stats.totalQuotes}</span>
+                  </button>
+                  <button onClick={() => setActiveTab("Support Tickets")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Support Tickets</span>
+                    <span className="text-xl font-serif font-bold text-linen-gold mt-2">{ticketsList.length}</span>
+                  </button>
+                  <button onClick={() => setActiveTab("Inventory")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">All Orders</span>
+                    <span className="text-xl font-serif font-bold text-linen-gold mt-2">{ordersList.length}</span>
+                  </button>
+                  <button onClick={() => setActiveTab("Inventory")} className="bg-alabaster-linen border border-black/10 hover:border-amber-500/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Pending Orders</span>
+                    <span className="text-xl font-serif font-bold text-amber-600 mt-2">{ordersList.filter(o => o.status === 'PENDING').length}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Summary View Table */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Recent Users Panel */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Recent Users</h3>
+                    <button onClick={() => setActiveTab("Customer Dashboard")} className="text-teal-600 hover:text-teal-700 text-xs font-bold cursor-pointer">View All</button>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {usersList.slice(0, 5).map(u => (
+                      <div key={u._id} className="py-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{u.name}</p>
+                          <p className="text-[10px] text-slate-400">{u.email}</p>
+                        </div>
+                        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${u.accountType === "Commercial Partner" ? "bg-purple-50 text-purple-700 border border-purple-200/50" : "bg-blue-50 text-blue-700 border border-blue-200/50"
+                          }`}>
+                          {u.accountType === "Commercial Partner" ? "Business" : "Individual"}
+                        </span>
+                      </div>
+                    ))}
+                    {usersList.length === 0 && (
+                      <p className="text-slate-400 text-xs py-4 text-center">No users found. Try seeding the database!</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Urgent support tickets */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Urgent Support Tickets</h3>
+                    <button onClick={() => setActiveTab("Support Tickets")} className="text-teal-600 hover:text-teal-700 text-xs font-bold cursor-pointer">View All</button>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {ticketsList.slice(0, 5).map(t => (
+                      <div key={t._id} className="py-3 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black text-slate-400">{t.ticketId}</span>
+                            <span className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded uppercase ${t.priority === 'CRITICAL' ? 'bg-red-50 text-red-700 border border-red-200/50' :
+                                t.priority === 'HIGH' ? 'bg-amber-50 text-amber-700 border border-amber-200/50' : 'bg-slate-100 text-slate-600'
+                              }`}>{t.priority}</span>
+                          </div>
+                          <p className="text-xs font-bold text-slate-800 mt-0.5">{t.subject}</p>
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-500">{t.status}</span>
+                      </div>
+                    ))}
+                    {ticketsList.length === 0 && (
+                      <p className="text-slate-400 text-xs py-4 text-center">No active tickets registered.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ANALYTICS */}
+          {activeTab === "Analytics" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Analytics Overview</h1>
+                <p className="text-xs text-slate-500">Interactive subscription analysis, retention cohort performance, and billing metrics</p>
+              </div>
+
+              {/* KPI metrics row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Average Order Value (AOV)</span>
+                  <div className="flex items-baseline gap-1.5 mt-2">
+                    <h3 className="text-2xl font-black text-slate-900">₹450</h3>
+                    <span className="text-xs font-bold text-emerald-600">▲ 5.4%</span>
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Weighted average across all bundles</p>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lifetime Value (LTV)</span>
+                  <div className="flex items-baseline gap-1.5 mt-2">
+                    <h3 className="text-2xl font-black text-slate-900">₹2,800</h3>
+                    <span className="text-xs font-bold text-emerald-600">▲ 8.1%</span>
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Estimated LTV per registered customer</p>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">User Retention Rate</span>
+                  <div className="flex items-baseline gap-1.5 mt-2">
+                    <h3 className="text-2xl font-black text-teal-650">82.4%</h3>
+                    <span className="text-xs font-bold text-emerald-600">▲ 2.8%</span>
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Average cohort retention (3-month window)</p>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Monthly Churn Rate</span>
+                  <div className="flex items-baseline gap-1.5 mt-2">
+                    <h3 className="text-2xl font-black text-slate-900">3.2%</h3>
+                    <span className="text-xs font-bold text-emerald-600">▼ 0.5%</span>
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Average user cancellations rate</p>
+                </div>
+              </div>
+
+              {/* Charts Mockup */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                {/* Cohort Retention Table */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                  <h3 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-wider">Cohort Retention Analysis</h3>
+                  <p className="text-[10px] text-slate-400 mb-6">Percentage of active subscriber cohorts retained month-over-month</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
+                          <th className="p-3 font-bold text-center">Cohort Month</th>
+                          <th className="p-3 font-bold text-center">Size</th>
+                          <th className="p-3 font-bold text-center bg-teal-50/60 text-teal-700">Month 0</th>
+                          <th className="p-3 font-bold text-center">Month 1</th>
+                          <th className="p-3 font-bold text-center">Month 2</th>
+                          <th className="p-3 font-bold text-center">Month 3</th>
+                          <th className="p-3 font-bold text-center">Month 4</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
+                          <td className="p-3 font-bold text-slate-800 text-center">Jan 2026</td>
+                          <td className="p-3 font-semibold text-slate-500 text-center">150 users</td>
+                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
+                          <td className="p-3 text-center bg-teal-500/80 text-white font-semibold rounded-xs">92%</td>
+                          <td className="p-3 text-center bg-teal-500/60 text-slate-800 font-medium rounded-xs">85%</td>
+                          <td className="p-3 text-center bg-teal-500/40 text-slate-800 rounded-xs">78%</td>
+                          <td className="p-3 text-center bg-teal-500/20 text-slate-800 rounded-xs">74%</td>
+                        </tr>
+                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
+                          <td className="p-3 font-bold text-slate-800 text-center">Feb 2026</td>
+                          <td className="p-3 font-semibold text-slate-500 text-center">180 users</td>
+                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
+                          <td className="p-3 text-center bg-teal-500/80 text-white font-semibold rounded-xs">90%</td>
+                          <td className="p-3 text-center bg-teal-500/60 text-slate-800 font-medium rounded-xs">82%</td>
+                          <td className="p-3 text-center bg-teal-500/30 text-slate-800 rounded-xs">75%</td>
+                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
+                        </tr>
+                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
+                          <td className="p-3 font-bold text-slate-800 text-center">Mar 2026</td>
+                          <td className="p-3 font-semibold text-slate-500 text-center">210 users</td>
+                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
+                          <td className="p-3 text-center bg-teal-500/80 text-white font-semibold rounded-xs">94%</td>
+                          <td className="p-3 text-center bg-teal-500/50 text-slate-800 font-medium rounded-xs">84%</td>
+                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
+                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
+                        </tr>
+                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
+                          <td className="p-3 font-bold text-slate-800 text-center">Apr 2026</td>
+                          <td className="p-3 font-semibold text-slate-500 text-center">240 users</td>
+                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
+                          <td className="p-3 text-center bg-teal-500/70 text-slate-800 font-semibold rounded-xs">88%</td>
+                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
+                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
+                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Monthly Revenue Growth Chart */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-wider">Monthly Revenue Trend</h3>
+                    <p className="text-[10px] text-slate-400">Aggregated plan earnings (₹ in thousands)</p>
+                  </div>
+
+                  <div className="h-44 flex items-end justify-between px-4 mt-6">
+                    <div className="flex flex-col items-center gap-2 w-10">
+                      <span className="text-[9px] font-bold text-slate-500">₹8.0k</span>
+                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '50px' }} />
+                      <span className="text-[10px] font-extrabold text-slate-400">Jan</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 w-10">
+                      <span className="text-[9px] font-bold text-slate-500">₹12.5k</span>
+                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '78px' }} />
+                      <span className="text-[10px] font-extrabold text-slate-400">Feb</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 w-10">
+                      <span className="text-[9px] font-bold text-slate-500">₹15.0k</span>
+                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '94px' }} />
+                      <span className="text-[10px] font-extrabold text-slate-400">Mar</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 w-10">
+                      <span className="text-[9px] font-bold text-slate-500">₹18.5k</span>
+                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '115px' }} />
+                      <span className="text-[10px] font-extrabold text-slate-400">Apr</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 w-10">
+                      <span className="text-[9px] font-bold text-slate-500">₹22.1k</span>
+                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '138px' }} />
+                      <span className="text-[10px] font-extrabold text-slate-400">May</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 w-10">
+                      <span className="text-[9px] font-bold text-teal-650">₹28.5k</span>
+                      <div className="w-6 bg-gradient-to-t from-teal-550 to-emerald-400 rounded-t-lg shadow-sm transition-all" style={{ height: '178px' }} />
+                      <span className="text-[10px] font-extrabold text-slate-800">Jun</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* TAB: CATEGORIES */}
+          {activeTab === "Categories" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Categories Management</h1>
+                  <p className="text-xs text-slate-500">Configure beddings, towels, sheets, and baseline prices</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setCategoryForm({ id: "", name: "", description: "", pricePerItem: "", status: "ACTIVE", totalStock: 100, availableStock: 100, rentedStock: 0, laundryStock: 0 });
+                    setShowCategoryModal(true);
+                  }}
+                  className="py-2.5 px-5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition-all shadow-md shadow-teal-500/10 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Add Category
+                </button>
+              </div>
+
+              {/* Alert Box info */}
+              <div className="bg-white border border-slate-200/60 p-4.5 rounded-2xl text-xs text-slate-500 leading-relaxed shadow-xs">
+                <strong className="text-teal-600">About Categories:</strong> Categories are the basic items like "Single Bed", "Double Bed", "Curtains", "Pillow Covers", etc. After creating categories, you can create bundles that combine multiple categories with pricing.
+              </div>
+
+              {/* Categories Cards Layout */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {categoriesList.map(cat => {
+                  const total = cat.totalStock || 0;
+                  const available = cat.availableStock || 0;
+                  const rented = cat.rentedStock || 0;
+                  const laundry = cat.laundryStock || 0;
+                  return (
+                    <div key={cat._id} className="bg-white border border-slate-200/60 hover:border-teal-500/20 hover:shadow-md rounded-3xl p-6 flex flex-col justify-between relative group transition-all duration-200">
+                      <div>
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="font-extrabold text-slate-900 text-base">{cat.name}</h3>
+                          <button
+                            onClick={async () => {
+                              const nextStatus = cat.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+                              try {
+                                const res = await fetch("/api/admin/categories", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ categoryId: cat._id, name: cat.name, description: cat.description, pricePerItem: cat.pricePerItem, status: nextStatus, totalStock: cat.totalStock, availableStock: cat.availableStock, rentedStock: cat.rentedStock, laundryStock: cat.laundryStock })
+                                });
+                                if (res.ok) {
+                                  fetchData();
+                                }
+                              } catch (err) {
+                                  console.error(err);
+                              }
+                            }}
+                            className={`text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded border transition-all hover:scale-105 active:scale-95 cursor-pointer ${cat.status === "ACTIVE"
+                                ? "bg-teal-50 text-teal-650 border-teal-200 hover:bg-teal-100"
+                                : "bg-slate-100 text-slate-550 border-slate-200/80 hover:bg-slate-200"
+                              }`}
+                            title="Click to toggle status"
+                          >
+                            {cat.status}
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-500 min-h-[40px] mb-4 leading-relaxed">{cat.description || "No description provided."}</p>
+                      </div>
+
+                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
+                        <div className="w-full">
+                          <span className="text-[10px] text-slate-400 font-bold block uppercase">Price & Stock Allocation</span>
+                          <div className="flex items-baseline gap-2 mt-0.5 mb-2">
+                            <span className="text-base font-black text-teal-650">₹{cat.pricePerItem}</span>
+                          </div>
+                          
+                          <div className="space-y-1.5 w-full">
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="text-slate-500 font-medium">Avail: <strong className="text-emerald-600 font-black">{available}</strong></span>
+                              <span className="text-slate-500 font-medium">Rent: <strong className="text-teal-700 font-black">{rented}</strong></span>
+                              <span className="text-slate-500 font-medium">Laund: <strong className="text-amber-600 font-black">{laundry}</strong></span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2 flex overflow-hidden">
+                              <div className="bg-emerald-500" style={{ width: `${total > 0 ? (available / total) * 100 : 0}%` }} title={`Available: ${available}`} />
+                              <div className="bg-teal-600" style={{ width: `${total > 0 ? (rented / total) * 100 : 0}%` }} title={`Rented: ${rented}`} />
+                              <div className="bg-amber-500" style={{ width: `${total > 0 ? (laundry / total) * 100 : 0}%` }} title={`Laundry: ${laundry}`} />
+                            </div>
+                            <span className="text-[10px] text-slate-450 block font-bold">Total Stock: {total} units</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              setCategoryForm({
+                                id: "",
+                                name: `${cat.name} (Copy)`,
+                                description: cat.description || "",
+                                pricePerItem: cat.pricePerItem,
+                                status: cat.status,
+                                totalStock: cat.totalStock || 100,
+                                availableStock: cat.availableStock || 100,
+                                rentedStock: cat.rentedStock || 0,
+                                laundryStock: cat.laundryStock || 0
+                              });
+                              setShowCategoryModal(true);
+                            }}
+                            className="p-2 bg-slate-50 hover:bg-teal-50 text-slate-605 hover:text-teal-700 rounded-xl transition-all cursor-pointer"
+                            title="Duplicate Category"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEditCategory(cat)}
+                            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-xl transition-all cursor-pointer"
+                            title="Edit Category & Stock"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(cat._id)}
+                            className="p-2 bg-slate-50 hover:bg-red-50 text-slate-650 hover:text-red-700 rounded-xl transition-all cursor-pointer"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {categoriesList.length === 0 && (
+                  <div className="col-span-3 text-center py-12 text-slate-400 text-xs bg-white border border-slate-200/60 rounded-3xl">
+                    No categories found. Click Add Category to create one.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: INVENTORY */}
+          {activeTab === "Inventory" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Inventory & Orders Management</h1>
+                <p className="text-xs text-slate-500">Complete end-to-end tracking — orders, SKUs, pickups</p>
+              </div>
+
+              {/* Mini Metrics */}
+              {(() => {
+                const totalItemsOut = ordersList
+                  .filter(o => o.status === "ACTIVE" || o.status === "DELIVERED")
+                  .reduce((acc, o) => {
+                    if (o.bundleName && o.bundleName.toLowerCase().includes("double")) {
+                      return acc + 4; // 1 double sheet, 2 pillow covers, 1 quilt
+                    } else if (o.bundleName && o.bundleName.toLowerCase().includes("single")) {
+                      return acc + 3; // 1 single sheet, 1 pillow cover, 1 quilt
+                    }
+                    return acc + 3; // default
+                  }, 0);
+                const pickupPending = ordersList.filter(o => o.status === "PENDING").length;
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Orders</span>
+                      <h3 className="text-xl font-black text-slate-900 mt-1">{ordersList.length}</h3>
+                    </div>
+                    <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Subscriptions</span>
+                      <h3 className="text-xl font-black text-slate-900 mt-1">{ordersList.filter(o => o.status === 'ACTIVE' || o.status === 'DELIVERED').length}</h3>
+                    </div>
+                    <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Rented Items Out</span>
+                      <h3 className="text-xl font-black text-teal-650 mt-1">{totalItemsOut}</h3>
+                    </div>
+                    <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Delivery/Swap Pending</span>
+                      <h3 className="text-xl font-black text-amber-600 mt-1">{pickupPending}</h3>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Stacked Stock Allocation bars and transfer tool */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Live Stock Level stacked bars */}
+                <div className="lg:col-span-2 bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                  <h3 className="text-sm font-black text-slate-900 mb-2 uppercase tracking-wider">Live Warehouse Stock Status</h3>
+                  <p className="text-[10px] text-slate-450 mb-6">Real-time linen stock utilization across warehouse states</p>
+                  
+                  <div className="space-y-5">
+                    {categoriesList.map(cat => {
+                      const total = cat.totalStock || 0;
+                      const available = cat.availableStock || 0;
+                      const rented = cat.rentedStock || 0;
+                      const laundry = cat.laundryStock || 0;
+                      
+                      return (
+                        <div key={cat._id} className="space-y-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-800">{cat.name}</span>
+                            <span className="text-[10px] font-extrabold text-slate-500">Total: {total} units</span>
+                          </div>
+                          
+                          <div className="w-full bg-slate-100 rounded-full h-3 flex overflow-hidden">
+                            <div className="bg-emerald-500 hover:opacity-90 animate-pulse-slow" style={{ width: `${total > 0 ? (available / total) * 100 : 0}%` }} title={`Available: ${available}`} />
+                            <div className="bg-teal-600 hover:opacity-90" style={{ width: `${total > 0 ? (rented / total) * 100 : 0}%` }} title={`Rented: ${rented}`} />
+                            <div className="bg-amber-500 hover:opacity-90" style={{ width: `${total > 0 ? (laundry / total) * 100 : 0}%` }} title={`Laundry: ${laundry}`} />
+                          </div>
+                          
+                          <div className="flex gap-4 text-[9px] text-slate-400 font-bold">
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Available ({available})</span>
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-teal-600 inline-block" /> Rented ({rented})</span>
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Laundry ({laundry})</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {categoriesList.length === 0 && (
+                      <p className="text-slate-400 text-xs py-4 text-center">No inventory categories found.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Stock Transfer Form */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 mb-2 uppercase tracking-wider">Quick Stock Transfer</h3>
+                    <p className="text-[10px] text-slate-450 mb-6">Log manual logistics adjustments (e.g. laundry release or intake)</p>
+                    
+                    <form onSubmit={handleStockTransfer} className="space-y-3">
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-extrabold uppercase block mb-1">Item Category</label>
+                        <select
+                          value={transferForm.categoryId}
+                          onChange={(e) => setTransferForm({ ...transferForm, categoryId: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                        >
+                          {categoriesList.map(c => (
+                            <option key={c._id} value={c._id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-extrabold uppercase block mb-1">From state</label>
+                          <select
+                            value={transferForm.fromState}
+                            onChange={(e) => setTransferForm({ ...transferForm, fromState: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="availableStock">Available</option>
+                            <option value="laundryStock">Laundry</option>
+                            <option value="rentedStock">Rented</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-extrabold uppercase block mb-1">To state</label>
+                          <select
+                            value={transferForm.toState}
+                            onChange={(e) => setTransferForm({ ...transferForm, toState: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="availableStock">Available</option>
+                            <option value="laundryStock">Laundry</option>
+                            <option value="rentedStock">Rented</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-extrabold uppercase block mb-1">Linen Quantity</label>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          value={transferForm.qty}
+                          onChange={(e) => setTransferForm({ ...transferForm, qty: Number(e.target.value) })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full mt-3 py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs transition-all active:scale-98 cursor-pointer text-center shadow-md shadow-slate-700/10"
+                      >
+                        Submit Stock Adjustment
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search and Filters */}
+              <div className="bg-white border border-slate-200/60 p-6 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                    placeholder="Search by ID, Customer Name, or Bundle..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-2.5 text-xs placeholder-slate-400 text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xs text-slate-500 font-bold uppercase">Status:</span>
+                  <select
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs font-bold text-slate-850 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="ALL">All Orders</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="DELIVERED">DELIVERED</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/20">
+                  <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">Orders List ({ordersList.length} total orders)</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
+                        <th className="p-4 font-bold">Bundle Order ID</th>
+                        <th className="p-4 font-bold">User Details</th>
+                        <th className="p-4 font-bold">Bundle Name</th>
+                        <th className="p-4 font-bold">Price</th>
+                        <th className="p-4 font-bold">Status</th>
+                        <th className="p-4 font-bold">Timeline</th>
+                        <th className="p-4 font-bold">Address</th>
+                        <th className="p-4 font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {ordersList
+                        .filter(o => {
+                          const query = orderSearch.toLowerCase();
+                          const matchesQuery =
+                            o.bundleOrderId.toLowerCase().includes(query) ||
+                            (o.userName || "").toLowerCase().includes(query) ||
+                            (o.email || "").toLowerCase().includes(query) ||
+                            o.bundleName.toLowerCase().includes(query);
+
+                          const matchesFilter = orderStatusFilter === "ALL" || o.status === orderStatusFilter;
+                          return matchesQuery && matchesFilter;
+                        })
+                        .map(o => (
+                          <tr key={o._id} className="hover:bg-slate-50/40 transition-colors">
+                            <td className="p-4 font-black text-slate-900">{o.bundleOrderId}</td>
+                            <td className="p-4 space-y-0.5">
+                              <p className="font-bold text-slate-800">{o.userName || "N/A"}</p>
+                              <p className="text-[10px] text-slate-400">{o.email || "N/A"}</p>
+                              <p className="text-[10px] text-slate-400">{o.phone || ""}</p>
+                            </td>
+                            <td className="p-4 text-slate-650 font-bold">{o.bundleName}</td>
+                            <td className="p-4 font-extrabold text-teal-600">₹{o.finalPrice}</td>
+                            <td className="p-4">
+                              <span className={`text-[9px] font-black uppercase px-2.5 py-0.8 rounded-full border ${o.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                  o.status === "CANCELLED" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                    o.status === "DELIVERED" ? "bg-teal-50 text-teal-700 border-teal-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                                }`}>
+                                {o.status}
+                              </span>
+                            </td>
+                            <td className="p-4 space-y-0.5 text-[10px] text-slate-400 font-medium">
+                              <p>Start: {new Date(o.startDate).toLocaleDateString()}</p>
+                              {o.endDate && <p>End: {new Date(o.endDate).toLocaleDateString()}</p>}
+                            </td>
+                            <td className="p-4 text-slate-600 max-w-[200px] truncate" title={o.deliveryAddress}>
+                              {o.deliveryAddress || "—"}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-1.5 items-center">
+                                <button
+                                  onClick={() => {
+                                    setSelectedOrder(o);
+                                    orderFormSet({
+                                      userName: o.userName || "",
+                                      email: o.email || "",
+                                      phone: o.phone || "",
+                                      bundleName: o.bundleName || "",
+                                      finalPrice: o.finalPrice || 0,
+                                      status: o.status || "PENDING",
+                                      deliveryAddress: o.deliveryAddress || "",
+                                      startDate: o.startDate ? new Date(o.startDate).toISOString().split('T')[0] : "",
+                                      endDate: o.endDate ? new Date(o.endDate).toISOString().split('T')[0] : ""
+                                    });
+                                  }}
+                                  className="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  <Edit className="h-3 w-3" /> View & Edit
+                                </button>
+                                {o.status !== "ACTIVE" && (
+                                  <button
+                                    onClick={() => updateOrderStatus(o._id, "ACTIVE")}
+                                    className="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 text-[10px] font-bold rounded-lg border border-teal-200/50 transition-all cursor-pointer"
+                                  >
+                                    Activate
+                                  </button>
+                                )}
+                                {o.status !== "CANCELLED" && (
+                                  <button
+                                    onClick={() => updateOrderStatus(o._id, "CANCELLED")}
+                                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-200/50 transition-all cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      {ordersList.length === 0 && (
+                        <tr>
+                          <td colSpan="8" className="text-center p-8 text-slate-400">No orders registered.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: CUSTOMER DASHBOARD */}
+          {activeTab === "Customer Dashboard" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Customer Dashboard</h1>
+                  <p className="text-xs text-slate-550">Manage B2B partners, single clients, address books, and active subscription plans</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setUserForm({
+                      name: "",
+                      email: "",
+                      mobile: "",
+                      address: "",
+                      password: "",
+                      accountType: "Individual User",
+                      status: "ACTIVE",
+                      role: "user",
+                      selectedPlan: {
+                        bedType: "",
+                        planName: "",
+                        price: "",
+                        duration: "",
+                        startDate: new Date().toISOString().split('T')[0]
+                      }
+                    });
+                    setShowUserModal(true);
+                  }}
+                  className="py-2.5 px-5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition-all shadow-md shadow-teal-500/10 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Add New Customer
+                </button>
+              </div>
+
+              {/* Customer Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden group hover:border-teal-500/20 hover:shadow-md transition-all duration-200">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Customers</span>
+                  <h3 className="text-2xl font-black text-slate-900 mt-1">{usersList.length}</h3>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">B2B & Single Customers</p>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden group hover:border-teal-500/20 hover:shadow-md transition-all duration-200">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active Single Clients</span>
+                  <h3 className="text-2xl font-black text-slate-900 mt-1">{usersList.filter(u => u.accountType === 'Individual User' && u.status === 'ACTIVE').length}</h3>
+                  <p className="text-[9px] text-teal-600 font-bold mt-1">{usersList.filter(u => u.accountType === 'Individual User' && u.selectedPlan?.planName).length} with active subscription</p>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden group hover:border-teal-500/20 hover:shadow-md transition-all duration-200">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active B2B Partners</span>
+                  <h3 className="text-2xl font-black text-slate-900 mt-1">{usersList.filter(u => u.accountType === 'Commercial Partner' && u.status === 'ACTIVE').length}</h3>
+                  <p className="text-[9px] text-purple-600 font-bold mt-1">Commercial Partner accounts</p>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden group hover:border-teal-500/20 hover:shadow-md transition-all duration-200">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active Plan Value (MRR)</span>
+                  <h3 className="text-2xl font-black text-teal-650 mt-1">
+                    ₹{usersList.filter(u => u.status === 'ACTIVE').reduce((sum, u) => sum + (Number(u.selectedPlan?.price) || 0), 0).toLocaleString()}
+                  </h3>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Sum of active subscription pricing</p>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="bg-white border border-slate-200/60 p-6 rounded-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-xs">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search by name, email, mobile, or address..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-2.5 text-xs placeholder-slate-400 text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xs text-slate-500 font-bold uppercase">Type:</span>
+                    <select
+                      value={userTypeFilter}
+                      onChange={(e) => setUserTypeFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-2xs font-bold text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="ALL">All Types</option>
+                      <option value="Individual User">Individual</option>
+                      <option value="Commercial Partner">B2B Partner</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xs text-slate-500 font-bold uppercase">Status:</span>
+                    <select
+                      value={userStatusFilter}
+                      onChange={(e) => setUserStatusFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-2xs font-bold text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="ALL">All Status</option>
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xs text-slate-500 font-bold uppercase">Plan:</span>
+                    <select
+                      value={userPlanFilter}
+                      onChange={(e) => setUserPlanFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-2xs font-bold text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="ALL">All Plans</option>
+                      <option value="HAS_PLAN">Active Plan</option>
+                      <option value="NO_PLAN">No Active Plan</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-550 bg-slate-50/50">
+                        <th className="p-4 font-bold">Customer Details</th>
+                        <th className="p-4 font-bold">Contact & Address</th>
+                        <th className="p-4 font-bold">Account Type</th>
+                        <th className="p-4 font-bold">Active Subscription Plan</th>
+                        <th className="p-4 font-bold">Status</th>
+                        <th className="p-4 font-bold">Registered</th>
+                        <th className="p-4 font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {usersList
+                        .filter(u => {
+                          const query = userSearch.toLowerCase();
+                          const matchesQuery =
+                            u.name.toLowerCase().includes(query) ||
+                            u.email.toLowerCase().includes(query) ||
+                            (u.mobile || "").includes(query) ||
+                            (u.address || "").toLowerCase().includes(query);
+
+                          const matchesType = userTypeFilter === "ALL" || u.accountType === userTypeFilter;
+                          const matchesStatus = userStatusFilter === "ALL" || (u.status || "ACTIVE") === userStatusFilter;
+                          
+                          let matchesPlan = true;
+                          if (userPlanFilter === "HAS_PLAN") {
+                            matchesPlan = !!(u.selectedPlan && u.selectedPlan.planName);
+                          } else if (userPlanFilter === "NO_PLAN") {
+                            matchesPlan = !(u.selectedPlan && u.selectedPlan.planName);
+                          }
+
+                          return matchesQuery && matchesType && matchesStatus && matchesPlan;
+                        })
+                        .map(u => {
+                          const b2bQuotesCount = quotesList.filter(q => q.email.toLowerCase() === u.email.toLowerCase()).length;
+                          const userOrdersCount = ordersList.filter(o => o.email.toLowerCase() === u.email.toLowerCase()).length;
+
+                          return (
+                            <tr key={u._id} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="p-4 space-y-0.5">
+                                <p className="font-bold text-slate-800">{u.name}</p>
+                                <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                                  <Mail className="h-3.5 w-3.5 text-slate-400 inline shrink-0" /> {u.email}
+                                </p>
+                              </td>
+                              <td className="p-4 space-y-1">
+                                <p className="text-slate-650 font-bold flex items-center gap-1">
+                                  <Phone className="h-3.5 w-3.5 text-slate-400 inline shrink-0" /> {u.mobile || "—"}
+                                </p>
+                                <p className="text-[10px] text-slate-400 max-w-[180px] truncate" title={u.address}>
+                                  <MapPin className="h-3.5 w-3.5 text-slate-400 inline shrink-0" /> {u.address || "No Address Saved"}
+                                </p>
+                              </td>
+                              <td className="p-4">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${u.accountType === "Commercial Partner"
+                                    ? "bg-purple-50 text-purple-750 border-purple-200"
+                                    : "bg-blue-50 text-blue-750 border-blue-200"
+                                  }`}>
+                                  {u.accountType === "Commercial Partner" ? "B2B Partner" : "Individual"}
+                                </span>
+                                {u.accountType === "Commercial Partner" && b2bQuotesCount > 0 && (
+                                  <div className="mt-1">
+                                    <span 
+                                      onClick={() => {
+                                        setQuoteReplyMessage(""); 
+                                        setQuoteTypeTab("quotation");
+                                        setActiveTab("Quotes");
+                                      }}
+                                      className="text-[9px] text-purple-700 font-extrabold hover:underline cursor-pointer bg-purple-100/50 border border-purple-200 rounded px-1.5 py-0.2"
+                                    >
+                                      Quotes: {b2bQuotesCount}
+                                    </span>
+                                  </div>
+                                )}
+                                {userOrdersCount > 0 && (
+                                  <div className="mt-1">
+                                    <span 
+                                      onClick={() => {
+                                        setOrderSearch(u.email);
+                                        setActiveTab("Inventory");
+                                      }}
+                                      className="text-[9px] text-teal-700 font-extrabold hover:underline cursor-pointer bg-teal-50 border border-teal-200 rounded px-1.5 py-0.2"
+                                    >
+                                      Orders: {userOrdersCount}
+                                    </span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                {u.selectedPlan && u.selectedPlan.planName ? (
+                                  <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-xl text-[10px] space-y-0.5 max-w-[180px]">
+                                    <p className="font-extrabold text-emerald-800 truncate">{u.selectedPlan.planName}</p>
+                                    <p className="text-slate-500 font-bold">
+                                      Bed: <span className="text-slate-800">{u.selectedPlan.bedType || "—"}</span>
+                                    </p>
+                                    <p className="text-slate-500 font-bold">
+                                      Price: <span className="text-teal-600 font-extrabold">₹{u.selectedPlan.price}</span> ({u.selectedPlan.duration || "Monthly"})
+                                    </p>
+                                    {u.selectedPlan.startDate && (
+                                      <p className="text-[9px] text-slate-400">Since {new Date(u.selectedPlan.startDate).toLocaleDateString()}</p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-slate-405 italic">No Active Plan</span>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${u.status === "ACTIVE" ? "bg-teal-50 text-teal-650 border-teal-200" : "bg-slate-100 text-slate-500 border-slate-200"
+                                  }`}>
+                                  {u.status || "ACTIVE"}
+                                </span>
+                              </td>
+                              <td className="p-4 text-slate-450">{new Date(u.createdAt).toLocaleDateString()}</td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setUserForm({
+                                        name: u.name,
+                                        email: u.email,
+                                        mobile: u.mobile || "",
+                                        address: u.address || "",
+                                        password: "",
+                                        accountType: u.accountType || "Individual User",
+                                        status: u.status || "ACTIVE",
+                                        role: u.role || "user",
+                                        selectedPlan: {
+                                          bedType: u.selectedPlan?.bedType || "",
+                                          planName: u.selectedPlan?.planName || "",
+                                          price: u.selectedPlan?.price !== undefined ? u.selectedPlan.price : "",
+                                          duration: u.selectedPlan?.duration || "",
+                                          startDate: u.selectedPlan?.startDate ? new Date(u.selectedPlan.startDate).toISOString().split('T')[0] : ""
+                                        }
+                                      });
+                                      setShowUserModal(true);
+                                    }}
+                                    className="p-1 px-2 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                                    title="Edit Customer Details"
+                                  >
+                                    <Edit className="h-3 w-3" /> Edit
+                                  </button>
+                                  <button
+                                    onClick={() => toggleUserStatus(u._id, u.status || "ACTIVE")}
+                                    className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-650 text-[10px] font-bold border border-slate-200 rounded-lg transition-all cursor-pointer"
+                                  >
+                                    {(u.status || "ACTIVE") === "ACTIVE" ? "Deactivate" : "Activate"}
+                                  </button>
+                                  {u.role !== "admin" && (
+                                    <button
+                                      onClick={() => deleteUser(u._id)}
+                                      className="p-1.5 text-slate-450 hover:text-red-650 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                                      title="Delete Customer Account"
+                                    >
+                                      <Trash2 className="h-4.5 w-4.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {usersList.length === 0 && (
+                        <tr>
+                          <td colSpan="7" className="text-center p-8 text-slate-400">No customers registered.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: STAFF APPROVALS */}
+          {activeTab === "Staff Approvals" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Staff Approvals</h1>
+                  <p className="text-xs text-slate-500">Review and approve warehouse manager and logistics partner registrations</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setStaffForm({ name: "", email: "", mobile: "", role: "WH", status: "PENDING" });
+                    setShowStaffModal(true);
+                  }}
+                  className="py-2.5 px-5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition-all shadow-md shadow-teal-500/10 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Add Staff Member
+                </button>
+              </div>
+
+              {/* Stats overview */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">WH Pending</span>
+                  <h3 className="text-xl font-black text-amber-600 mt-1">{staffList.filter(s => s.role === 'WH' && s.status === 'PENDING').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">WH Approved</span>
+                  <h3 className="text-xl font-black text-teal-600 mt-1">{staffList.filter(s => s.role === 'WH' && s.status === 'APPROVED').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LP Pending</span>
+                  <h3 className="text-xl font-black text-amber-600 mt-1">{staffList.filter(s => s.role === 'LP' && s.status === 'PENDING').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LP Approved</span>
+                  <h3 className="text-xl font-black text-teal-600 mt-1">{staffList.filter(s => s.role === 'LP' && s.status === 'APPROVED').length}</h3>
+                </div>
+              </div>
+
+              {/* Tabs for staff selection */}
+              <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                  <div className="flex border-b border-slate-100 gap-6">
+                    <button
+                      onClick={() => setStaffTypeFilter("WH")}
+                      className={`pb-3 text-xs font-extrabold tracking-wider uppercase transition-all cursor-pointer ${staffTypeFilter === "WH" ? "text-teal-600 border-b-2 border-teal-600" : "text-slate-400 hover:text-slate-600"
+                        }`}
+                    >
+                      Warehouse Managers
+                    </button>
+                    <button
+                      onClick={() => setStaffTypeFilter("LP")}
+                      className={`pb-3 text-xs font-extrabold tracking-wider uppercase transition-all cursor-pointer ${staffTypeFilter === "LP" ? "text-teal-600 border-b-2 border-teal-600" : "text-slate-400 hover:text-slate-600"
+                        }`}
+                    >
+                      Logistics Partners
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xs text-slate-400 font-bold uppercase">Filter Status:</span>
+                    <select
+                      value={staffStatusFilter}
+                      onChange={(e) => setStaffStatusFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-2xs font-bold text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="PENDING">PENDING</option>
+                      <option value="APPROVED">APPROVED</option>
+                      <option value="REJECTED">REJECTED</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
+                        <th className="p-4 font-bold">Name</th>
+                        <th className="p-4 font-bold">Email & System Account</th>
+                        <th className="p-4 font-bold">Mobile</th>
+                        <th className="p-4 font-bold">Status</th>
+                        <th className="p-4 font-bold">Registered Date</th>
+                        <th className="p-4 font-bold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {staffList
+                        .filter(s => s.role === staffTypeFilter && (staffStatusFilter === "ALL" || s.status === staffStatusFilter))
+                        .map(s => {
+                          const userAcc = usersList.find(u => u.email === s.email);
+                          return (
+                            <tr key={s._id} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="p-4 font-bold text-slate-900">{s.name}</td>
+                              <td className="p-4 text-slate-650 space-y-1">
+                                <p className="font-semibold text-slate-800">{s.email}</p>
+                                {userAcc ? (
+                                  <div className="text-[10px] bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-md inline-block">
+                                    <p className="font-extrabold uppercase">Login Account Active ({userAcc.role})</p>
+                                    <p className="text-[9px] font-medium mt-0.5 text-slate-500">Temp Password: <code className="font-mono bg-white px-1 py-0.2 rounded border font-extrabold select-all">staffpassword</code></p>
+                                  </div>
+                                ) : s.status === "APPROVED" ? (
+                                  <button
+                                    onClick={async () => {
+                                      await updateStaffStatus(s._id, "APPROVED");
+                                    }}
+                                    className="text-[10px] text-teal-600 hover:text-teal-700 font-extrabold flex items-center gap-1 cursor-pointer"
+                                    title="Click to manually provision credentials"
+                                  >
+                                    Provision Login Credentials
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 font-medium italic">Awaiting Approval</span>
+                                )}
+                              </td>
+                              <td className="p-4 text-slate-500 font-medium">{s.mobile}</td>
+                              <td className="p-4">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${s.status === "APPROVED" ? "bg-teal-50 text-teal-650 border-teal-200" :
+                                    s.status === "PENDING" ? "bg-amber-50 text-amber-650 border-amber-200" :
+                                      "bg-rose-50 text-rose-700 border-rose-200"
+                                  }`}>
+                                  {s.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-slate-450">{new Date(s.registeredAt).toLocaleDateString()}</td>
+                              <td className="p-4 text-right">
+                                <div className="flex gap-1.5 justify-end">
+                                  {s.status !== "APPROVED" && (
+                                    <button
+                                      onClick={() => updateStaffStatus(s._id, "APPROVED")}
+                                      className="p-1 bg-teal-50 text-teal-650 hover:bg-teal-100 border border-teal-200/50 rounded transition-all cursor-pointer"
+                                      title="Approve"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                  {s.status !== "REJECTED" && (
+                                    <button
+                                      onClick={() => updateStaffStatus(s._id, "REJECTED")}
+                                      className="p-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/50 rounded transition-all cursor-pointer"
+                                      title="Reject"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {staffList.filter(s => s.role === staffTypeFilter).length === 0 && (
+                        <tr>
+                          <td colSpan="6" className="text-center p-8 text-slate-400">No staff found for selection.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: QUOTES */}
+          {activeTab === "Quotes" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Quotes Management</h1>
+                <p className="text-xs text-slate-500">Manage connection requests and quotation submissions from customers</p>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Connection Requests</span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">{quotesList.filter(q => q.type === 'connection').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Quotation Requests</span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">{quotesList.filter(q => q.type === 'quotation').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Quotes</span>
+                  <h3 className="text-xl font-black text-teal-600 mt-1">{quotesList.length}</h3>
+                </div>
+              </div>
+
+              {/* Quote Type Toggle Tabs */}
+              <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                <div className="flex border-b border-slate-100 gap-6 mb-6">
+                  <button
+                    onClick={() => setQuoteTypeTab("connection")}
+                    className={`pb-3 text-xs font-extrabold tracking-wider uppercase transition-all cursor-pointer ${quoteTypeTab === "connection" ? "text-teal-600 border-b-2 border-teal-600" : "text-slate-400 hover:text-slate-600"
+                      }`}
+                  >
+                    Connection Details ({quotesList.filter(q => q.type === 'connection').length})
+                  </button>
+                  <button
+                    onClick={() => setQuoteTypeTab("quotation")}
+                    className={`pb-3 text-xs font-extrabold tracking-wider uppercase transition-all cursor-pointer ${quoteTypeTab === "quotation" ? "text-teal-600 border-b-2 border-teal-600" : "text-slate-400 hover:text-slate-600"
+                      }`}
+                  >
+                    Quotation Details ({quotesList.filter(q => q.type === 'quotation').length})
+                  </button>
+                </div>
+
+                {quoteTypeTab === "connection" ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
+                          <th className="p-4 font-bold">Business Name</th>
+                          <th className="p-4 font-bold">Contact Person</th>
+                          <th className="p-4 font-bold">Email</th>
+                          <th className="p-4 font-bold">Phone</th>
+                          <th className="p-4 font-bold">Business Type</th>
+                          <th className="p-4 font-bold">Message</th>
+                          <th className="p-4 font-bold">Received</th>
+                          <th className="p-4 font-bold">Status</th>
+                          <th className="p-4 font-bold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {quotesList
+                          .filter(q => q.type === "connection")
+                          .map(q => (
+                            <tr key={q._id} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="p-4 font-black text-slate-900">{q.businessName}</td>
+                              <td className="p-4 font-bold text-slate-600">{q.contactPerson}</td>
+                              <td className="p-4 text-slate-500">{q.email}</td>
+                              <td className="p-4 text-slate-500">{q.phone}</td>
+                              <td className="p-4 text-slate-500 font-bold uppercase">{q.businessType}</td>
+                              <td className="p-4 text-slate-600 truncate max-w-[150px]" title={q.message}>{q.message || "—"}</td>
+                              <td className="p-4 text-slate-450">{new Date(q.receivedAt).toLocaleDateString()}</td>
+                              <td className="p-4">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${q.status === "ACCEPTED" ? "bg-teal-50 text-teal-650 border-teal-200" :
+                                    q.status === "CONTACTED" ? "bg-blue-50 text-blue-650 border-blue-200" :
+                                      "bg-amber-50 text-amber-650 border-amber-200"
+                                  }`}>
+                                  {q.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-right">
+                                <div className="flex gap-2 justify-end items-center">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedQuote(q);
+                                      setQuoteReplySubject(`Re: ClosetRush Partnership Inquiry - ${q.businessName}`);
+                                      setQuoteReplyMessage(`Hi ${q.contactPerson},\n\nThank you for reaching out to ClosetRush regarding partnership options. We received your request for your business (${q.businessName})...\n\nBest regards,\nClosetRush Corporate Operations`);
+                                    }}
+                                    className="px-2.5 py-1 bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold rounded-lg shadow-xs transition-all active:scale-98 cursor-pointer"
+                                  >
+                                    Open & Respond
+                                  </button>
+                                  <select
+                                    value={q.status}
+                                    onChange={(e) => updateQuoteStatus(q._id, e.target.value)}
+                                    className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-2xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                                  >
+                                    <option value="PENDING">PENDING</option>
+                                    <option value="CONTACTED">CONTACTED</option>
+                                    <option value="ACCEPTED">ACCEPTED</option>
+                                  </select>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
+                          <th className="p-4 font-bold">Business Name</th>
+                          <th className="p-4 font-bold">Contact Person</th>
+                          <th className="p-4 font-bold">Email</th>
+                          <th className="p-4 font-bold">Phone</th>
+                          <th className="p-4 font-bold">Business Type</th>
+                          <th className="p-4 font-bold">Properties</th>
+                          <th className="p-4 font-bold">Bundles</th>
+                          <th className="p-4 font-bold">Est. Total</th>
+                          <th className="p-4 font-bold">Status</th>
+                          <th className="p-4 font-bold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {quotesList
+                          .filter(q => q.type === "quotation")
+                          .map(q => (
+                            <tr key={q._id} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="p-4 font-black text-slate-900">{q.businessName}</td>
+                              <td className="p-4 font-bold text-slate-600">{q.contactPerson}</td>
+                              <td className="p-4 text-slate-500">{q.email}</td>
+                              <td className="p-4 text-slate-500">{q.phone}</td>
+                              <td className="p-4 text-slate-500 font-bold uppercase">{q.businessType}</td>
+                              <td className="p-4 space-y-0.5 text-[10px] text-slate-450 font-medium">
+                                <p>{q.propertiesCount || 0} properties</p>
+                                <p>{q.unitsCount || 0} units</p>
+                              </td>
+                              <td className="p-4 text-slate-600">{q.bundleSelections}</td>
+                              <td className="p-4 font-black text-teal-600">{q.estimatedTotal ? `₹${q.estimatedTotal.toLocaleString()}` : "N/A"}</td>
+                              <td className="p-4">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${q.status === "QUOTE SENT" ? "bg-teal-50 text-teal-650 border-teal-200" :
+                                    q.status === "NEGOTIATING" ? "bg-blue-50 text-blue-650 border-blue-200" :
+                                      "bg-amber-50 text-amber-650 border-amber-200"
+                                  }`}>
+                                  {q.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-right">
+                                <div className="flex gap-2 justify-end items-center">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedQuote(q);
+                                      setQuoteReplySubject(`Re: ClosetRush Service Proposal for ${q.businessName}`);
+                                      setQuoteReplyMessage(`Hi ${q.contactPerson},\n\nWe have generated a custom proposal for your business (${q.businessName}) consisting of ${q.propertiesCount} properties and ${q.unitsCount} units.\n\nSelections: ${q.bundleSelections}\nEstimated Total: ₹${q.estimatedTotal ? q.estimatedTotal.toLocaleString() : "0"}\n\nLet's connect to finalize the terms!\n\nBest regards,\nClosetRush B2B Sales Team`);
+                                    }}
+                                    className="px-2.5 py-1 bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold rounded-lg shadow-xs transition-all active:scale-98 cursor-pointer"
+                                  >
+                                    Open & Respond
+                                  </button>
+                                  <select
+                                    value={q.status}
+                                    onChange={(e) => updateQuoteStatus(q._id, e.target.value)}
+                                    className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-2xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                                  >
+                                    <option value="PENDING">PENDING</option>
+                                    <option value="NEGOTIATING">NEGOTIATING</option>
+                                    <option value="QUOTE SENT">QUOTE SENT</option>
+                                    <option value="ACCEPTED">ACCEPTED</option>
+                                  </select>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: SUPPORT TICKETS */}
+          {activeTab === "Support Tickets" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Support Tickets</h1>
+                  <p className="text-xs text-slate-500">View and respond to client assistance tickets</p>
+                </div>
+                <button
+                  onClick={() => setShowTicketModal(true)}
+                  className="py-2.5 px-5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition-all shadow-md shadow-teal-500/10 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Create Ticket
+                </button>
+              </div>
+
+              {/* Filters */}
+              <div className="bg-white border border-slate-200/60 p-6 rounded-3xl flex flex-wrap items-center gap-4 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xs text-slate-500 font-bold uppercase">Status:</span>
+                  <select
+                    value={ticketStatusFilter}
+                    onChange={(e) => setTicketStatusFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-2xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="OPEN">OPEN</option>
+                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                    <option value="CLOSED">CLOSED</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xs text-slate-550 font-bold uppercase">Priority:</span>
+                  <select
+                    value={ticketPriorityFilter}
+                    onChange={(e) => setTicketPriorityFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-2xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Priorities</option>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
+                        <th className="p-4 font-bold">Ticket ID</th>
+                        <th className="p-4 font-bold">Subject</th>
+                        <th className="p-4 font-bold">User Details</th>
+                        <th className="p-4 font-bold">Priority</th>
+                        <th className="p-4 font-bold">Status</th>
+                        <th className="p-4 font-bold">Created</th>
+                        <th className="p-4 font-bold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {ticketsList
+                        .filter(t => {
+                          const matchesStatus = ticketStatusFilter === "ALL" || t.status === ticketStatusFilter;
+                          const matchesPriority = ticketPriorityFilter === "ALL" || t.priority === ticketPriorityFilter;
+                          return matchesStatus && matchesPriority;
+                        })
+                        .map(t => (
+                          <tr key={t._id} className="hover:bg-slate-50/40 transition-colors">
+                            <td className="p-4 font-black text-slate-900">{t.ticketId}</td>
+                            <td className="p-4 text-slate-800 font-semibold">{t.subject}</td>
+                            <td className="p-4 space-y-0.5">
+                              <p className="font-bold text-slate-700">{t.userName}</p>
+                              <p className="text-[10px] text-slate-400">{t.userEmail}</p>
+                            </td>
+                            <td className="p-4">
+                              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${t.priority === "CRITICAL" ? "bg-red-50 text-red-750 border-red-200" :
+                                  t.priority === "HIGH" ? "bg-amber-50 text-amber-650 border-amber-200" :
+                                    t.priority === "MEDIUM" ? "bg-blue-50 text-blue-650 border-blue-200" :
+                                      "bg-slate-100 text-slate-550 border-slate-200"
+                                }`}>
+                                {t.priority}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className={`text-[9px] font-black uppercase px-2.5 py-0.8 rounded-full border ${t.status === "CLOSED" ? "bg-slate-100 text-slate-500 border-slate-200" :
+                                  t.status === "IN_PROGRESS" ? "bg-blue-50 text-blue-650 border-blue-200/50" :
+                                    "bg-teal-50 text-teal-650 border-teal-200/50"
+                                }`}>
+                                {t.status}
+                              </span>
+                            </td>
+                            <td className="p-4 text-slate-450">{new Date(t.createdAt).toLocaleDateString()}</td>
+                            <td className="p-4 text-right">
+                              <div className="flex gap-2 justify-end items-center">
+                                <button
+                                  onClick={() => {
+                                    setSelectedTicket(t);
+                                    setReplySubject(`Re: Ticket ${t.ticketId} - ${t.subject}`);
+                                    setReplyMessage("");
+                                  }}
+                                  className="px-2.5 py-1 bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold rounded-lg shadow-xs transition-all active:scale-98 cursor-pointer"
+                                >
+                                  Open & Reply
+                                </button>
+                                <select
+                                  value={t.status}
+                                  onChange={(e) => updateTicketStatus(t._id, e.target.value)}
+                                  className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-2xs text-slate-800 focus:outline-none cursor-pointer"
+                                >
+                                  <option value="OPEN">OPEN</option>
+                                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                  <option value="CLOSED">CLOSED</option>
+                                </select>
+                                <select
+                                  value={t.priority}
+                                  onChange={(e) => updateTicketPriority(t._id, e.target.value)}
+                                  className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-2xs text-slate-800 focus:outline-none cursor-pointer"
+                                >
+                                  <option value="LOW">LOW</option>
+                                  <option value="MEDIUM">MEDIUM</option>
+                                  <option value="HIGH">HIGH</option>
+                                  <option value="CRITICAL">CRITICAL</option>
+                                </select>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      {ticketsList.length === 0 && (
+                        <tr>
+                          <td colSpan="7" className="text-center p-8 text-slate-400">No support tickets found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: REFUNDS */}
+          {activeTab === "Refunds" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Refund Requests</h1>
+                <p className="text-xs text-slate-500">Manage cancellation refund claims from customers</p>
+              </div>
+
+              {/* Refunds visual state */}
+              <div className="bg-white border border-slate-200/60 p-8 rounded-3xl text-center max-w-lg mx-auto mt-12 shadow-sm">
+                <Inbox className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="font-extrabold text-slate-800 text-base mb-1">No Active Refund Claims</h3>
+                <p className="text-xs text-slate-500 leading-relaxed mb-6">
+                  There are no pending subscription refunds or billing disputes currently logged in the ClosetRush database.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: PLANS */}
+          {activeTab === "Plans" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Plans & Pricing</h1>
+                  <p className="text-xs text-slate-500">Configure client bedding plans, pricing, features, and popularity highlights</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setPlanForm({ id: "", bedType: "single", name: "", duration: "", price: "", originalPrice: "", discount: "", features: "", cta: "Choose Plan", popular: false, badge: "" });
+                    setShowPlanModal(true);
+                  }}
+                  className="py-2.5 px-5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/10 flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Add New Plan
+                </button>
+              </div>
+
+              {/* Plans Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Single Bed Plans Column */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6.5 shadow-sm space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-teal-500"></span>
+                      Single Bed Plans
+                    </h3>
+                    <span className="text-3xs font-black bg-teal-50 text-teal-600 px-2 py-0.5 rounded uppercase">
+                      {plansList.filter(p => p.bedType === "single").length} Plans
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {plansList.filter(p => p.bedType === "single").map((plan) => (
+                      <div key={plan._id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl relative hover:border-slate-250 transition-colors flex justify-between items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-800 text-sm">{plan.name}</span>
+                            <span className="text-[10px] bg-slate-200 text-slate-600 font-extrabold px-1.5 py-0.5 rounded">{plan.duration}</span>
+                            {plan.popular && (
+                              <span className="text-[9px] bg-teal-100 text-teal-700 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                {plan.badge || "Popular"}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-baseline gap-1.5 text-xs text-slate-500">
+                            <span className="text-slate-800 font-black text-sm">₹{plan.price}</span>
+                            {plan.originalPrice && (
+                              <span className="line-through text-slate-400">₹{plan.originalPrice}</span>
+                            )}
+                            {plan.discount && (
+                              <span className="text-teal-600 font-extrabold text-3xs">{plan.discount}</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 leading-relaxed font-semibold">
+                            <strong>Features:</strong> {plan.features && plan.features.length > 0 ? plan.features.join(", ") : "None"}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => handleEditPlan(plan)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-850 shadow-xs cursor-pointer transition-colors"
+                            title="Edit Plan"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePlan(plan._id)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-red-500 hover:text-red-700 shadow-xs cursor-pointer transition-colors"
+                            title="Delete Plan"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {plansList.filter(p => p.bedType === "single").length === 0 && (
+                      <div className="text-center py-12 text-slate-400 text-xs">No Single Bed plans configured yet. Click "Add New Plan" to start.</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Double Bed Plans Column */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6.5 shadow-sm space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-teal-500"></span>
+                      Double Bed Plans
+                    </h3>
+                    <span className="text-3xs font-black bg-teal-50 text-teal-600 px-2 py-0.5 rounded uppercase">
+                      {plansList.filter(p => p.bedType === "double").length} Plans
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {plansList.filter(p => p.bedType === "double").map((plan) => (
+                      <div key={plan._id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl relative hover:border-slate-250 transition-colors flex justify-between items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-800 text-sm">{plan.name}</span>
+                            <span className="text-[10px] bg-slate-200 text-slate-600 font-extrabold px-1.5 py-0.5 rounded">{plan.duration}</span>
+                            {plan.popular && (
+                              <span className="text-[9px] bg-teal-100 text-teal-700 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                {plan.badge || "Popular"}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-baseline gap-1.5 text-xs text-slate-500">
+                            <span className="text-slate-800 font-black text-sm">₹{plan.price}</span>
+                            {plan.originalPrice && (
+                              <span className="line-through text-slate-400">₹{plan.originalPrice}</span>
+                            )}
+                            {plan.discount && (
+                              <span className="text-teal-600 font-extrabold text-3xs">{plan.discount}</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 leading-relaxed font-semibold">
+                            <strong>Features:</strong> {plan.features && plan.features.length > 0 ? plan.features.join(", ") : "None"}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => handleEditPlan(plan)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-850 shadow-xs cursor-pointer transition-colors"
+                            title="Edit Plan"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePlan(plan._id)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-red-500 hover:text-red-700 shadow-xs cursor-pointer transition-colors"
+                            title="Delete Plan"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {plansList.filter(p => p.bedType === "double").length === 0 && (
+                      <div className="text-center py-12 text-slate-400 text-xs">No Double Bed plans configured yet. Click "Add New Plan" to start.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* MODAL: ADD / EDIT PLAN */}
+      {showPlanModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-8 shadow-2xl relative animate-scaleUp text-slate-800 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowPlanModal(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-sm font-black text-slate-900 mb-6 uppercase tracking-wider">
+              {planForm.id ? "Edit Pricing Plan" : "Add New Pricing Plan"}
+            </h2>
+
+            <form onSubmit={handleSavePlan} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Bed Type</label>
+                  <select
+                    value={planForm.bedType}
+                    onChange={(e) => setPlanForm({ ...planForm, bedType: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white font-bold transition-all"
+                  >
+                    <option value="single">Single Bed</option>
+                    <option value="double">Double Bed</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Plan Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={planForm.name}
+                    onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                    placeholder="e.g. Starter"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Duration</label>
+                  <input
+                    type="text"
+                    required
+                    value={planForm.duration}
+                    onChange={(e) => setPlanForm({ ...planForm, duration: e.target.value })}
+                    placeholder="e.g. 3 Months"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Price (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={planForm.price}
+                    onChange={(e) => setPlanForm({ ...planForm, price: e.target.value })}
+                    placeholder="e.g. 855"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Original Price (₹) (Opt)</label>
+                  <input
+                    type="number"
+                    value={planForm.originalPrice}
+                    onChange={(e) => setPlanForm({ ...planForm, originalPrice: e.target.value })}
+                    placeholder="e.g. 900"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Discount Badge (Opt)</label>
+                  <input
+                    type="text"
+                    value={planForm.discount}
+                    onChange={(e) => setPlanForm({ ...planForm, discount: e.target.value })}
+                    placeholder="e.g. 5% off"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Features (One per line)</label>
+                <textarea
+                  required
+                  rows="3"
+                  value={planForm.features}
+                  onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })}
+                  placeholder="4 Single Bedsheets&#10;4 Pillow Covers&#10;Free delivery & pickup"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all min-h-[70px] resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Button CTA Text</label>
+                  <input
+                    type="text"
+                    required
+                    value={planForm.cta}
+                    onChange={(e) => setPlanForm({ ...planForm, cta: e.target.value })}
+                    placeholder="e.g. Choose Growth"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Popular Highlight Badge (Opt)</label>
+                  <input
+                    type="text"
+                    value={planForm.badge}
+                    onChange={(e) => setPlanForm({ ...planForm, badge: e.target.value })}
+                    placeholder="e.g. Best Value"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 py-2">
+                <input
+                  type="checkbox"
+                  id="planPopular"
+                  checked={planForm.popular}
+                  onChange={(e) => setPlanForm({ ...planForm, popular: e.target.checked })}
+                  className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4 cursor-pointer"
+                />
+                <label htmlFor="planPopular" className="text-xs text-slate-600 font-bold select-none cursor-pointer">
+                  Highlight this plan as Popular / Best Value
+                </label>
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPlanModal(false)}
+                  className="flex-1 py-3 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-6 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition-all shadow-md shadow-teal-500/10 cursor-pointer"
+                >
+                  Save Plan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT CATEGORY */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-8 shadow-2xl relative animate-scaleUp text-slate-800">
+            <button
+              onClick={() => setShowCategoryModal(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-sm font-black text-slate-900 mb-6 uppercase tracking-wider">
+              {categoryForm.id ? "Edit Category" : "Add New Category"}
+            </h2>
+
+            <form onSubmit={handleSaveCategory} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Name</label>
+                <input
+                  type="text"
+                  required
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  placeholder="e.g. Quilt"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Description</label>
+                <textarea
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                  placeholder="e.g. Premium Cotton Quilts"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white min-h-[80px] transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Price per item (₹)</label>
+                <input
+                  type="number"
+                  required
+                  value={categoryForm.pricePerItem}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, pricePerItem: e.target.value })}
+                  placeholder="e.g. 500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Total Stock</label>
+                  <input
+                    type="number"
+                    required
+                    value={categoryForm.totalStock}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, totalStock: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Available Stock</label>
+                  <input
+                    type="number"
+                    required
+                    value={categoryForm.availableStock}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, availableStock: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Rented Stock</label>
+                  <input
+                    type="number"
+                    required
+                    value={categoryForm.rentedStock}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, rentedStock: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Laundry Stock</label>
+                  <input
+                    type="number"
+                    required
+                    value={categoryForm.laundryStock}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, laundryStock: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Status</label>
+                <select
+                  value={categoryForm.status}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, status: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="flex-1 py-3 px-6 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-6 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-md shadow-teal-500/10 cursor-pointer"
+                >
+                  Save Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CREATE SUPPORT TICKET */}
+      {showTicketModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-8 shadow-2xl relative animate-scaleUp text-slate-800">
+            <button
+              onClick={() => setShowTicketModal(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-sm font-black text-slate-900 mb-6 uppercase tracking-wider">Create Support Ticket</h2>
+
+            <form onSubmit={handleCreateTicket} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Subject / Issue Description</label>
+                <input
+                  type="text"
+                  required
+                  value={ticketForm.subject}
+                  onChange={(e) => setTicketForm({ ...ticketForm, subject: e.target.value })}
+                  placeholder="e.g. Delivery Delay or Damaged Bedsheet"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">User Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={ticketForm.userName}
+                  onChange={(e) => setTicketForm({ ...ticketForm, userName: e.target.value })}
+                  placeholder="e.g. Prasad Shaswat"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">User Email</label>
+                <input
+                  type="email"
+                  required
+                  value={ticketForm.userEmail}
+                  onChange={(e) => setTicketForm({ ...ticketForm, userEmail: e.target.value })}
+                  placeholder="e.g. prasad@gmail.com"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Priority</label>
+                  <select
+                    value={ticketForm.priority}
+                    onChange={(e) => setTicketForm({ ...ticketForm, priority: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Status</label>
+                  <select
+                    value={ticketForm.status}
+                    onChange={(e) => setTicketForm({ ...ticketForm, status: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="OPEN">OPEN</option>
+                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowTicketModal(false)}
+                  className="flex-1 py-3 px-6 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-6 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-md shadow-teal-500/10 cursor-pointer"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VIEW & REPLY SUPPORT TICKET */}
+      {selectedTicket && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl p-8 shadow-2xl relative animate-scaleUp text-slate-800 my-8">
+            <button
+              onClick={() => setSelectedTicket(null)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mb-6">
+              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border mr-2 ${selectedTicket.priority === "CRITICAL" ? "bg-red-50 text-red-750 border-red-200" :
+                  selectedTicket.priority === "HIGH" ? "bg-amber-50 text-amber-650 border-amber-200" :
+                    selectedTicket.priority === "MEDIUM" ? "bg-blue-50 text-blue-650 border-blue-200" :
+                      "bg-slate-100 text-slate-550 border-slate-200"
+                }`}>
+                {selectedTicket.priority}
+              </span>
+              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${selectedTicket.status === "CLOSED" ? "bg-slate-100 text-slate-500 border-slate-200" :
+                  selectedTicket.status === "IN_PROGRESS" ? "bg-blue-50 text-blue-650 border-blue-200/50" :
+                    "bg-teal-50 text-teal-650 border-teal-200/50"
+                }`}>
+                {selectedTicket.status}
+              </span>
+              <h2 className="text-xl font-black text-slate-900 mt-3">{selectedTicket.subject}</h2>
+              <p className="text-2xs text-slate-400 mt-1">Ticket ID: {selectedTicket.ticketId} • Created: {new Date(selectedTicket.createdAt).toLocaleString()}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6">
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Customer Details</p>
+                <p className="text-xs font-bold text-slate-800 mt-1">{selectedTicket.userName}</p>
+                <p className="text-[10px] text-slate-500">{selectedTicket.userEmail}</p>
+              </div>
+              <div className="flex flex-col justify-between items-end">
+                <div className="flex gap-2">
+                  <select
+                    value={selectedTicket.status}
+                    onChange={(e) => {
+                      updateTicketStatus(selectedTicket._id, e.target.value);
+                      setSelectedTicket({ ...selectedTicket, status: e.target.value });
+                    }}
+                    className="bg-white border border-slate-200 rounded-xl px-2 py-1 text-2xs text-slate-800 focus:outline-none cursor-pointer"
+                  >
+                    <option value="OPEN">OPEN</option>
+                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                    <option value="CLOSED">CLOSED</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Conversation History */}
+            <div className="mb-6">
+              <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider mb-3">Conversation Log</h3>
+              <div className="space-y-4 max-h-48 overflow-y-auto border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+                <div className="p-3 bg-white border border-slate-100 rounded-2xl">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-2xs font-extrabold text-slate-700">{selectedTicket.userName}</span>
+                    <span className="text-[9px] text-slate-400">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-slate-650 leading-relaxed font-medium">
+                    Opened ticket with subject: <strong>{selectedTicket.subject}</strong>. Needs support regarding bedding and linen service.
+                  </p>
+                </div>
+
+                {/* Simulated Replies */}
+                {(ticketReplies[selectedTicket.ticketId] || []).map((reply, idx) => (
+                  <div key={idx} className="p-3 bg-teal-50/40 border border-teal-100/50 rounded-2xl ml-6">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-2xs font-extrabold text-teal-750">Admin Support (You)</span>
+                      <span className="text-[9px] text-slate-450">{new Date(reply.sentAt).toLocaleString()}</span>
+                    </div>
+                    <p className="text-2xs text-teal-650 font-bold uppercase mb-1">Subject: {reply.subject}</p>
+                    <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{reply.message}</p>
+                  </div>
+                ))}
+
+                {(!ticketReplies[selectedTicket.ticketId] || ticketReplies[selectedTicket.ticketId].length === 0) && (
+                  <p className="text-center text-slate-400 text-2xs py-2">No replies sent yet. Send a direct mail reply below.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Reply Form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setReplySending(true);
+
+                // Simulate email sending API delay
+                await new Promise((resolve) => setTimeout(resolve, 800));
+
+                const newReply = {
+                  subject: replySubject,
+                  message: replyMessage,
+                  sentAt: new Date().toISOString()
+                };
+
+                const updatedReplies = {
+                  ...ticketReplies,
+                  [selectedTicket.ticketId]: [...(ticketReplies[selectedTicket.ticketId] || []), newReply]
+                };
+
+                setTicketReplies(updatedReplies);
+                localStorage.setItem("closet_rush_ticket_replies", JSON.stringify(updatedReplies));
+
+                // Auto-update ticket status to IN_PROGRESS if it was OPEN
+                if (selectedTicket.status === "OPEN") {
+                  updateTicketStatus(selectedTicket._id, "IN_PROGRESS");
+                  setSelectedTicket({ ...selectedTicket, status: "IN_PROGRESS" });
+                }
+
+                alert(`Email successfully dispatched to ${selectedTicket.userEmail}!\nSubject: ${replySubject}`);
+
+                setReplyMessage("");
+                setReplySending(false);
+              }}
+              className="space-y-4 pt-4 border-t border-slate-100"
+            >
+              <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">Direct Mail Reply</h3>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-450 font-bold uppercase block">Subject</label>
+                <input
+                  type="text"
+                  required
+                  value={replySubject}
+                  onChange={(e) => setReplySubject(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-450 font-bold uppercase block">Message</label>
+                <textarea
+                  required
+                  rows="3"
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  placeholder="Type your reply here. This will be sent as an email to the client."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white min-h-[80px]"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold transition-all cursor-pointer text-center"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={replySending}
+                  className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md shadow-teal-500/10 cursor-pointer text-center"
+                >
+                  {replySending ? "Sending Email..." : "Send Reply"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VIEW & RESPOND TO QUOTE */}
+      {selectedQuote && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl p-8 shadow-2xl relative animate-scaleUp text-slate-800 my-8">
+            <button
+              onClick={() => setSelectedQuote(null)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mb-6">
+              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-teal-200 bg-teal-50 text-teal-650 mr-2">
+                {selectedQuote.type === "connection" ? "Connection Request" : "Quotation Request"}
+              </span>
+              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${selectedQuote.status === "ACCEPTED" ? "bg-teal-50 text-teal-650 border-teal-200" :
+                  selectedQuote.status === "CONTACTED" || selectedQuote.status === "QUOTE SENT" ? "bg-blue-50 text-blue-650 border-blue-200" :
+                    "bg-amber-50 text-amber-650 border-amber-200"
+                }`}>
+                {selectedQuote.status}
+              </span>
+              <h2 className="text-xl font-black text-slate-900 mt-3">{selectedQuote.businessName}</h2>
+              <p className="text-2xs text-slate-400 mt-1">Requested on: {new Date(selectedQuote.receivedAt).toLocaleString()}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-6">
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-15">Contact Details</p>
+                <div className="space-y-1 text-xs">
+                  <p><strong>Contact Person:</strong> {selectedQuote.contactPerson}</p>
+                  <p><strong>Email:</strong> {selectedQuote.email}</p>
+                  <p><strong>Phone:</strong> {selectedQuote.phone}</p>
+                  <p><strong>Business Type:</strong> <span className="uppercase font-bold">{selectedQuote.businessType}</span></p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-15">Request Specifications</p>
+                {selectedQuote.type === "connection" ? (
+                  <div className="text-xs">
+                    <p><strong>Message / Inquiry:</strong></p>
+                    <p className="text-slate-600 bg-white border border-slate-100 rounded-xl p-3 mt-1.5 leading-relaxed font-medium italic">
+                      "{selectedQuote.message || "—"}"
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 text-xs">
+                    <p><strong>Properties Count:</strong> {selectedQuote.propertiesCount || 0}</p>
+                    <p><strong>Units Count:</strong> {selectedQuote.unitsCount || 0}</p>
+                    <p><strong>Selected Bundles:</strong> {selectedQuote.bundleSelections}</p>
+                    <p className="text-sm font-black text-teal-600 mt-1 bg-white border border-slate-100 p-2 rounded-xl text-center">
+                      Estimated Total: ₹{selectedQuote.estimatedTotal ? selectedQuote.estimatedTotal.toLocaleString() : "0"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Response Draft Form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setQuoteReplySending(true);
+
+                // Simulate email sending API delay
+                await new Promise((resolve) => setTimeout(resolve, 800));
+
+                // Auto-update status depending on type
+                const newStatus = selectedQuote.type === "connection" ? "CONTACTED" : "QUOTE SENT";
+                await updateQuoteStatus(selectedQuote._id, newStatus);
+                setSelectedQuote({ ...selectedQuote, status: newStatus });
+
+                alert(`Email response successfully dispatched to ${selectedQuote.email}!\nSubject: ${quoteReplySubject}`);
+
+                setQuoteReplyMessage("");
+                setQuoteReplySending(false);
+                setSelectedQuote(null);
+              }}
+              className="space-y-4 pt-4 border-t border-slate-100"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">Send Corporate Email Response</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xs text-slate-450 font-bold uppercase">Change Status:</span>
+                  <select
+                    value={selectedQuote.status}
+                    onChange={(e) => {
+                      updateQuoteStatus(selectedQuote._id, e.target.value);
+                      setSelectedQuote({ ...selectedQuote, status: e.target.value });
+                    }}
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-2xs text-slate-805 focus:outline-none cursor-pointer"
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="CONTACTED">CONTACTED</option>
+                    <option value="NEGOTIATING">NEGOTIATING</option>
+                    <option value="QUOTE SENT">QUOTE SENT</option>
+                    <option value="ACCEPTED">ACCEPTED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-450 font-bold uppercase block">Subject</label>
+                <input
+                  type="text"
+                  required
+                  value={quoteReplySubject}
+                  onChange={(e) => setQuoteReplySubject(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-450 font-bold uppercase block">Message Body</label>
+                <textarea
+                  required
+                  rows="4"
+                  value={quoteReplyMessage}
+                  onChange={(e) => setQuoteReplyMessage(e.target.value)}
+                  placeholder="Draft your response proposal or connection follow-up here."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white min-h-[100px]"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedQuote(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={quoteReplySending}
+                  className="flex-1 py-2.5 rounded-xl bg-teal-650 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md shadow-teal-500/10 cursor-pointer text-center"
+                >
+                  {quoteReplySending ? "Sending Email..." : "Send Response & Update"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VIEW, CREATE & EDIT CUSTOMER */}
+      {showUserModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-8 shadow-2xl relative animate-scaleUp text-slate-800 my-8">
+            <button
+              onClick={() => {
+                setShowUserModal(false);
+                setSelectedUser(null);
+              }}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-sm font-black text-slate-900 mb-6 uppercase tracking-wider">
+              {selectedUser ? "Edit Customer Details" : "Create New Customer"}
+            </h2>
+
+            <form onSubmit={handleSaveUser} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={userForm.name}
+                    onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                    placeholder="e.g. John Doe"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={userForm.email}
+                    onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                    placeholder="e.g. john@example.com"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Mobile Phone</label>
+                  <input
+                    type="text"
+                    value={userForm.mobile}
+                    onChange={(e) => setUserForm({ ...userForm, mobile: e.target.value })}
+                    placeholder="e.g. 9876543210"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">
+                    {selectedUser ? "Password (Leave blank to keep same)" : "Password"}
+                  </label>
+                  <input
+                    type="password"
+                    required={!selectedUser}
+                    value={userForm.password || ""}
+                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    placeholder={selectedUser ? "••••••••" : "e.g. securepassword"}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Delivery & Billing Address</label>
+                <textarea
+                  value={userForm.address || ""}
+                  onChange={(e) => setUserForm({ ...userForm, address: e.target.value })}
+                  placeholder="e.g. Flat 301, Courtyard, Gurugram"
+                  rows="2"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-405 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Account Type</label>
+                  <select
+                    value={userForm.accountType}
+                    onChange={(e) => setUserForm({ ...userForm, accountType: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="Individual User">Individual</option>
+                    <option value="Commercial Partner">B2B Partner</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Role</label>
+                  <select
+                    value={userForm.role}
+                    onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Status</label>
+                  <select
+                    value={userForm.status}
+                    onChange={(e) => setUserForm({ ...userForm, status: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* NESTED PLAN FORM */}
+              <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/55 space-y-3 text-left">
+                <h3 className="text-2xs font-extrabold text-slate-500 uppercase tracking-wider">Subscription Plan Configuration</h3>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-450 font-bold uppercase block">Bed Type</label>
+                    <select
+                      value={userForm.selectedPlan?.bedType || ""}
+                      onChange={(e) => setUserForm({
+                        ...userForm,
+                        selectedPlan: { ...userForm.selectedPlan, bedType: e.target.value }
+                      })}
+                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="">No Plan / Select</option>
+                      <option value="Single">Single Bed</option>
+                      <option value="Double">Double Bed</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-455 font-bold uppercase block">Plan Name</label>
+                    <input
+                      type="text"
+                      value={userForm.selectedPlan?.planName || ""}
+                      onChange={(e) => setUserForm({
+                        ...userForm,
+                        selectedPlan: { ...userForm.selectedPlan, planName: e.target.value }
+                      })}
+                      placeholder="e.g. Deluxe Single Plan"
+                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-450 font-bold uppercase block">Price (₹)</label>
+                    <input
+                      type="number"
+                      value={userForm.selectedPlan?.price !== undefined ? userForm.selectedPlan.price : ""}
+                      onChange={(e) => setUserForm({
+                        ...userForm,
+                        selectedPlan: { ...userForm.selectedPlan, price: e.target.value }
+                      })}
+                      placeholder="e.g. 500"
+                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-450 font-bold uppercase block">Duration</label>
+                    <select
+                      value={userForm.selectedPlan?.duration || ""}
+                      onChange={(e) => setUserForm({
+                        ...userForm,
+                        selectedPlan: { ...userForm.selectedPlan, duration: e.target.value }
+                      })}
+                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="">No Duration</option>
+                      <option value="Monthly">Monthly</option>
+                      <option value="Quarterly">Quarterly</option>
+                      <option value="Half-Yearly">Half-Yearly</option>
+                      <option value="Yearly">Yearly</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-450 font-bold uppercase block">Start Date</label>
+                    <input
+                      type="date"
+                      value={userForm.selectedPlan?.startDate || ""}
+                      onChange={(e) => setUserForm({
+                        ...userForm,
+                        selectedPlan: { ...userForm.selectedPlan, startDate: e.target.value }
+                      })}
+                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setSelectedUser(null);
+                  }}
+                  className="flex-1 py-3 px-6 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 text-xs font-bold transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-6 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-md shadow-teal-500/10 cursor-pointer text-center"
+                >
+                  {selectedUser ? "Save Changes" : "Create Customer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VIEW & EDIT ORDER */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl p-8 shadow-2xl relative animate-scaleUp text-slate-800 my-8">
+            <button
+              onClick={() => setSelectedOrder(null)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-sm font-black text-slate-900 mb-2 uppercase tracking-wider">
+              Order Details & Editing
+            </h2>
+            <p className="text-2xs text-slate-400 mb-6">Order ID: {selectedOrder.bundleOrderId}</p>
+
+            <form onSubmit={handleSaveOrder} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Customer Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={orderForm.userName}
+                    onChange={(e) => orderFormSet({ ...orderForm, userName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Customer Phone</label>
+                  <input
+                    type="text"
+                    value={orderForm.phone}
+                    onChange={(e) => orderFormSet({ ...orderForm, phone: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Customer Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={orderForm.email}
+                    onChange={(e) => orderFormSet({ ...orderForm, email: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Final Price (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={orderForm.finalPrice}
+                    onChange={(e) => orderFormSet({ ...orderForm, finalPrice: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Bundle Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={orderForm.bundleName}
+                    onChange={(e) => orderFormSet({ ...orderForm, bundleName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Order Status</label>
+                  <select
+                    value={orderForm.status}
+                    onChange={(e) => orderFormSet({ ...orderForm, status: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="DELIVERED">DELIVERED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Delivery Address</label>
+                <textarea
+                  rows="2"
+                  value={orderForm.deliveryAddress}
+                  onChange={(e) => orderFormSet({ ...orderForm, deliveryAddress: e.target.value })}
+                  placeholder="Address details..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white min-h-[50px] transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Subscription Start Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={orderForm.startDate}
+                    onChange={(e) => orderFormSet({ ...orderForm, startDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all cursor-pointer"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Subscription End Date</label>
+                  <input
+                    type="date"
+                    value={orderForm.endDate}
+                    onChange={(e) => orderFormSet({ ...orderForm, endDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  className="flex-1 py-3 px-6 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-6 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-md shadow-teal-500/10 cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD STAFF */}
+      {showStaffModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-8 shadow-2xl relative animate-scaleUp text-slate-800">
+            <button
+              onClick={() => setShowStaffModal(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-sm font-black text-slate-900 mb-6 uppercase tracking-wider">
+              Add New Staff Registration
+            </h2>
+
+            <form onSubmit={handleCreateStaff} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={staffForm.name}
+                  onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
+                  placeholder="e.g. John Manager"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={staffForm.email}
+                  onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
+                  placeholder="e.g. manager@closetrush.com"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-2xs text-slate-450 font-bold uppercase block">Mobile Phone</label>
+                <input
+                  type="text"
+                  required
+                  value={staffForm.mobile}
+                  onChange={(e) => setStaffForm({ ...staffForm, mobile: e.target.value })}
+                  placeholder="e.g. 9876543210"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Role</label>
+                  <select
+                    value={staffForm.role}
+                    onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="WH">Warehouse Manager (WH)</option>
+                    <option value="LP">Logistics Partner (LP)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Initial Status</label>
+                  <select
+                    value={staffForm.status}
+                    onChange={(e) => setStaffForm({ ...staffForm, status: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="REJECTED">REJECTED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowStaffModal(false)}
+                  className="flex-1 py-3 px-6 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-6 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-md shadow-teal-500/10 cursor-pointer"
+                >
+                  Register Staff
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,26 +1,152 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F3F7F8; /* Soft Slate-Teal Off-white */
+  --foreground: #0F1A1C; /* Deep Charcoal Teal */
+  --primary-navy: #0F1A1C;
+  --accent-teal: #245c77; /* Brand Deep Teal */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary-navy: var(--primary-navy);
+  --color-accent-teal: var(--accent-teal);
+  
+  --color-alabaster-linen: #F3F7F8;
+  --color-chalk-white: #FFFFFF;
+  --color-charcoal-ink: #0F1A1C;
+  --color-linen-gold: #245c77;
+  --color-sage-mist: #CCE3E6;
+  
+  --color-teal-50: #ecf5f8;
+  --color-teal-100: #d3e7f0;
+  --color-teal-200: #abcee1;
+  --color-teal-300: #7db1cc;
+  --color-teal-400: #5091b4;
+  --color-teal-500: #245c77;
+  --color-teal-600: #1d4a60;
+  --color-teal-700: #163747;
+  --color-teal-800: #0f2530;
+  --color-teal-900: #081419;
+  --color-teal-950: #040a0c;
+  
+  --font-serif: var(--font-serif), Georgia, serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Custom Scroll Behavior and Layout Tweaks */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* offset for fixed navbar */
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-alabaster-linen);
+  color: var(--color-charcoal-ink);
+  min-height: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-sans);
 }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-alabaster-linen);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-linen-gold);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #163747;
+}
+
+/* Premium Typography Classes */
+.text-hero {
+  font-family: var(--font-serif);
+  font-size: clamp(3.0rem, 8vw, 6.0rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--color-charcoal-ink);
+}
+
+.text-section-header {
+  font-family: var(--font-serif);
+  font-size: clamp(2.25rem, 5vw, 4.0rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-charcoal-ink);
+}
+
+.text-subheading {
+  font-family: var(--font-sans);
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--color-charcoal-ink);
+}
+
+.text-body {
+  font-family: var(--font-sans);
+  font-size: clamp(1.0rem, 1.2vw, 1.25rem);
+  font-weight: 400;
+  line-height: 1.625;
+  letter-spacing: -0.005em;
+  color: var(--color-charcoal-ink);
+  opacity: 0.8;
+}
+
+.text-micro-label {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-linen-gold);
+}
+
+/* Base custom classes for micro-animations */
+.hover-scale-102 {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-scale-102:hover {
+  transform: scale(1.02);
+}
+
+.text-2xs {
+  font-size: 0.7rem;
+}
+
+.text-3xs {
+  font-size: 0.6rem;
+}
+
+/* Luxury Button */
+.btn-luxury {
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(17, 17, 17, 0.15);
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+.btn-luxury:hover {
+  border-color: var(--color-charcoal-ink);
+  background-color: var(--color-charcoal-ink);
+  color: var(--color-alabaster-linen);
+  transform: translateY(-2px);
+}
+
