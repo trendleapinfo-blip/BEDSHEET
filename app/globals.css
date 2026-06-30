@@ -150,3 +150,10 @@ body {
   transform: translateY(-2px);
 }
 
+/* Admin Dashboard Specific Typography Theme Override */
+.admin-theme {
+  font-family: var(--font-outfit), var(--font-sans), sans-serif !important;
+  --font-serif: var(--font-outfit), var(--font-sans), sans-serif;
+  --font-sans: var(--font-outfit), var(--font-sans), sans-serif;
+}
+

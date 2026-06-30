@@ -66,6 +66,8 @@ const UserSchema = new mongoose.Schema(
       color: { type: String },
       fabric: { type: String },
       print: { type: String },
+      couponCode: { type: String, default: null },
+      discount: { type: Number, default: 0 },
     },
   },
   { timestamps: true }

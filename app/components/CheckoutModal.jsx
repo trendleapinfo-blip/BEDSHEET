@@ -43,6 +43,12 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
   const [mobile, setMobile] = useState(user?.mobile || "");
   const [error, setError] = useState("");
 
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { couponCode, discountType, discountValue, discount }
+  const [couponError, setCouponError] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState("");
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
   const isSingle = plan.bedType === "single";
 
   const getCustomExtra = () => {
@@ -73,6 +79,8 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
   // Calculate pricing breakdown
   const getPricing = () => {
     const customExtra = getCustomExtra();
+    let base = 0;
+    let deposit = 0;
 
     // 1. Monthly Kit pricing
     if (subscriptionType === "monthly") {
@@ -80,41 +88,100 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
       if (plan.isCustom) {
         basePlanPrice = Number(plan.basePlanPrice) || (Number(plan.price) - customExtra);
       }
-      const base = basePlanPrice + customExtra;
-      const gst = Math.round(base * 0.18);
-      const deposit = 500;
-      const total = base + gst + deposit;
-      return { base, gst, deposit, total };
+      base = basePlanPrice + customExtra;
+      deposit = 500;
+    } else {
+      // 2. Weekly Change Service pricing (₹1200/mo single bed, ₹2000/mo double bed)
+      const baseWeeklyMonthly = isSingle ? 1200 : 2000;
+      
+      // Scale according to duration
+      let multiplier = 1;
+      let discountRate = 0;
+      if (plan.duration === "3 Months") {
+        multiplier = 3;
+        discountRate = 0.05;
+      } else if (plan.duration === "6 Months") {
+        multiplier = 6;
+        discountRate = 0.10;
+      } else if (plan.duration === "12 Months") {
+        multiplier = 12;
+        discountRate = 0.20;
+      }
+
+      const rawBase = baseWeeklyMonthly * multiplier;
+      const baseWeekly = Math.round(rawBase * (1 - discountRate));
+      base = baseWeekly + customExtra;
+      deposit = 0;
     }
 
-    // 2. Weekly Change Service pricing (₹1200/mo single bed, ₹2000/mo double bed)
-    const baseWeeklyMonthly = isSingle ? 1200 : 2000;
-    
-    // Scale according to duration
-    let multiplier = 1;
-    let discountRate = 0;
-    if (plan.duration === "3 Months") {
-      multiplier = 3;
-      discountRate = 0.05;
-    } else if (plan.duration === "6 Months") {
-      multiplier = 6;
-      discountRate = 0.10;
-    } else if (plan.duration === "12 Months") {
-      multiplier = 12;
-      discountRate = 0.20;
+    // Apply Coupon Discount on base
+    let couponDiscount = 0;
+    if (appliedCoupon) {
+      if (appliedCoupon.discountType === "percentage") {
+        couponDiscount = Math.round(base * (appliedCoupon.discountValue / 100));
+        if (appliedCoupon.maxDiscount && couponDiscount > appliedCoupon.maxDiscount) {
+          couponDiscount = appliedCoupon.maxDiscount;
+        }
+      } else {
+        couponDiscount = appliedCoupon.discountValue;
+      }
+      if (couponDiscount > base) {
+        couponDiscount = base;
+      }
     }
 
-    const rawBase = baseWeeklyMonthly * multiplier;
-    const baseWeekly = Math.round(rawBase * (1 - discountRate));
-    const base = baseWeekly + customExtra;
-    const gst = Math.round(base * 0.18);
-    const deposit = 0;
-    const total = base + gst + deposit;
+    const discountedBase = base - couponDiscount;
+    const gst = Math.round(discountedBase * 0.18);
+    const total = discountedBase + gst + deposit;
 
-    return { base, gst, deposit, total };
+    return { base, couponDiscount, discountedBase, gst, deposit, total };
   };
 
   const pricing = getPricing();
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setValidatingCoupon(true);
+    setCouponError("");
+    setCouponSuccess("");
+    try {
+      const res = await fetch("/api/user/apply-coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: couponCode.trim(),
+          subtotal: pricing.base
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAppliedCoupon({
+          couponCode: data.couponCode,
+          discountType: data.discountType,
+          discountValue: data.discountValue,
+          discount: data.discount
+        });
+        setCouponSuccess(`Coupon '${data.couponCode}' applied! Discount: ₹${data.discount}`);
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(data.error || "Failed to apply coupon.");
+      }
+    } catch (err) {
+      console.error(err);
+      setCouponError("Error validating coupon code.");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  // Re-validate or reset coupon when delivery option changes (since subtotal changes)
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+    setCouponSuccess("");
+  }, [subscriptionType]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -144,7 +211,9 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
       isCustom: plan.isCustom,
       color: plan.color,
       fabric: plan.fabric,
-      print: plan.print
+      print: plan.print,
+      couponCode: appliedCoupon ? appliedCoupon.couponCode : null,
+      discount: pricing.couponDiscount
     });
   };
 
@@ -345,6 +414,46 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
             </div>
           </div>
 
+          {/* Coupon Code Section (B2C Only) */}
+          {user?.accountType === "Individual User" && (
+            <div className="space-y-2 bg-slate-50 border border-slate-150 rounded-3xl p-5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#245c77]" /> Apply Promo/Coupon Code
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value);
+                    setCouponError("");
+                    setCouponSuccess("");
+                  }}
+                  placeholder="Enter code (e.g. WELCOME10)"
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#245c77] text-xs font-bold uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={validatingCoupon || !couponCode.trim()}
+                  className="px-5 py-2.5 bg-[#245c77] hover:bg-[#245c77]/90 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {validatingCoupon ? "Validating..." : "Apply"}
+                </button>
+              </div>
+              {couponError && (
+                <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" /> {couponError}
+                </p>
+              )}
+              {couponSuccess && (
+                <p className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" /> {couponSuccess}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Pricing Invoice Summary Panel */}
           <div className="bg-slate-50 border border-slate-150 rounded-3xl p-5 space-y-3">
             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
@@ -358,6 +467,21 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
                 </span>
                 <span className="text-slate-700">₹{pricing.base}</span>
               </div>
+
+              {pricing.couponDiscount > 0 && (
+                <div className="flex justify-between font-bold text-emerald-600">
+                  <span>Coupon Discount ({appliedCoupon?.couponCode}):</span>
+                  <span>-₹{pricing.couponDiscount}</span>
+                </div>
+              )}
+
+              {pricing.couponDiscount > 0 && (
+                <div className="flex justify-between font-semibold border-b border-dashed border-slate-200 pb-2">
+                  <span className="text-slate-400">Discounted Base Rate:</span>
+                  <span className="text-slate-700 font-bold">₹{pricing.discountedBase}</span>
+                </div>
+              )}
+
               <div className="flex justify-between font-semibold">
                 <span className="text-slate-400">GST (18%):</span>
                 <span className="text-slate-700">₹{pricing.gst}</span>

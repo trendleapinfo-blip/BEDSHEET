@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Order from "@/models/Order";
+import Coupon from "@/models/Coupon";
 
 export async function POST(request) {
   try {
@@ -35,7 +36,9 @@ export async function POST(request) {
       color,
       fabric,
       print,
-      isCustom
+      isCustom,
+      couponCode,
+      discount
     } = await request.json();
 
     if (!bedType || !planName || price === undefined || !duration) {
@@ -53,6 +56,57 @@ export async function POST(request) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
+    // Server-side validation of Coupon
+    let calculatedDiscount = 0;
+    let coupon = null;
+    if (couponCode) {
+      if (user.accountType !== "Individual User") {
+        return NextResponse.json(
+          { error: "Coupons are only available for B2C Individual Users." },
+          { status: 400 }
+        );
+      }
+
+      const uppercaseCode = couponCode.trim().toUpperCase();
+      coupon = await Coupon.findOne({ code: uppercaseCode });
+      if (!coupon) {
+        return NextResponse.json({ error: "Invalid coupon code." }, { status: 400 });
+      }
+      if (!coupon.isActive) {
+        return NextResponse.json({ error: "This coupon is no longer active." }, { status: 400 });
+      }
+      const now = new Date();
+      if (coupon.startDate && now < new Date(coupon.startDate)) {
+        return NextResponse.json({ error: "This coupon is not active yet." }, { status: 400 });
+      }
+      if (coupon.endDate && now > new Date(coupon.endDate)) {
+        return NextResponse.json({ error: "This coupon has expired." }, { status: 400 });
+      }
+      if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+        return NextResponse.json({ error: "This coupon usage limit has been reached." }, { status: 400 });
+      }
+      if (Number(price) < coupon.minPurchase) {
+        return NextResponse.json({ error: `Minimum order value of ₹${coupon.minPurchase} required.` }, { status: 400 });
+      }
+
+      if (coupon.discountType === "percentage") {
+        calculatedDiscount = Math.round(Number(price) * (coupon.discountValue / 100));
+        if (coupon.maxDiscount !== null && calculatedDiscount > coupon.maxDiscount) {
+          calculatedDiscount = coupon.maxDiscount;
+        }
+      } else if (coupon.discountType === "flat") {
+        calculatedDiscount = coupon.discountValue;
+      }
+      if (calculatedDiscount > Number(price)) {
+        calculatedDiscount = Math.round(Number(price));
+      }
+    }
+
+    const discountedBase = Number(price) - calculatedDiscount;
+    const computedGst = Math.round(discountedBase * 0.18);
+    const computedDeposit = (subscriptionType === "weekly") ? 0 : 500;
+    const computedTotalPrice = discountedBase + computedGst + computedDeposit;
+
     const updateFields = {
       selectedPlan: {
         bedType,
@@ -60,14 +114,16 @@ export async function POST(request) {
         price: Number(price),
         duration,
         subscriptionType: subscriptionType || "monthly",
-        securityDeposit: securityDeposit !== undefined ? Number(securityDeposit) : 500,
-        gst: gst !== undefined ? Number(gst) : Math.round(Number(price) * 0.18),
-        totalPrice: totalPrice !== undefined ? Number(totalPrice) : Number(price) + Math.round(Number(price) * 0.18) + 500,
+        securityDeposit: computedDeposit,
+        gst: computedGst,
+        totalPrice: computedTotalPrice,
         startDate: new Date(),
         isCustom: !!isCustom,
         color,
         fabric,
-        print
+        print,
+        couponCode: coupon ? coupon.code : null,
+        discount: calculatedDiscount
       }
     };
 
@@ -130,12 +186,18 @@ export async function POST(request) {
       email: updatedUser.email,
       bundleName,
       duration,
-      finalPrice: Number(totalPrice || price),
+      finalPrice: computedTotalPrice,
+      couponCode: coupon ? coupon.code : null,
+      discount: calculatedDiscount,
       status: "ACTIVE",
       startDate: new Date(),
       endDate,
       deliveryAddress: updatedUser.address || "—",
     });
+
+    if (coupon) {
+      await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });
+    }
 
     return NextResponse.json({
       message: "Plan selected successfully and order created",
