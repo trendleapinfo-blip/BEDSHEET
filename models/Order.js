@@ -51,6 +51,16 @@ const OrderSchema = new mongoose.Schema(
       enum: ["ACTIVE", "CANCELLED", "PENDING", "DELIVERED"],
       default: "ACTIVE",
     },
+    orderType: {
+      type: String,
+      enum: ["RENT", "BUY"],
+      default: "RENT",
+    },
+    itemTier: {
+      type: String,
+      enum: ["BASIC", "PREMIUM"],
+      default: "BASIC",
+    },
     startDate: {
       type: Date,
       default: Date.now,

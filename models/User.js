@@ -68,6 +68,8 @@ const UserSchema = new mongoose.Schema(
       print: { type: String },
       couponCode: { type: String, default: null },
       discount: { type: Number, default: 0 },
+      orderType: { type: String, enum: ["RENT", "BUY"], default: "RENT" },
+      itemTier: { type: String, enum: ["BASIC", "PREMIUM"], default: "BASIC" },
     },
   },
   { timestamps: true }

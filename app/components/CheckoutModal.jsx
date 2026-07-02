@@ -89,7 +89,7 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
         basePlanPrice = Number(plan.basePlanPrice) || (Number(plan.price) - customExtra);
       }
       base = basePlanPrice + customExtra;
-      deposit = 500;
+      deposit = isSingle ? 500 : 800;
     } else {
       // 2. Weekly Change Service pricing (₹1200/mo single bed, ₹2000/mo double bed)
       const baseWeeklyMonthly = isSingle ? 1200 : 2000;
@@ -294,7 +294,7 @@ export default function CheckoutModal({ plan, user, onClose, onConfirm, loading 
                     We deliver a bundle of 4 sheets and 4 pillow covers once a month. You swap them yourself.
                   </p>
                   <p className="text-[9px] text-[#A89276] font-bold mt-1.5 uppercase tracking-wide">
-                    Requires ₹500 Security Deposit
+                    Requires ₹{isSingle ? 500 : 800} Security Deposit
                   </p>
                 </div>
               </button>

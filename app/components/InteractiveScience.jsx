@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { HeartIcon, ShieldCheckIcon, LotusIcon, BrainIcon, CheckIcon, ArrowRightIcon } from "./Icons";
 
 export default function InteractiveScience() {
@@ -169,31 +170,31 @@ export default function InteractiveScience() {
   // Simulator Renders
   const renderHealthSimulator = () => {
     return (
-      <div className="space-y-5 p-6 bg-alabaster-linen border border-charcoal-ink/08 mb-6 font-sans">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider">Select Bedding State</span>
-          <div className="inline-flex bg-charcoal-ink/05 p-1">
+      <div className="space-y-5 p-6 bg-alabaster-linen/60 backdrop-blur-sm border border-charcoal-ink/05 rounded-2xl mb-6 font-sans">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <span className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider font-sans">Select Bedding State</span>
+          <div className="inline-flex bg-charcoal-ink/05 p-1 rounded-full border border-charcoal-ink/05 self-start sm:self-auto">
             <button
               onClick={() => {
                 setIsStandardBedding(true);
                 setIsPaused(true);
               }}
-              className={`px-3 py-1 text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
                 isStandardBedding
-                  ? "bg-charcoal-ink text-alabaster-linen"
+                  ? "bg-charcoal-ink text-alabaster-linen shadow-sm"
                   : "text-charcoal-ink/60 hover:text-charcoal-ink"
               }`}
             >
-              Normal Sheets (14 days old)
+              Normal Sheets
             </button>
             <button
               onClick={() => {
                 setIsStandardBedding(false);
                 setIsPaused(true);
               }}
-              className={`px-3 py-1 text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
                 !isStandardBedding
-                  ? "bg-linen-gold text-charcoal-ink"
+                  ? "bg-[#245c77] text-white shadow-sm"
                   : "text-charcoal-ink/60 hover:text-charcoal-ink"
               }`}
             >
@@ -204,46 +205,46 @@ export default function InteractiveScience() {
 
         <div className="space-y-4">
           {/* Dust Mite Count */}
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-charcoal-ink/75">Bugs in Bed (Approx.)</span>
-              <span className={`font-bold transition-colors duration-300 ${isStandardBedding ? "text-red-500" : "text-linen-gold"}`}>
+              <span className={`font-bold transition-colors duration-300 ${isStandardBedding ? "text-red-500" : "text-[#245c77]"}`}>
                 {isStandardBedding ? "10,000+ Bugs" : "0 Bugs"}
               </span>
             </div>
-            <div className="h-1.5 w-full bg-charcoal-ink/05 rounded-none overflow-hidden">
+            <div className="h-2 w-full bg-charcoal-ink/05 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-500 ${isStandardBedding ? "bg-red-500 w-full" : "bg-linen-gold w-0"}`}
+                className={`h-full rounded-full transition-all duration-500 ${isStandardBedding ? "bg-red-500 w-full" : "bg-[#245c77] w-0"}`}
               />
             </div>
           </div>
 
           {/* Skin Health Rating */}
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-charcoal-ink/75">Skin Health Score</span>
-              <span className={`font-bold transition-colors duration-300 ${isStandardBedding ? "text-red-500" : "text-linen-gold"}`}>
+              <span className={`font-bold transition-colors duration-300 ${isStandardBedding ? "text-red-500" : "text-[#245c77]"}`}>
                 {isStandardBedding ? "35/100 (Itchy & Bad)" : "98/100 (Very Good)"}
               </span>
             </div>
-            <div className="h-1.5 w-full bg-charcoal-ink/05 rounded-none overflow-hidden">
+            <div className="h-2 w-full bg-charcoal-ink/05 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-500 ${isStandardBedding ? "bg-red-500 w-[35%]" : "bg-linen-gold w-[98%]"}`}
+                className={`h-full rounded-full transition-all duration-500 ${isStandardBedding ? "bg-red-500 w-[35%]" : "bg-[#245c77] w-[98%]"}`}
               />
             </div>
           </div>
 
           {/* Breathing Score */}
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-charcoal-ink/75">Allergy Level</span>
-              <span className={`font-bold transition-colors duration-300 ${isStandardBedding ? "text-red-500" : "text-linen-gold"}`}>
+              <span className={`font-bold transition-colors duration-300 ${isStandardBedding ? "text-red-500" : "text-[#245c77]"}`}>
                 {isStandardBedding ? "Dusty (Sneeze Risk)" : "Clean & Safe"}
               </span>
             </div>
-            <div className="h-1.5 w-full bg-charcoal-ink/05 rounded-none overflow-hidden">
+            <div className="h-2 w-full bg-charcoal-ink/05 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-500 ${isStandardBedding ? "bg-red-500 w-[45%]" : "bg-linen-gold w-full"}`}
+                className={`h-full rounded-full transition-all duration-500 ${isStandardBedding ? "bg-red-500 w-[45%]" : "bg-[#245c77] w-full"}`}
               />
             </div>
           </div>
@@ -261,18 +262,18 @@ export default function InteractiveScience() {
     if (washTemp >= 80) {
       survivalPercent = 0.01;
       status = "100% Germ Free (Super Hot)";
-      statusColor = "bg-linen-gold/10 text-linen-gold border-linen-gold/20";
+      statusColor = "bg-[#245c77]/10 text-[#245c77] border-[#245c77]/20";
       progressColor = "bg-charcoal-ink";
     } else if (washTemp >= 60) {
       survivalPercent = 0.1;
       status = "Sanitized & Clean";
-      statusColor = "bg-linen-gold/10 text-linen-gold border-linen-gold/20";
-      progressColor = "bg-linen-gold";
+      statusColor = "bg-[#245c77]/10 text-[#245c77] border-[#245c77]/20";
+      progressColor = "bg-[#245c77]";
     } else if (washTemp >= 40) {
       survivalPercent = Number((65 - 3.25 * (washTemp - 40)).toFixed(1));
       status = "Warm Wash (Germs stay alive)";
-      statusColor = "bg-linen-gold/10 text-linen-gold/80 border-linen-gold/15";
-      progressColor = "bg-linen-gold/60";
+      statusColor = "bg-[#245c77]/10 text-[#245c77]/80 border-[#245c77]/15";
+      progressColor = "bg-[#245c77]/60";
     } else {
       survivalPercent = Number((99.9 - 1.745 * (washTemp - 20)).toFixed(1));
       status = "Cold Wash (Bugs stay alive)";
@@ -281,10 +282,10 @@ export default function InteractiveScience() {
     }
 
     return (
-      <div className="space-y-5 p-6 bg-alabaster-linen border border-charcoal-ink/08 mb-6 font-sans">
+      <div className="space-y-5 p-6 bg-alabaster-linen/60 backdrop-blur-sm border border-charcoal-ink/05 rounded-2xl mb-6 font-sans">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider">Thermal Dial</span>
-          <span className={`px-2 py-0.5 border text-[10px] font-black uppercase tracking-wider rounded-none transition-all duration-300 ${statusColor}`}>
+          <span className={`px-3 py-1 border text-[10px] font-black uppercase tracking-wider rounded-full transition-all duration-300 ${statusColor}`}>
             {status}
           </span>
         </div>
@@ -302,26 +303,26 @@ export default function InteractiveScience() {
                 setWashTemp(Number(e.target.value));
                 setIsPaused(true);
               }}
-              className="flex-1 accent-linen-gold cursor-pointer h-1.5 bg-charcoal-ink/05 rounded-none appearance-none"
+              className="flex-1 accent-[#245c77] cursor-pointer h-2 bg-charcoal-ink/05 rounded-full appearance-none"
             />
             <span className="text-3xs text-charcoal-ink/40 font-bold uppercase tracking-wider">80°C Max</span>
           </div>
 
           <div className="flex justify-between items-center text-xs font-semibold text-charcoal-ink/75">
             <span>Germ Survival Rate:</span>
-            <span className={`text-sm font-black transition-colors duration-300 ${survivalPercent < 1 ? "text-linen-gold" : "text-red-500"}`}>
+            <span className={`text-sm font-black transition-colors duration-300 ${survivalPercent < 1 ? "text-[#245c77]" : "text-red-500"}`}>
               {survivalPercent}%
             </span>
           </div>
 
-          <div className="h-1.5 w-full bg-charcoal-ink/05 rounded-none overflow-hidden">
+          <div className="h-2 w-full bg-charcoal-ink/05 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-none transition-all duration-300 ${progressColor}`}
+              className={`h-full rounded-full transition-all duration-300 ${progressColor}`}
               style={{ width: `${100 - survivalPercent}%` }}
             />
           </div>
 
-          <p className="text-3xs text-charcoal-ink/50 font-medium uppercase tracking-wider leading-relaxed">
+          <p className="text-3xs text-charcoal-ink/50 font-semibold uppercase tracking-wider leading-relaxed">
             * We promise to wash sheets in very hot water (60°C+) to kill all bugs.
           </p>
         </div>
@@ -333,7 +334,7 @@ export default function InteractiveScience() {
     const activeChakraData = chakras[activeChakra];
     
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 p-6 bg-alabaster-linen border border-charcoal-ink/08 mb-6 min-h-[220px] font-sans">
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 p-6 bg-alabaster-linen/60 backdrop-blur-sm border border-charcoal-ink/05 rounded-2xl mb-6 min-h-[220px] font-sans shadow-sm">
         {/* Visual Chakra Column */}
         <div className="sm:col-span-4 flex flex-row sm:flex-col items-center justify-between border-b sm:border-b-0 sm:border-r border-charcoal-ink/08 pb-4 sm:pb-0 pr-0 sm:pr-4">
           <span className="text-[9px] font-bold text-charcoal-ink/40 uppercase tracking-widest sm:mb-2">Body Focus</span>
@@ -350,12 +351,12 @@ export default function InteractiveScience() {
                     setActiveChakra(idx);
                     setIsPaused(true);
                   }}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center transition-all cursor-pointer ${chakra.color} ${
-                    isSel ? `scale-125 ring-2 ring-white shadow-lg ${chakra.glowColor}` : "opacity-40 hover:opacity-100 scale-95"
+                  className={`w-6.5 h-6.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${chakra.color} ${
+                    isSel ? `scale-125 ring-2 ring-white shadow-md ${chakra.glowColor}` : "opacity-40 hover:opacity-100 scale-95"
                   }`}
                   title={chakra.name}
                 >
-                  <div className={`w-1.5 h-1.5 bg-white rounded-full transition-transform ${isSel ? "scale-100" : "scale-0"}`} />
+                  <div className={`w-2 h-2 bg-white rounded-full transition-transform ${isSel ? "scale-100" : "scale-0"}`} />
                 </button>
               );
             })}
@@ -369,7 +370,7 @@ export default function InteractiveScience() {
               Body Part {7 - activeChakra} of 7 • {activeChakraData.element}
             </span>
             <h4 className="text-xs sm:text-sm font-black text-charcoal-ink mt-0.5">{activeChakraData.name}</h4>
-            <p className="text-[11px] sm:text-xs text-charcoal-ink/75 mt-2 leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-charcoal-ink/75 mt-2 leading-relaxed font-semibold">
               {activeChakraData.desc}
             </p>
           </div>
@@ -387,42 +388,42 @@ export default function InteractiveScience() {
     let stressLevel = 10;
     let deepSleep = 98;
     let statusText = "Super Fresh Bed";
-    let badgeColor = "bg-linen-gold/10 text-linen-gold border-linen-gold/20";
+    let badgeColor = "bg-[#245c77]/10 text-[#245c77] border-[#245c77]/20";
  
     if (beddingAge >= 21) {
       scent = "Smells Smelly & Sticky";
       stressLevel = Math.min(95, 55 + (beddingAge - 14) * 2.5);
       deepSleep = Math.max(25, 60 - (beddingAge - 14) * 2.2);
       statusText = "Dirty sheets (Danger)";
-      badgeColor = "bg-red-500/10 text-red-600 border-red-500/20";
+      badgeColor = "bg-rose-500/10 text-rose-600 border-rose-500/20";
     } else if (beddingAge >= 14) {
       scent = "Smells Dusty";
       stressLevel = 35 + (beddingAge - 7) * 2.8;
       deepSleep = 75 - (beddingAge - 7) * 2.1;
       statusText = "Needs Wash Now";
-      badgeColor = "bg-linen-gold/15 text-linen-gold/80 border-linen-gold/15";
+      badgeColor = "bg-[#245c77]/15 text-[#245c77]/80 border-[#245c77]/15";
     } else if (beddingAge >= 7) {
       scent = "No Smell";
       stressLevel = 15 + (beddingAge - 3) * 3.5;
       deepSleep = 90 - (beddingAge - 3) * 2.5;
       statusText = "Needs Change Soon";
-      badgeColor = "bg-linen-gold/10 text-linen-gold border-linen-gold/20";
+      badgeColor = "bg-[#245c77]/10 text-[#245c77] border-[#245c77]/20";
     } else if (beddingAge >= 3) {
       scent = "Smells Clean";
       stressLevel = 10 + (beddingAge - 1) * 2.5;
       deepSleep = 98 - (beddingAge - 1) * 2.0;
       statusText = "Very Comfortable";
-      badgeColor = "bg-linen-gold/10 text-linen-gold border-linen-gold/20";
+      badgeColor = "bg-[#245c77]/10 text-[#245c77] border-[#245c77]/20";
     }
 
     stressLevel = Math.round(stressLevel);
     deepSleep = Math.round(deepSleep);
 
     return (
-      <div className="space-y-5 p-6 bg-alabaster-linen border border-charcoal-ink/08 mb-6 font-sans">
+      <div className="space-y-5 p-6 bg-alabaster-linen/60 backdrop-blur-sm border border-charcoal-ink/05 rounded-2xl mb-6 font-sans">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider">Days since sheet change</span>
-          <span className={`px-2 py-0.5 border text-[10px] font-black uppercase tracking-wider rounded-none transition-all duration-300 ${badgeColor}`}>
+          <span className={`px-3 py-1 border text-[10px] font-black uppercase tracking-wider rounded-full transition-all duration-300 ${badgeColor}`}>
             {statusText}
           </span>
         </div>
@@ -440,27 +441,27 @@ export default function InteractiveScience() {
                 setBeddingAge(Number(e.target.value));
                 setIsPaused(true);
               }}
-              className="flex-1 accent-linen-gold cursor-pointer h-1.5 bg-charcoal-ink/05 rounded-none appearance-none"
+              className="flex-1 accent-[#245c77] cursor-pointer h-2 bg-charcoal-ink/05 rounded-full appearance-none"
             />
             <span className="text-3xs text-charcoal-ink/40 font-bold uppercase tracking-wider">30 Days</span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2.5 text-center">
-            <div className="bg-white p-2.5 rounded-none border border-charcoal-ink/05">
-              <p className="text-[8px] text-charcoal-ink/40 font-bold uppercase tracking-wider mb-0.5">Smell</p>
-              <p className="text-[11px] font-black text-charcoal-ink truncate">{scent}</p>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-xl border border-charcoal-ink/05 shadow-sm">
+              <p className="text-[8px] text-charcoal-ink/40 font-bold uppercase tracking-wider mb-1">Smell</p>
+              <p className="text-2xs font-extrabold text-charcoal-ink truncate leading-none">{scent}</p>
             </div>
             
-            <div className="bg-white p-2.5 rounded-none border border-charcoal-ink/05">
-              <p className="text-[8px] text-charcoal-ink/40 font-bold uppercase tracking-wider mb-0.5 font-bold">Stress Level</p>
-              <p className={`text-[11px] font-black transition-colors duration-300 ${stressLevel > 50 ? "text-red-500" : "text-charcoal-ink"}`}>
+            <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-xl border border-charcoal-ink/05 shadow-sm">
+              <p className="text-[8px] text-charcoal-ink/40 font-bold uppercase tracking-wider mb-1">Stress Level</p>
+              <p className={`text-2xs font-extrabold leading-none transition-colors duration-300 ${stressLevel > 50 ? "text-rose-500" : "text-charcoal-ink"}`}>
                 +{stressLevel}%
               </p>
             </div>
             
-            <div className="bg-white p-2.5 rounded-none border border-charcoal-ink/05">
-              <p className="text-[8px] text-charcoal-ink/40 font-bold uppercase tracking-wider mb-0.5 font-bold">Sleep Quality</p>
-              <p className={`text-[11px] font-black transition-colors duration-300 ${deepSleep < 60 ? "text-red-500" : "text-linen-gold"}`}>
+            <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-xl border border-charcoal-ink/05 shadow-sm">
+              <p className="text-[8px] text-charcoal-ink/40 font-bold uppercase tracking-wider mb-1">Sleep Quality</p>
+              <p className={`text-2xs font-extrabold leading-none transition-colors duration-300 ${deepSleep < 60 ? "text-rose-500" : "text-[#245c77]"}`}>
                 {deepSleep}%
               </p>
             </div>
@@ -485,9 +486,9 @@ export default function InteractiveScience() {
         </div>
 
         {/* Interactive Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           {/* Left Side: Selectors (Grid of Cards) */}
-          <div className="lg:col-span-6 space-y-3">
+          <div className="lg:col-span-5 space-y-4">
             {pillars.map((pillar) => {
               const IconComp = pillar.icon;
               const isSelected = activeTab === pillar.id;
@@ -499,34 +500,34 @@ export default function InteractiveScience() {
                     setActiveTab(pillar.id);
                     setIsPaused(true);
                   }}
-                  className={`w-full text-left p-6 border transition-all duration-300 flex items-start gap-6 relative overflow-hidden cursor-pointer rounded-none ${
+                  className={`w-full text-left p-5 sm:p-6 border transition-all duration-300 flex items-start gap-5 relative overflow-hidden cursor-pointer rounded-2xl ${
                     isSelected
-                      ? "bg-white border-charcoal-ink/20 shadow-md translate-x-1"
-                      : "bg-white/40 border-charcoal-ink/05 hover:bg-white hover:border-charcoal-ink/10"
+                      ? "bg-white border-[#245c77]/20 shadow-[0_15px_30px_rgba(36,92,119,0.04)] translate-x-1"
+                      : "bg-white/40 border-charcoal-ink/05 hover:bg-white hover:border-[#245c77]/10 hover:shadow-[0_10px_20px_rgba(0,0,0,0.01)]"
                   }`}
                 >
                   <div
-                    className={`absolute left-0 top-0 bottom-0 w-1 bg-linen-gold transition-transform duration-300 ${
+                    className={`absolute left-0 top-0 bottom-0 w-1.5 bg-[#245c77] transition-transform duration-300 ${
                       isSelected ? "scale-y-100" : "scale-y-0"
                     }`}
                   />
 
                   <div
-                    className={`p-3 rounded-none transition-all duration-300 ${
-                      isSelected ? "bg-linen-gold/10 text-linen-gold scale-105" : "bg-charcoal-ink/05 text-charcoal-ink/40"
+                    className={`p-3.5 rounded-xl transition-all duration-300 ${
+                      isSelected ? "bg-[#245c77]/10 text-[#245c77] scale-105" : "bg-charcoal-ink/05 text-charcoal-ink/40"
                     }`}
                   >
                     <IconComp className="w-5 h-5" />
                   </div>
 
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-baseline justify-between">
-                      <h3 className="font-bold text-sm sm:text-base text-charcoal-ink">{pillar.title}</h3>
-                      <span className="text-2xs font-extrabold tracking-wider text-linen-gold uppercase">
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h3 className="font-serif font-bold text-sm sm:text-base text-charcoal-ink">{pillar.title}</h3>
+                      <span className="text-[9px] font-extrabold tracking-widest text-[#245c77] uppercase bg-[#245c77]/10 px-2 py-0.5 rounded-full whitespace-nowrap">
                         {pillar.metric} {pillar.label}
                       </span>
                     </div>
-                    <p className="text-2xs sm:text-xs text-charcoal-ink/60 line-clamp-2 leading-relaxed">{pillar.description}</p>
+                    <p className="text-2xs sm:text-xs text-charcoal-ink/60 line-clamp-2 leading-relaxed font-semibold">{pillar.description}</p>
                   </div>
                 </button>
               );
@@ -534,39 +535,39 @@ export default function InteractiveScience() {
           </div>
 
           {/* Right Side: Detailed Focus Viewer */}
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-7">
             <div
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
-              className="bg-white border border-charcoal-ink/08 p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between min-h-[460px] rounded-none"
+              className="bg-white/80 backdrop-blur-md border border-white rounded-[32px] p-6 sm:p-8 md:p-10 relative overflow-hidden flex flex-col justify-between min-h-[520px] shadow-[0_20px_50px_rgba(0,0,0,0.02)]"
             >
               <div>
                 {/* Header & Icon */}
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 bg-charcoal-ink text-alabaster-linen rounded-none">
+                  <div className="p-3.5 bg-charcoal-ink text-alabaster-linen rounded-2xl">
                     <ActivePillarIcon className="w-6 h-6 text-linen-gold" />
                   </div>
                   <div>
-                    <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Health Proof</span>
+                    <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-black block">Health Proof</span>
                     <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-charcoal-ink">{activePillar.title}</h3>
                   </div>
                 </div>
 
                 {/* Big Stats Banner */}
-                <div className="bg-alabaster-linen p-6 border border-charcoal-ink/05 mb-6 flex items-center justify-between">
+                <div className="bg-gradient-to-r from-[#245c77]/08 to-[#245c77]/02 p-6 border border-[#245c77]/10 rounded-2xl mb-8 flex items-center justify-between shadow-xs">
                   <div>
-                    <div className="text-2xl sm:text-3xl font-bold font-serif text-linen-gold">
+                    <div className="text-3xl sm:text-4xl font-bold font-serif text-[#245c77]">
                       {activePillar.metric}
                     </div>
-                    <div className="text-[9px] font-bold text-charcoal-ink/40 uppercase tracking-widest mt-1">Cleanliness Level</div>
+                    <div className="text-[9px] font-black text-charcoal-ink/40 uppercase tracking-widest mt-1">Cleanliness Level</div>
                   </div>
-                  <div className="text-right space-y-0.5">
-                    <span className="text-xs uppercase tracking-wider font-extrabold text-charcoal-ink">{activePillar.label}</span>
-                    <p className="text-3xs text-charcoal-ink/40 uppercase tracking-widest">True Number</p>
+                  <div className="text-right space-y-1">
+                    <span className="text-xs uppercase tracking-widest font-black text-charcoal-ink bg-white/80 border border-charcoal-ink/05 px-3 py-1 rounded-full">{activePillar.label}</span>
+                    <p className="text-3xs text-charcoal-ink/40 uppercase tracking-widest font-bold">True Verified Stat</p>
                   </div>
                 </div>
 
-                <p className="text-xs sm:text-sm text-charcoal-ink/75 leading-relaxed mb-6">
+                <p className="text-xs sm:text-sm text-charcoal-ink/75 leading-relaxed mb-6 font-semibold">
                   {activePillar.description}
                 </p>
 
@@ -577,18 +578,18 @@ export default function InteractiveScience() {
                 {activeTab === 3 && renderMentalSimulator()}
 
                 {/* Checklist Title */}
-                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-charcoal-ink mb-4 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-linen-gold" /> Core Benefits
+                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-[#245c77] mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#245c77]" /> Core Benefits
                 </h4>
 
                 {/* Grid Checklist */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {activePillar.checklist.map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5">
-                      <div className="p-0.5 rounded-none bg-linen-gold/10 text-linen-gold mt-0.5">
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-full bg-[#245c77]/10 text-[#245c77] flex items-center justify-center shrink-0">
                         <CheckIcon className="w-3 h-3" />
                       </div>
-                      <span className="text-2xs sm:text-xs text-charcoal-ink/80 font-bold uppercase tracking-wider">{item}</span>
+                      <span className="text-2xs sm:text-xs text-charcoal-ink/75 font-semibold uppercase tracking-wider leading-none">{item}</span>
                     </div>
                   ))}
                 </div>
@@ -596,14 +597,14 @@ export default function InteractiveScience() {
 
               {/* Bottom Action Trigger */}
               <div className="mt-8 pt-6 border-t border-charcoal-ink/08 flex items-center justify-between text-xs font-bold uppercase tracking-wider">
-                <span className="text-3xs text-charcoal-ink/40 font-bold">simple tips for healthy living</span>
-                <a
-                  href="#about"
-                  className="inline-flex items-center gap-1 text-2xs text-linen-gold hover:text-charcoal-ink transition-colors"
+                <span className="text-3xs text-charcoal-ink/40 font-bold tracking-widest">simple tips for healthy living</span>
+                <Link
+                  href="/about"
+                  className="inline-flex items-center gap-1 text-2xs text-[#245c77] hover:text-charcoal-ink transition-all duration-300 hover:translate-x-1"
                 >
                   Learn More
                   <ArrowRightIcon className="w-3.5 h-3.5" />
-                </a>
+                </Link>
               </div>
             </div>
           </div>

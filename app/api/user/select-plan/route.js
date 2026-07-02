@@ -38,7 +38,9 @@ export async function POST(request) {
       print,
       isCustom,
       couponCode,
-      discount
+      discount,
+      orderType,
+      itemTier
     } = await request.json();
 
     if (!bedType || !planName || price === undefined || !duration) {
@@ -104,7 +106,7 @@ export async function POST(request) {
 
     const discountedBase = Number(price) - calculatedDiscount;
     const computedGst = Math.round(discountedBase * 0.18);
-    const computedDeposit = (subscriptionType === "weekly") ? 0 : 500;
+    const computedDeposit = (orderType === "BUY") ? 0 : ((subscriptionType === "weekly") ? 0 : (bedType === "single" ? 500 : 800));
     const computedTotalPrice = discountedBase + computedGst + computedDeposit;
 
     const updateFields = {
@@ -123,7 +125,9 @@ export async function POST(request) {
         fabric,
         print,
         couponCode: coupon ? coupon.code : null,
-        discount: calculatedDiscount
+        discount: calculatedDiscount,
+        orderType: orderType || "RENT",
+        itemTier: itemTier || "BASIC"
       }
     };
 
@@ -151,26 +155,37 @@ export async function POST(request) {
 
     // Calculate End Date based on duration
     let endDate = new Date();
-    if (duration === "1 Month") {
-      endDate.setMonth(endDate.getMonth() + 1);
-    } else if (duration === "3 Months") {
-      endDate.setMonth(endDate.getMonth() + 3);
-    } else if (duration === "6 Months") {
-      endDate.setMonth(endDate.getMonth() + 6);
-    } else if (duration === "12 Months") {
-      endDate.setMonth(endDate.getMonth() + 12);
+    if (orderType === "BUY") {
+      endDate = null;
     } else {
-      endDate.setMonth(endDate.getMonth() + 1);
+      if (duration === "1 Month") {
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else if (duration === "3 Months") {
+        endDate.setMonth(endDate.getMonth() + 3);
+      } else if (duration === "6 Months") {
+        endDate.setMonth(endDate.getMonth() + 6);
+      } else if (duration === "12 Months") {
+        endDate.setMonth(endDate.getMonth() + 12);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+      }
     }
 
     // Generate dynamic bundleOrderId
     const codePrefix = bedType === "single" ? "SIN" : "DOU";
-    const subPrefix = (subscriptionType || "monthly") === "weekly" ? "WK" : "MO";
-    const bundleOrderId = `B${codePrefix}BUN-${subPrefix}-${Math.floor(10000 + Math.random() * 90000)}`;
+    let bundleOrderId = "";
+    let bundleName = "";
 
-    let bundleName = `${bedType === "single" ? "Single" : "Double"} Bed ${
-      subscriptionType === "weekly" ? "Weekly Change Service" : "Bundle"
-    }`;
+    if (orderType === "BUY") {
+      bundleOrderId = `B${codePrefix}PUR-${Math.floor(10000 + Math.random() * 90000)}`;
+      bundleName = `${bedType === "single" ? "Single" : "Double"} Bed Sheets (${itemTier === "PREMIUM" ? "Premium Set" : "Basic Set"})`;
+    } else {
+      const subPrefix = (subscriptionType || "monthly") === "weekly" ? "WK" : "MO";
+      bundleOrderId = `B${codePrefix}BUN-${subPrefix}-${Math.floor(10000 + Math.random() * 90000)}`;
+      bundleName = `${bedType === "single" ? "Single" : "Double"} Bed ${
+        subscriptionType === "weekly" ? "Weekly Change Service" : "Bundle"
+      }`;
+    }
 
     if (color || fabric || print) {
       const customizations = [color, fabric, print].filter(Boolean).join(", ");
@@ -190,6 +205,8 @@ export async function POST(request) {
       couponCode: coupon ? coupon.code : null,
       discount: calculatedDiscount,
       status: "ACTIVE",
+      orderType: orderType || "RENT",
+      itemTier: itemTier || "BASIC",
       startDate: new Date(),
       endDate,
       deliveryAddress: updatedUser.address || "—",

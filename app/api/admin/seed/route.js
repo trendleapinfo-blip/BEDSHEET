@@ -111,7 +111,7 @@ export async function GET() {
         bedType: "double",
         name: "Starter",
         duration: "1 Month",
-        price: 500,
+        price: 800,
         originalPrice: null,
         discount: null,
         features: [
@@ -130,8 +130,8 @@ export async function GET() {
         bedType: "double",
         name: "Growth",
         duration: "3 Months",
-        price: 1425,
-        originalPrice: 1500,
+        price: 2280,
+        originalPrice: 2400,
         discount: "5% off",
         features: [
           "4 Double Bedsheets",
@@ -150,8 +150,8 @@ export async function GET() {
         bedType: "double",
         name: "Professional",
         duration: "6 Months",
-        price: 2700,
-        originalPrice: 3000,
+        price: 4320,
+        originalPrice: 4800,
         discount: "10% off",
         features: [
           "4 Double Bedsheets",
@@ -170,8 +170,8 @@ export async function GET() {
         bedType: "double",
         name: "Enterprise",
         duration: "12 Months",
-        price: 4800,
-        originalPrice: 6000,
+        price: 7680,
+        originalPrice: 9600,
         discount: "20% off",
         features: [
           "4 Double Bedsheets",

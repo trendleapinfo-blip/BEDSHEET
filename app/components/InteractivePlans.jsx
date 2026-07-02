@@ -42,6 +42,11 @@ const CUSTOMIZATION_PRICING = {
 };
 
 export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
+  const [orderType, setOrderType] = useState("RENT"); // 'RENT' | 'BUY'
+  const [buySize, setBuySize] = useState("single"); // 'single' | 'double'
+  const [buyColor, setBuyColor] = useState("Classic White");
+  const [rentTier, setRentTier] = useState("BASIC"); // 'BASIC' | 'PREMIUM'
+
   const [selectedSuite, setSelectedSuite] = useState("residence"); // 'atelier' | 'residence' | 'maison' | 'corporate' | 'custom'
   const [selectedDuration, setSelectedDuration] = useState("6 Months"); // '1 Month' | '3 Months' | '6 Months' | '12 Months'
   const [customBedType, setCustomBedType] = useState("single");
@@ -66,16 +71,16 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
     },
     double: {
       title: "Double Bed Plan",
-      subtitle: "For two people or bigger beds.",
-      basePrice: 500,
+      subtitle: "For two people or bigger beds. Includes 4 bedsheets + 8 pillow covers.",
+      basePrice: 800,
       image: "/about_bedding.png",
       cottonType: "Super Soft Egyptian Cotton",
       frequency: "Fresh Sheets Every 2 Weeks",
       durations: [
-        { name: "1 Month Plan", duration: "1 Month", price: "500", originalPrice: null, discount: null, cta: "Get 1 Month Plan" },
-        { name: "3 Months Plan", duration: "3 Months", price: "1425", originalPrice: "1500", discount: "5% off", cta: "Get 3 Months Plan" },
-        { name: "6 Months Plan", duration: "6 Months", price: "2700", originalPrice: "3000", discount: "10% off", cta: "Get 6 Months Plan", popular: true, badge: "Best Value" },
-        { name: "12 Months Plan", duration: "12 Months", price: "4800", originalPrice: "6000", discount: "20% off", cta: "Get 12 Months Plan" },
+        { name: "1 Month Plan", duration: "1 Month", price: "800", originalPrice: null, discount: null, cta: "Get 1 Month Plan" },
+        { name: "3 Months Plan", duration: "3 Months", price: "2280", originalPrice: "2400", discount: "5% off", cta: "Get 3 Months Plan" },
+        { name: "6 Months Plan", duration: "6 Months", price: "4320", originalPrice: "4800", discount: "10% off", cta: "Get 6 Months Plan", popular: true, badge: "Best Value" },
+        { name: "12 Months Plan", duration: "12 Months", price: "7680", originalPrice: "9600", discount: "20% off", cta: "Get 12 Months Plan" },
       ],
     },
   };
@@ -102,8 +107,8 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
               },
               double: {
                 title: "Double Bed Plan",
-                subtitle: "For two people or bigger beds.",
-                basePrice: 500,
+                subtitle: "For two people or bigger beds. Includes 4 bedsheets + 8 pillow covers.",
+                basePrice: 800,
                 image: "/about_bedding.png",
                 cottonType: "Super Soft Egyptian Cotton",
                 frequency: "Fresh Sheets Every 2 Weeks",
@@ -145,6 +150,28 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
 
   // Resolve the dynamic selected plan based on Suite and Duration
   const getSelectedPlanData = () => {
+    if (orderType === "BUY") {
+      const baseBuyPrice = buySize === "single" ? 200 : 350;
+      return {
+        orderType: "BUY",
+        itemTier: "BASIC",
+        bedType: buySize,
+        planName: `${buySize === "single" ? "Single Bed" : "Double Bed"} Sheets (Purchase)`,
+        price: baseBuyPrice,
+        originalPrice: null,
+        discount: null,
+        duration: "One-Time Purchase",
+        title: `${buySize === "single" ? "Single Bed Set" : "Double Bed Set"}`,
+        subtitle: `Buy and own permanently. No swap cycles or security deposits.`,
+        cottonType: "Standard Bedding Weave",
+        frequency: "One-Time Delivery",
+        image: buySize === "single" ? "/hero_bedding.png" : "/about_bedding.png",
+        cta: "Buy Bedding Set",
+        color: buyColor,
+        isCustom: false
+      };
+    }
+
     if (selectedSuite === "corporate") {
       return {
         name: "Business Plan",
@@ -164,10 +191,8 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
 
       const basePlanPrice = Number(durationPlan.price) || 0;
 
-      const colorCost = CUSTOMIZATION_PRICING.colors[customColor] || 0;
-      const fabricCost = CUSTOMIZATION_PRICING.fabrics[customFabric] || 0;
-      const printCost = CUSTOMIZATION_PRICING.prints[customPrint] || 0;
-      const extraPerMonth = colorCost + fabricCost + printCost;
+      // Customization fee: Flat ₹50/mo for Single, ₹0/mo for Double (as per handwritten note)
+      const extraPerMonth = customBedType === "single" ? 50 : 0;
 
       let multiplier = 1;
       let discountRate = 0;
@@ -209,29 +234,71 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
 
     const bedTypeKey = selectedSuite === "atelier" ? "single" : "double";
     const suite = activePlans[bedTypeKey];
-    const durationPlan = suite.durations.find(d => d.duration === selectedDuration) || suite.durations[0];
+
+    const monthlyBase = rentTier === "PREMIUM"
+      ? (bedTypeKey === "single" ? 1200 : 2000)
+      : (bedTypeKey === "single" ? 300 : 800);
+
+    let multiplier = 1;
+    let discountStr = null;
+    let discountRate = 0;
+    if (selectedDuration === "3 Months") {
+      multiplier = 3;
+      discountStr = "5% off";
+      discountRate = 0.05;
+    } else if (selectedDuration === "6 Months") {
+      multiplier = 6;
+      discountStr = "10% off";
+      discountRate = 0.10;
+    } else if (selectedDuration === "12 Months") {
+      multiplier = 12;
+      discountStr = "20% off";
+      discountRate = 0.20;
+    }
+
+    const computedPrice = Math.round(monthlyBase * multiplier * (1 - discountRate));
+    const computedOriginalPrice = discountRate > 0 ? (monthlyBase * multiplier) : null;
 
     return {
       bedType: bedTypeKey,
-      planName: durationPlan.name,
-      price: durationPlan.price,
-      originalPrice: durationPlan.originalPrice,
-      discount: durationPlan.discount,
-      duration: durationPlan.duration,
+      planName: `${bedTypeKey === "single" ? "Single Bed" : "Double Bed"} ${rentTier === "PREMIUM" ? "Premium Rent" : "Basic Rent"} (${selectedDuration})`,
+      price: computedPrice,
+      originalPrice: computedOriginalPrice,
+      discount: discountStr,
+      duration: selectedDuration,
       title: suite.title,
-      subtitle: suite.subtitle,
-      cottonType: suite.cottonType,
-      frequency: suite.frequency,
+      subtitle: rentTier === "PREMIUM"
+        ? "Premium weekly change service. No security deposit, every week they change sheets."
+        : suite.subtitle,
+      cottonType: rentTier === "PREMIUM" ? "600 TC Premium Egyptian Cotton" : suite.cottonType,
+      frequency: rentTier === "PREMIUM" ? "Fresh Sheets Swapped Weekly" : suite.frequency,
       image: suite.image,
-      cta: durationPlan.cta
+      cta: `Choose ${rentTier === "PREMIUM" ? "Premium" : "Basic"} Plan`,
+      itemTier: rentTier,
+      orderType: "RENT"
     };
   };
 
   const currentPlan = getSelectedPlanData();
 
   const handleReserve = () => {
+    if (orderType === "BUY") {
+      handleSelectPlan({
+        orderType: "BUY",
+        itemTier: currentPlan.itemTier,
+        bedType: currentPlan.bedType,
+        planName: currentPlan.planName,
+        price: currentPlan.price,
+        duration: currentPlan.duration,
+        color: currentPlan.color,
+        isCustom: false
+      });
+      return;
+    }
+
     if (selectedSuite === "corporate") {
       handleSelectPlan({
+        orderType: "RENT",
         bedType: "corporate",
         planName: "Corporate Plan",
         price: 0,
@@ -242,6 +309,7 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
 
     if (selectedSuite === "custom") {
       handleSelectPlan({
+        orderType: "RENT",
         bedType: currentPlan.bedType,
         planName: currentPlan.planName,
         price: currentPlan.price,
@@ -256,6 +324,8 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
     }
 
     handleSelectPlan({
+      orderType: "RENT",
+      itemTier: currentPlan.itemTier || "BASIC",
       bedType: currentPlan.bedType,
       planName: currentPlan.planName,
       price: currentPlan.price,
@@ -268,16 +338,42 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <p className="text-micro-label">Our Plans</p>
-        <h2 className="text-section-header">Choose Your Bed Plan.</h2>
+        <h2 className="text-section-header">Choose Your Bedding.</h2>
         <p className="text-body text-charcoal-ink/65">
-          Pick the bed sheets that fit your bed. Select how many months you want on the right side.
+          Pick whether you want to subscribe to a rental cleaning plan or purchase the bedding set permanently.
         </p>
+      </div>
+
+      {/* Rent vs Buy Toggle */}
+      <div className="flex justify-center">
+        <div className="bg-charcoal-ink/05 p-1.5 rounded-none border border-charcoal-ink/10 flex gap-2">
+          <button
+            onClick={() => setOrderType("RENT")}
+            className={`px-8 py-3 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded-none cursor-pointer border-none outline-none ${
+              orderType === "RENT"
+                ? "bg-charcoal-ink text-white shadow-md"
+                : "text-charcoal-ink/60 hover:text-charcoal-ink bg-transparent"
+            }`}
+          >
+            Rent (Clean Sheet Swaps)
+          </button>
+          <button
+            onClick={() => setOrderType("BUY")}
+            className={`px-8 py-3 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded-none cursor-pointer border-none outline-none ${
+              orderType === "BUY"
+                ? "bg-charcoal-ink text-white shadow-md"
+                : "text-charcoal-ink/60 hover:text-charcoal-ink bg-transparent"
+            }`}
+          >
+            Buy & Own (One-Time Purchase)
+          </button>
+        </div>
       </div>
  
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         {/* Left Column: Suite Selectors */}
         <div className="lg:col-span-5 space-y-4">
-          {[
+          {(orderType === "RENT" ? [
             {
               id: "atelier",
               num: "01",
@@ -302,27 +398,52 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
               title: "Design Your Plan",
               desc: "Pick your own colors, fabrics, and prints.",
             },
-          ].map((suite) => (
+          ] : [
+            {
+              id: "single",
+              num: "01",
+              title: "Single Bed Set",
+              desc: "Buy single bedsheets permanently.",
+            },
+            {
+              id: "double",
+              num: "02",
+              title: "Double Bed Set",
+              desc: "Buy double bedsheets permanently.",
+            }
+          ]).map((suite) => (
             <button
               key={suite.id}
               onClick={() => {
-                setSelectedSuite(suite.id);
-                if (suite.id !== "corporate") {
-                  setSelectedDuration("6 Months"); // reset to default professional duration
+                if (orderType === "RENT") {
+                  setSelectedSuite(suite.id);
+                  if (suite.id !== "corporate") {
+                    setSelectedDuration("6 Months"); // reset to default professional duration
+                  }
+                } else {
+                  setBuySize(suite.id);
                 }
               }}
               className={`w-full text-left p-6 border transition-all duration-300 flex items-start gap-6 cursor-pointer rounded-none ${
-                selectedSuite === suite.id
+                (orderType === "RENT" ? selectedSuite === suite.id : buySize === suite.id)
                   ? "bg-charcoal-ink text-alabaster-linen border-charcoal-ink shadow-md"
                   : "bg-white text-charcoal-ink border-charcoal-ink/08 hover:border-charcoal-ink/20"
               }`}
             >
-              <span className={`font-serif text-lg font-bold ${selectedSuite === suite.id ? "text-linen-gold" : "text-charcoal-ink/40"}`}>
+              <span className={`font-serif text-lg font-bold ${
+                (orderType === "RENT" ? selectedSuite === suite.id : buySize === suite.id) 
+                  ? "text-linen-gold" 
+                  : "text-charcoal-ink/40"
+              }`}>
                 {suite.num}
               </span>
               <div className="space-y-1">
                 <h4 className="text-sm font-extrabold uppercase tracking-wider">{suite.title}</h4>
-                <p className={`text-2xs ${selectedSuite === suite.id ? "text-alabaster-linen/70" : "text-charcoal-ink/50"}`}>
+                <p className={`text-2xs ${
+                  (orderType === "RENT" ? selectedSuite === suite.id : buySize === suite.id)
+                    ? "text-alabaster-linen/70"
+                    : "text-charcoal-ink/50"
+                }`}>
                   {suite.desc}
                 </p>
               </div>
@@ -332,17 +453,81 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
           {/* Value note */}
           <div className="p-6 border border-linen-gold/20 bg-linen-gold/05 space-y-2">
             <span className="text-2xs font-extrabold text-linen-gold uppercase tracking-wider flex items-center gap-1.5">
-              <CrownIcon className="w-3.5 h-3.5" /> Guaranteed Fresh Sleep
+              <CrownIcon className="w-3.5 h-3.5" /> {orderType === "RENT" ? "Guaranteed Fresh Sleep" : "Premium Bedding Quality"}
             </span>
             <p className="text-3xs text-charcoal-ink/60 leading-relaxed uppercase tracking-wider">
-              Every plan includes hot washing, germ-killing treatment, and delivery to your door.
+              {orderType === "RENT" 
+                ? "Every plan includes hot washing, germ-killing treatment, and delivery to your door."
+                : "Own hotel-grade organic long-staple cotton sheets permanently."}
             </p>
           </div>
         </div>
 
         {/* Right Column: Suite Details Dashboard */}
         <div className="lg:col-span-7 bg-white border border-charcoal-ink/08 p-8 space-y-8">
-          {selectedSuite === "custom" ? (
+          {orderType === "BUY" ? (
+            <div className="space-y-6">
+              {/* Buy Title and Sub */}
+              <div className="space-y-2 border-b border-charcoal-ink/08 pb-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold uppercase tracking-wider text-charcoal-ink">
+                    Buy & Own: {buySize === "single" ? "Single Bed Sheets" : "Double Bed Sheets"}
+                  </h3>
+                  <span className="text-2xs font-bold bg-[#B2905F]/10 text-[#B2905F] px-2.5 py-1 uppercase tracking-wider">
+                    One-Time Purchase
+                  </span>
+                </div>
+                <p className="text-xs text-charcoal-ink/60 leading-relaxed">
+                  Purchase a premium organic cotton bedsheet set permanently. No returns or swap schedules required.
+                </p>
+              </div>
+              {/* Step 1: Choose Color */}
+              <div className="space-y-3">
+                <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">
+                  Step 1: Choose Color
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                  {Object.entries(CUSTOMIZATION_PRICING.colors).map(([colorName, colorPrice]) => (
+                    <button
+                      key={colorName}
+                      onClick={() => setBuyColor(colorName)}
+                      className={`p-2.5 border flex flex-col items-center justify-between gap-2 text-center transition-all cursor-pointer h-20 rounded-none ${
+                        buyColor === colorName
+                          ? "border-[#245c77] bg-[#245c77]/05 ring-1 ring-[#245c77]"
+                          : "border-charcoal-ink/08 bg-white hover:border-charcoal-ink/20"
+                      }`}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full border border-slate-350"
+                        style={{ backgroundColor: CUSTOMIZATION_PRICING.colorsHex[colorName] }}
+                      />
+                      <div>
+                        <span className="text-[8px] font-extrabold uppercase tracking-tight block truncate w-full max-w-[80px]">
+                          {colorName}
+                        </span>
+                        <span className="text-[8px] text-[#245c77] font-bold">
+                          Free
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Specs display for Buy */}
+              <div className="bg-[#B2905F]/05 border border-[#B2905F]/10 p-5 rounded-none space-y-2 text-xs">
+                <span className="text-[10px] uppercase tracking-widest text-[#B2905F] font-extrabold block">
+                  Delivery Inclusions
+                </span>
+                <p className="text-charcoal-ink/70 font-semibold leading-relaxed">
+                  {buySize === "single" 
+                    ? "Includes: 1 Single Bedsheet + 1 Pillow Cover (Vacuum Sealed Shield)." 
+                    : "Includes: 1 Double Bedsheet + 2 Pillow Covers (Vacuum Sealed Shield)."}
+                </p>
+              </div>
+
+            </div>
+          ) : selectedSuite === "custom" ? (
             <div className="space-y-6">
               {/* Suite Title and Sub */}
               <div className="space-y-2 border-b border-charcoal-ink/08 pb-6">
@@ -586,6 +771,54 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
                 </p>
               </div>
 
+              {/* Rental Service Tier Selector (Only for Non-Corporate Rent) */}
+              {selectedSuite !== "corporate" && (
+                <div className="space-y-3 border-b border-charcoal-ink/08 pb-6">
+                  <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">
+                    Choose Rental Service Tier
+                  </span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setRentTier("BASIC")}
+                      className={`p-4 border text-left flex flex-col justify-between h-28 transition-all cursor-pointer rounded-none ${
+                        rentTier === "BASIC"
+                          ? "border-charcoal-ink bg-charcoal-ink/05 ring-1 ring-charcoal-ink"
+                          : "border-charcoal-ink/08 bg-white hover:border-charcoal-ink/20"
+                      }`}
+                    >
+                      <div>
+                        <span className="text-xs font-black uppercase tracking-wider block">Basic Rent</span>
+                        <span className="text-[10px] text-charcoal-ink/65 mt-1 block leading-normal">
+                          Monthly self-swap. Requires ₹{selectedSuite === "atelier" ? 500 : 800} refundable deposit.
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-linen-gold mt-2 block">
+                        {selectedSuite === "atelier" ? "₹300 / Month" : "₹800 / Month"}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setRentTier("PREMIUM")}
+                      className={`p-4 border text-left flex flex-col justify-between h-28 transition-all cursor-pointer rounded-none ${
+                        rentTier === "PREMIUM"
+                          ? "border-charcoal-ink bg-charcoal-ink/05 ring-1 ring-charcoal-ink"
+                          : "border-charcoal-ink/08 bg-white hover:border-charcoal-ink/20"
+                      }`}
+                    >
+                      <div>
+                        <span className="text-xs font-black uppercase tracking-wider block">Premium Rent</span>
+                        <span className="text-[10px] text-charcoal-ink/65 mt-1 block leading-normal">
+                          Weekly change service by staff. No security deposit.
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-linen-gold mt-2 block">
+                        {selectedSuite === "atelier" ? "₹1,200 / Month" : "₹2,000 / Month"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Specifications Grid */}
               <div className="grid grid-cols-2 gap-4 border-b border-charcoal-ink/08 pb-6 text-xs">
                 <div className="space-y-1">
@@ -598,7 +831,7 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
                 </div>
               </div>
 
-              {/* Duration Toggles (Only for Non-Corporate suites) */}
+              {/* Duration Toggles (Only for Non-Corporate Rent) */}
               {selectedSuite !== "corporate" && (
                 <div className="space-y-4">
                   <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">
@@ -607,8 +840,19 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {["1 Month", "3 Months", "6 Months", "12 Months"].map((duration) => {
                       const pKey = selectedSuite === "atelier" ? "single" : "double";
-                      const pData = activePlans[pKey].durations.find(d => d.duration === duration);
-                      if (!pData) return null;
+                      
+                      const monthlyBase = rentTier === "PREMIUM"
+                        ? (pKey === "single" ? 1200 : 2000)
+                        : (pKey === "single" ? 300 : 800);
+                      
+                      let multiplier = 1;
+                      let discountRate = 0;
+                      let discountStr = null;
+                      if (duration === "3 Months") { multiplier = 3; discountRate = 0.05; discountStr = "5% off"; }
+                      else if (duration === "6 Months") { multiplier = 6; discountRate = 0.10; discountStr = "10% off"; }
+                      else if (duration === "12 Months") { multiplier = 12; discountRate = 0.20; discountStr = "20% off"; }
+
+                      const displayPrice = Math.round(monthlyBase * multiplier * (1 - discountRate));
 
                       return (
                         <button
@@ -621,10 +865,10 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
                           }`}
                         >
                           <span className="text-2xs font-bold uppercase tracking-wider block">{duration}</span>
-                          <span className="text-3xs opacity-80 block mt-0.5">₹{pData.price}</span>
-                          {pData.discount && (
+                          <span className="text-3xs opacity-80 block mt-0.5">₹{displayPrice}</span>
+                          {discountStr && (
                             <span className="text-[8px] font-extrabold text-linen-gold block mt-0.5 uppercase tracking-tight">
-                              {pData.discount}
+                              {discountStr}
                             </span>
                           )}
                         </button>
@@ -640,19 +884,24 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
           <div className="bg-alabaster-linen p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="text-center sm:text-left">
               <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">
-                Price
+                {orderType === "BUY" ? "Base Price" : "Price"}
               </span>
               <div className="flex items-baseline justify-center sm:justify-start gap-2 mt-1">
                 <span className="text-2xl font-bold font-serif text-charcoal-ink">
-                  {selectedSuite === "corporate" ? "Custom Quote" : `₹${currentPlan.price}`}
+                  {orderType === "RENT" && selectedSuite === "corporate" ? "Custom Quote" : `₹${currentPlan.price}`}
                 </span>
-                {selectedSuite !== "corporate" && (
+                {orderType === "RENT" && selectedSuite !== "corporate" && (
                   <span className="text-3xs text-charcoal-ink/50 uppercase tracking-widest font-bold">
                     / {currentPlan.duration}
                   </span>
                 )}
+                {orderType === "BUY" && (
+                  <span className="text-3xs text-charcoal-ink/50 uppercase tracking-widest font-bold">
+                    + 18% GST
+                  </span>
+                )}
               </div>
-              {selectedSuite !== "corporate" && currentPlan.originalPrice && (
+              {orderType === "RENT" && selectedSuite !== "corporate" && currentPlan.originalPrice && (
                 <p className="text-[10px] text-charcoal-ink/40 mt-1">
                   Instead of <span className="line-through">₹{currentPlan.originalPrice}</span> ({currentPlan.discount} savings applied)
                 </p>
@@ -664,15 +913,15 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
               disabled={submittingPlan}
               className="w-full sm:w-auto py-4 px-8 bg-charcoal-ink text-alabaster-linen font-bold text-2xs uppercase tracking-widest hover:bg-linen-gold transition-colors duration-300 cursor-pointer disabled:opacity-50"
             >
-              {submittingPlan ? "Processing..." : selectedSuite === "corporate" ? "Contact Us" : currentPlan.cta}
+              {submittingPlan ? "Processing..." : (orderType === "RENT" && selectedSuite === "corporate" ? "Contact Us" : currentPlan.cta)}
             </button>
           </div>
 
           {/* Details footer */}
           <div className="flex flex-wrap items-center justify-between gap-4 text-3xs text-charcoal-ink/50 uppercase tracking-widest font-bold">
             <span className="flex items-center gap-1"><TruckIcon className="w-3.5 h-3.5" /> Free Delivery</span>
-            <span className="flex items-center gap-1"><SparklesIcon className="w-3.5 h-3.5" /> Hot Wash Guarantee</span>
-            <span className="flex items-center gap-1"><CancelIcon className="w-3.5 h-3.5" /> Change Plans Anytime</span>
+            <span className="flex items-center gap-1"><SparklesIcon className="w-3.5 h-3.5" /> {orderType === "RENT" ? "Hot Wash Guarantee" : "Sanitized & Sealed"}</span>
+            <span className="flex items-center gap-1"><CancelIcon className="w-3.5 h-3.5" /> {orderType === "RENT" ? "Change Plans Anytime" : "Quality Assured"}</span>
           </div>
         </div>
       </div>

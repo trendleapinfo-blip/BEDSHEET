@@ -216,7 +216,7 @@ export default function LogisticsDashboard() {
               <h4 className="text-xs font-bold text-white truncate">{sessionUser.name}</h4>
               <p className="text-[10px] text-linen-gold font-extrabold uppercase tracking-wider">Logi Partner</p>
             </div>
-          </div>v>
+          </div>
 
           {/* Tabs */}
           <nav className="px-3 space-y-1">
@@ -284,7 +284,7 @@ export default function LogisticsDashboard() {
               Courier Hub: <span className="text-linen-gold font-extrabold">Dispatch Office</span>
             </div>
           </div>
-        </header>r>
+        </header>
 
         {/* CONTENT */}
         <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
@@ -387,6 +387,13 @@ export default function LogisticsDashboard() {
                           <span className="text-2xs font-bold text-linen-gold bg-linen-gold/15 px-2.5 py-0.5 rounded-none border border-linen-gold/25 tracking-wider uppercase">
                             {order.bundleOrderId}
                           </span>
+                          <span className={`px-2 py-0.5 rounded-none text-3xs font-extrabold tracking-wider uppercase border ${
+                            order.orderType === "BUY"
+                              ? "bg-purple-50 text-purple-650 border-purple-200"
+                              : "bg-blue-50 text-blue-650 border-blue-200"
+                          }`}>
+                            {order.orderType || "RENT"}
+                          </span>
                           <span className={`inline-flex items-center gap-1 py-0.5 px-2 rounded-none text-[10px] font-bold uppercase tracking-wider border ${
                             isDelivered
                               ? "bg-linen-gold/15 text-linen-gold border-linen-gold/20"
@@ -413,6 +420,10 @@ export default function LogisticsDashboard() {
                         <div className="md:col-span-8 space-y-2">
                           <h3 className="text-sm font-serif font-bold text-charcoal-ink">{order.bundleName}</h3>
                           <div className="text-xs text-charcoal-ink/60 space-y-1 font-semibold">
+                            <p className="text-[10px] text-linen-gold font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-linen-gold"></span>
+                              Task: {order.orderType === "BUY" ? "Direct Sale Handover (Verify & Collect Sign)" : (order.subscriptionType === "weekly" ? "Weekly Sheet Change service" : "Monthly Kit swap")}
+                            </p>
                             <p className="flex items-center gap-1.5">
                               <span>Customer:</span>
                               <strong className="text-charcoal-ink">{order.userName || "—"}</strong>

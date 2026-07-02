@@ -8,9 +8,8 @@ function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState("email"); // "email" or "mobile"
+  const activeTab = "email";
   const [email, setEmail] = useState("");
-  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   
@@ -213,12 +212,8 @@ function LoginFormContent() {
   const handleRedirect = (user) => {
     setTimeout(() => {
       const redirect = searchParams.get("redirect");
-      if (redirect === "pricing") {
-        const bedType = searchParams.get("bedType");
-        const planName = searchParams.get("planName");
-        const price = searchParams.get("price");
-        const duration = searchParams.get("duration");
-        router.push(`/?redirect=pricing&bedType=${bedType}&planName=${planName}&price=${price}&duration=${duration}`);
+      if (redirect === "pricing" || redirect === "checkout") {
+        router.push("/checkout");
       } else if (user && user.role === "admin") {
         router.push("/admin");
       } else if (user && user.role === "warehouse") {
@@ -249,41 +244,7 @@ function LoginFormContent() {
         </p>
       </div>
 
-      {/* Tab Selector for Email vs Mobile */}
-      <div className="flex bg-alabaster-linen p-1 mb-6 border border-charcoal-ink/08 rounded-none">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("email");
-            setError("");
-            setOtpSent(false);
-            setDevOtp("");
-          }}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-2xs font-bold uppercase tracking-wider transition-all duration-300 rounded-none cursor-pointer ${
-            activeTab === "email"
-              ? "bg-charcoal-ink text-alabaster-linen"
-              : "text-charcoal-ink/60 hover:text-charcoal-ink"
-          }`}
-        >
-          Email
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("mobile");
-            setError("");
-            setOtpSent(false);
-            setDevOtp("");
-          }}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-2xs font-bold uppercase tracking-wider transition-all duration-300 rounded-none cursor-pointer ${
-            activeTab === "mobile"
-              ? "bg-charcoal-ink text-alabaster-linen"
-              : "text-charcoal-ink/60 hover:text-charcoal-ink"
-          }`}
-        >
-          Mobile
-        </button>
-      </div>
+
 
       {/* Error Message */}
       {error && (
@@ -324,48 +285,25 @@ function LoginFormContent() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Email or Mobile Input */}
-        {activeTab === "email" ? (
-          <div>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-charcoal-ink/40">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </span>
-              <input
-                type="email"
-                required
-                value={email}
-                disabled={loading || (otpSent && loginMode !== "password")}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full pl-12 pr-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs disabled:bg-alabaster-linen disabled:text-charcoal-ink/40"
-              />
-            </div>
+        {/* Email Input */}
+        <div>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-charcoal-ink/40">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </span>
+            <input
+              type="email"
+              required
+              value={email}
+              disabled={loading || (otpSent && loginMode !== "password")}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="w-full pl-12 pr-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs disabled:bg-alabaster-linen disabled:text-charcoal-ink/40"
+            />
           </div>
-        ) : (
-          <div>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-charcoal-ink/40">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </span>
-              <input
-                type="tel"
-                required
-                pattern="[0-9]{10}"
-                maxLength="10"
-                value={mobile}
-                disabled={loading || (otpSent && loginMode !== "password")}
-                onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-                placeholder="Enter your 10-digit mobile number"
-                className="w-full pl-12 pr-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs disabled:bg-alabaster-linen disabled:text-charcoal-ink/40"
-              />
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Conditional Rendering of Fields based on Mode & OTP status */}
         
@@ -529,44 +467,6 @@ function LoginFormContent() {
 
       {/* Mode Switchers */}
       <div className="flex flex-col gap-3.5 items-center justify-center text-xs font-bold text-charcoal-ink/60">
-        {loginMode === "password" ? (
-          <button
-            type="button"
-            onClick={() => {
-              setLoginMode("otp");
-              setError("");
-              setSuccess("");
-              setOtpSent(false);
-              setDevOtp("");
-            }}
-            className="text-linen-gold hover:underline flex items-center gap-1.5 cursor-pointer"
-          >
-            {/* Phone/OTP Icon */}
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            Sign in using OTP code instead
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setLoginMode("password");
-              setError("");
-              setSuccess("");
-              setOtpSent(false);
-              setDevOtp("");
-            }}
-            className="text-linen-gold hover:underline flex items-center gap-1.5 cursor-pointer"
-          >
-            {/* Key/Lock Icon */}
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m-5 8a2 2 0 110-4 2 2 0 010 4zM15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Sign in using Password instead
-          </button>
-        )}
-
         {/* Google Authentication (Only visible in normal login states) */}
         {loginMode !== "reset" && (
           <Link

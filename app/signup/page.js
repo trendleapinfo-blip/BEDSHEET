@@ -127,12 +127,8 @@ function SignupFormContent() {
       setSuccess("Account created successfully! Redirecting...");
       setTimeout(() => {
         const redirect = searchParams.get("redirect");
-        if (redirect === "pricing") {
-          const bedType = searchParams.get("bedType");
-          const planName = searchParams.get("planName");
-          const price = searchParams.get("price");
-          const duration = searchParams.get("duration");
-          router.push(`/?redirect=pricing&bedType=${bedType}&planName=${planName}&price=${price}&duration=${duration}`);
+        if (redirect === "pricing" || redirect === "checkout") {
+          router.push("/checkout");
         } else {
           router.push("/");
         }

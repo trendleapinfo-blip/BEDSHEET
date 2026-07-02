@@ -7,7 +7,8 @@ import InteractivePlans from "./components/InteractivePlans";
 import SavingsTable from "./components/SavingsTable";
 import SubscriptionModal from "./components/SubscriptionModal";
 import HeroThreeDVisual from "./components/HeroThreeDVisual";
-import CheckoutModal from "./components/CheckoutModal";
+import RoutineComparison from "./components/RoutineComparison";
+
 import {
   TruckIcon,
   CancelIcon,
@@ -31,6 +32,131 @@ export default function Home() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submittingPlan, setSubmittingPlan] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState(null);
+
+
+  // Slider State for auto-playing banners
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Active step in "How We Do It" section
+  const [activeStep, setActiveStep] = useState(0);
+
+  // Active column in "The Material" accordion section
+  const [activeMaterialCol, setActiveMaterialCol] = useState(0);
+
+
+
+  const steps = [
+    {
+      step: "01",
+      title: "Doorstep Pickup",
+      desc: "Our courier collects your used linens in color-coded, air-tight sealed transit bags to ensure zero cross-contamination.",
+      image: "/step_1.png"
+    },
+    {
+      step: "02",
+      title: "Hot Wash Disinfection",
+      desc: "Linens undergo a deep thermodynamic wash cycle at 60°C+ with certified detergents to break down body oils, dust mites, and bacteria.",
+      image: "/step_2.png"
+    },
+    {
+      step: "03",
+      title: "UV-C Sanitization",
+      desc: "We feed washed sheets through a continuous UV-C light sterilization tunnel, destroying 99.9% of sub-microscopic germs and allergens.",
+      image: "/step_3.png"
+    },
+    {
+      step: "04",
+      title: "Vacuum Sealed Shield",
+      desc: "Once high-temp ironed, sheets are folded and vacuum-sealed in oxygen-deprived protective wrap, keeping them completely dust-free.",
+      image: "/step_4.png"
+    },
+    {
+      step: "05",
+      title: "Contactless Fresh Swap",
+      desc: "We deliver a crisp, hotel-standard sealed pack directly to your door. You swap on your schedule and return the used set back.",
+      image: "/step_5.png"
+    }
+  ];
+
+  const categories = [
+    {
+      name: "Bedsheet + Pillow (Single)",
+      image: "/cat_single.png"
+    },
+    {
+      name: "Bedsheet + Pillow (Double)",
+      image: "/cat_double.png"
+    },
+    {
+      name: "Curtains",
+      image: "/cat_curtains.png"
+    },
+    {
+      name: "Quilts",
+      image: "/cat_quilt.png"
+    },
+    {
+      name: "Blankets",
+      image: "/cat_blankets.png"
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % steps.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [steps.length]);
+
+  const slides = [
+    {
+      label: "NEW ARRIVAL",
+      titleLine1: "Always Sleep On",
+      titleLine2: "Fresh, Clean Sheets",
+      priceLabel: "Rent starting at just",
+      priceValue: "₹10 / day",
+      image: "/banner_1.png",
+      ctaText: "EXPLORE PLANS",
+      ctaLink: "#pricing"
+    },
+    {
+      label: "HYGIENE FIRST",
+      titleLine1: "60°C+ Hot Wash &",
+      titleLine2: "UV Sanitized Care",
+      priceLabel: "Pristine sheets, guaranteed",
+      priceValue: "100% Germ-Free",
+      image: "/banner_2.png",
+      ctaText: "EXPLORE SCIENCE",
+      ctaLink: "#science"
+    },
+    {
+      label: "ZERO EFFORT",
+      titleLine1: "Seamless Swaps",
+      titleLine2: "On Your Schedule",
+      priceLabel: "Delivery & pickup included",
+      priceValue: "Free Swaps",
+      image: "/banner_3.png",
+      ctaText: "HOW IT WORKS",
+      ctaLink: "#experience"
+    },
+    {
+      label: "BULK SOLUTIONS",
+      titleLine1: "Linen Rentals For",
+      titleLine2: "PGs & Hostels",
+      priceLabel: "Save on setup and wash costs",
+      priceValue: "Zero Deposit",
+      image: "/banner_4.png",
+      ctaText: "REQUEST QUOTE",
+      ctaLink: "#pricing"
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
   // Intersection Observer for scroll-triggered fades
   const observerRef = useRef(null);
@@ -107,12 +233,8 @@ export default function Home() {
   }, []);
 
   const handleSelectPlan = (planData) => {
-    if (!user) {
-      localStorage.setItem("checkout_pending", JSON.stringify(planData));
-      window.location.href = `/login?redirect=pricing&bedType=${planData.bedType}&planName=${planData.planName}&price=${planData.price}&duration=${planData.duration}`;
-      return;
-    }
-    setCheckoutPlan(planData);
+    localStorage.setItem("checkout_pending", JSON.stringify(planData));
+    window.location.href = "/checkout";
   };
 
   const handleConfirmCheckout = async (finalPlanData) => {
@@ -195,256 +317,542 @@ export default function Home() {
           opacity: 1 !important;
           transform: translateY(0) !important;
         }
+        @keyframes slideProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-none {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
 
       {/* Navigation */}
       <Navbar user={user} loading={loading} handleLogout={handleLogout} />
 
-      {/* Hero Section */}
-      <header className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-alabaster-linen">
-        {/* Subtle texture grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(17,17,17,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(17,17,17,0.03)_1px,transparent_1px)] bg-[size:6rem_6rem] pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8 items-center">
-            {/* Hero Left Content */}
-            <div className="lg:col-span-7 text-center lg:text-left space-y-6">
-              {/* Premium micro label */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-linen-gold/10 text-linen-gold text-2xs font-bold uppercase tracking-widest border border-linen-gold/20">
-                <SparklesIcon className="w-3.5 h-3.5 fill-current" />
-                <span>Super Clean Bed Sheets</span>
-              </div>
-
-              {/* Massive Serif Headline */}
-              <h1 className="text-hero leading-tight">
-                Always sleep on <br className="hidden sm:inline" />
-                fresh, clean sheets.
-              </h1>
-
-              {/* Body Copy */}
-              <p className="text-body text-charcoal-ink/70 max-w-xl mx-auto lg:mx-0">
-                We deliver fresh, clean bed sheets to your door on your schedule. No contracts. Stop or pause anytime.
-              </p>
-
-              {/* Luxury CTAs */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <a
-                  href="#pricing"
-                  onClick={(e) => handleScrollTo(e, "#pricing")}
-                  className="w-full sm:w-auto inline-flex justify-center items-center py-4 px-8 bg-charcoal-ink text-alabaster-linen font-bold text-xs uppercase tracking-widest hover:bg-linen-gold transition-colors duration-300"
+      {/* Hero Section Banner Carousel */}
+      <header className="pt-28 pb-8 bg-alabaster-linen">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative h-[320px] sm:h-[380px] md:h-[460px] w-full overflow-hidden rounded-[20px] shadow-2xl bg-charcoal-ink">
+            {/* Background Banners with crossfade */}
+            <div className="absolute inset-0 z-0">
+              {slides.map((slide, idx) => (
+                <div
+                  key={idx}
+                  className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${currentSlide === idx ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                    }`}
                 >
-                  Choose Your Plan
-                </a>
-                <a
-                  href="#experience"
-                  onClick={(e) => handleScrollTo(e, "#experience")}
-                  className="w-full sm:w-auto inline-flex justify-center items-center py-4 px-8 border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs uppercase tracking-widest hover:border-charcoal-ink transition-colors duration-300"
-                >
-                  How It Works
-                </a>
-              </div>
+                  <img
+                    src={slide.image}
+                    alt={slide.titleLine1}
+                    className="w-full h-full object-cover object-center transition-transform duration-[3000ms] ease-linear"
+                    style={{
+                      transform: currentSlide === idx ? "scale(1.05)" : "scale(1.00)"
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/45 to-transparent" />
+                </div>
+              ))}
+            </div>
 
-              {/* Verified Badge */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-4 pt-6 border-t border-charcoal-ink/08">
-                <div className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-linen-gold" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-charcoal-ink/60">Free Door Delivery</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-linen-gold" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-charcoal-ink/60">No Contracts</span>
-                </div>
+            {/* Logo on the top-right */}
+            <div className="absolute top-6 right-8 z-20 pointer-events-none">
+              <span className="text-lg md:text-xl font-serif font-bold text-white tracking-[0.15em] uppercase opacity-90">
+                Closet<span className="text-[#B2905F]">Rush</span>
+              </span>
+            </div>
+
+            {/* Slider Content */}
+            <div className="absolute inset-0 z-20 flex items-center px-8 sm:px-12 md:px-16 lg:px-20">
+              <div className="w-full relative h-[80%] flex items-center">
+                {slides.map((slide, idx) => (
+                  <div
+                    key={idx}
+                    className={`absolute w-full max-w-lg text-left space-y-4 md:space-y-6 transition-all duration-700 ease-out ${currentSlide === idx
+                        ? "opacity-100 translate-y-0 pointer-events-auto z-20"
+                        : "opacity-0 translate-y-8 pointer-events-none z-0"
+                      }`}
+                  >
+                    {/* Premium micro label */}
+                    <span className="block text-3xs sm:text-2xs font-extrabold uppercase tracking-widest text-[#B2905F]">
+                      {slide.label}
+                    </span>
+
+                    {/* Headline */}
+                    <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-white font-medium leading-[1.15] tracking-tight">
+                      {slide.titleLine1} <br />
+                      <span className="text-[#B2905F] italic font-normal">{slide.titleLine2}</span>
+                    </h1>
+
+                    {/* Price details */}
+                    <div className="space-y-0.5">
+                      <p className="text-3xs sm:text-2xs text-gray-300/80 font-sans tracking-wide uppercase font-bold">
+                        {slide.priceLabel}
+                      </p>
+                      <p className="font-serif text-xl sm:text-2xl md:text-3xl text-[#B2905F] font-medium">
+                        {slide.priceValue}
+                      </p>
+                    </div>
+
+                    {/* Button */}
+                    <div className="pt-1">
+                      <a
+                        href={slide.ctaLink}
+                        onClick={(e) => handleScrollTo(e, slide.ctaLink)}
+                        className="inline-flex items-center gap-2 border border-white/20 hover:border-[#B2905F] hover:text-[#B2905F] text-white font-sans text-3xs sm:text-2xs font-bold tracking-widest px-5 py-2.5 uppercase transition-all duration-300"
+                      >
+                        {slide.ctaText} →
+                      </a>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Hero Right Visual: 3D interactive bedding mockup */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-end">
-              <HeroThreeDVisual />
+            {/* Pill shaped Indicators */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/25 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center justify-center gap-2">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-2 rounded-full cursor-pointer transition-all duration-300 border-none outline-none ${currentSlide === idx ? "w-6 bg-white" : "w-2 bg-white/40 hover:bg-white/60"
+                    }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
             </div>
+
+            {/* Left and Right Manual Control Arrows */}
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+              className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 items-center justify-center rounded-full bg-black/10 hover:bg-black/30 border border-white/05 text-white transition-all cursor-pointer backdrop-blur-sm"
+              aria-label="Previous slide"
+            >
+              ⟨
+            </button>
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+              className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 items-center justify-center rounded-full bg-black/10 hover:bg-black/30 border border-white/05 text-white transition-all cursor-pointer backdrop-blur-sm"
+              aria-label="Next slide"
+            >
+              ⟩
+            </button>
           </div>
         </div>
       </header>
 
-      {/* SECTION 1: THE REALIZATION (Full-Screen Typography Reveal) */}
-      <section className="bg-charcoal-ink py-20 md:py-28 flex items-center overflow-hidden">
-        <div className="max-w-5xl mx-auto px-6 sm:px-8 text-center space-y-8">
-          <p className="text-micro-label" style={{ color: "white" }}>The Truth</p>
-          <div className="space-y-6">
-            <h2 className="reveal-on-scroll text-section-header leading-snug" style={{ color: "white" }}>
-              "You wear fresh clothes every day."
-            </h2>
-            <h2 className="reveal-on-scroll text-section-header leading-snug" style={{ transitionDelay: "400ms", color: "white" }}>
-              "But you sleep on the same dirty sheets for weeks."
-            </h2>
+      {/* CATEGORIES SECTION (Circular slider categories down to hero) */}
+      <section className="bg-alabaster-linen pt-4 pb-12">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center mb-8">
+            <h3 className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-extrabold text-charcoal-ink/40">
+              Rent By Category
+            </h3>
+            <div className="h-[1px] w-12 bg-[#B2905F] mt-2" />
           </div>
-          <p className="text-body max-w-xl mx-auto pt-4" style={{ transitionDelay: "600ms", color: "white", opacity: 0.9 }}>
-            Bed sheets get dirty fast with sweat, hair, and dead skin. Your bed sheets should be kept as clean as your clothes.
-          </p>
+
+          <div className="flex overflow-x-auto whitespace-nowrap scrollbar-none py-4 px-2 gap-6 md:gap-10 justify-start md:justify-center items-center scrollbar-none">
+            {categories.map((cat, idx) => (
+              <a
+                key={idx}
+                href="#pricing"
+                onClick={(e) => handleScrollTo(e, "#pricing")}
+                className="flex flex-col items-center gap-4 group cursor-pointer flex-shrink-0"
+              >
+                {/* Rounded Image Container */}
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-white shadow-md group-hover:border-[#B2905F] group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-105">
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  {/* Subtle hover overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
+                </div>
+
+                {/* Category Name */}
+                <span className="text-[10px] sm:text-2xs font-extrabold uppercase tracking-widest text-charcoal-ink/75 group-hover:text-[#B2905F] transition-colors duration-300 text-center max-w-[120px] whitespace-normal leading-normal">
+                  {cat.name}
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
+
       </section>
 
-      {/* SECTION 2: THE PROBLEM (Cinematic Split Screen) */}
-
-      {/* SECTION 3: THE SHIFT (The Shift Focus) */}
-      <section className="relative py-20 md:py-28 bg-white overflow-hidden flex items-center justify-center">
-        {/* Soft abstract graphic representation of fresh sheet */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(168,146,118,0.08)_0%,transparent_60%)] pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto px-6 sm:px-8 text-center space-y-4 relative z-10">
-          <p className="text-micro-label">The Solution</p>
-          <h2 className="text-hero tracking-tight leading-none text-charcoal-ink">
-            A fresh bed. <br /> Without the work.
-          </h2>
-          <p className="text-body text-charcoal-ink/60 max-w-lg mx-auto">
-            We are not just a laundry shop. We take care of everything so your bed is always clean and fresh, like a nice hotel.
-          </p>
-        </div>
-      </section>
-
-      {/* SECTION 4: THE EXPERIENCE (Manufacturing / Timeline) */}
-      <section id="experience" className="py-16 md:py-24 bg-alabaster-linen border-t border-b border-charcoal-ink/08">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 space-y-10">
-          <div className="text-center space-y-3">
-            <p className="text-micro-label">How We Do It</p>
-            <h2 className="text-section-header">Our Simple Steps</h2>
-            <p className="text-body text-charcoal-ink/60 max-w-xl mx-auto">
-              How we clean, sanitize, and deliver fresh sheets straight to your door.
+      {/* PRODUCT CATALOG SECTION */}
+      <section id="products" className="py-24 md:py-32 bg-gradient-to-b from-[#faf9f6] via-[#f5f2eb] to-[#faf9f6] border-t border-b border-charcoal-ink/05">
+        <div className="max-w-[1380px] mx-auto px-6 sm:px-8 space-y-16">
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto space-y-4">
+            <p className="text-micro-label">The Catalog</p>
+            <h2 className="text-section-header">Our Bedding Collections.</h2>
+            <p className="text-body text-charcoal-ink/65">
+              Choose from our premium sanitized sheets. Available for flat purchase or flexible subscription swaps.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4">
+          {/* Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                step: "01",
-                title: "1. We Pick Up",
-                desc: "We come to your house and collect your dirty sheets in sealed bags.",
+                title: "Single Bed Bedding Set",
+                desc: "Thermodynamic UV-C sanitized organic standard weave sheets. Perfect for single mattress setups.",
+                rentPrice: "₹300/mo",
+                buyPrice: "₹200 + GST",
+                image: "/cat_single.png",
+                tag: "Bestseller",
+                active: true
               },
               {
-                step: "02",
-                title: "2. We Hot Wash",
-                desc: "We wash the sheets in very hot water to kill all dirt, sweat, and bed bugs.",
+                title: "Double Bed Bedding Set",
+                desc: "Super-soft 400 TC long-staple cotton sheets. Full set includes 4 bedsheets + 8 pillow covers.",
+                rentPrice: "₹800/mo",
+                buyPrice: "₹350 + GST",
+                image: "/cat_double.png",
+                tag: "Popular",
+                active: true
               },
               {
-                step: "03",
-                title: "3. We Sanitize",
-                desc: "We use special safe blue lights to kill all leftover germs and viruses.",
+                title: "Premium Quilts & Duvets",
+                desc: "High loft hypoallergenic microfiber quilted duvets. Sanitized and cleaned regularly.",
+                rentPrice: "₹450/mo",
+                buyPrice: "Coming Soon",
+                image: "/cat_quilt.png",
+                tag: "Coming Soon",
+                active: false
               },
               {
-                step: "04",
-                title: "4. We Seal",
-                desc: "We wrap and seal the sheets in clean bags to keep dust out.",
+                title: "Warm Woolen Blankets",
+                desc: "Insulating premium winter blankets, sanitized and washed at hot thermodynamic temperatures.",
+                rentPrice: "₹250/mo",
+                buyPrice: "Coming Soon",
+                image: "/cat_blankets.png",
+                tag: "Coming Soon",
+                active: false
+              }
+            ].map((prod, idx) => {
+              const productId = prod.title.toLowerCase().includes("single") ? "single" : "double";
+              return (
+                <div 
+                  key={idx} 
+                  onClick={() => { if (prod.active) window.location.href = `/product/${productId}`; }}
+                  className={`group bg-white/75 backdrop-blur-md border border-white/50 rounded-[32px] p-5 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.02)] hover:shadow-[0_30px_70px_rgba(36,92,119,0.08)] hover:-translate-y-2.5 transition-all duration-500 ease-out ${
+                    prod.active ? "cursor-pointer" : "cursor-default"
+                  }`}
+                >
+                  {/* Image Container */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[24px] bg-alabaster-linen shadow-inner">
+                    <img 
+                      src={prod.image} 
+                      alt={prod.title} 
+                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-700 ease-out pointer-events-none"
+                    />
+                    {prod.tag && (
+                      <span className={`absolute top-4 left-4 text-[8px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full backdrop-blur-md border shadow-sm ${
+                        prod.active 
+                          ? "bg-charcoal-ink/90 text-white border-white/10" 
+                          : "bg-white/90 text-charcoal-ink/60 border-charcoal-ink/05"
+                      }`}>
+                        {prod.tag}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="pt-6 flex-grow flex flex-col justify-between space-y-5">
+                    <div className="space-y-2">
+                      <h3 className="font-serif font-bold text-sm text-charcoal-ink leading-snug">
+                        {prod.title}
+                      </h3>
+                      <p className="text-3xs text-charcoal-ink/60 leading-relaxed font-medium">
+                        {prod.desc}
+                      </p>
+                    </div>
+
+                    {/* Pricing Matrix */}
+                    <div className="pt-2 grid grid-cols-2 gap-3 text-center text-3xs font-bold uppercase tracking-wider">
+                      <div className="bg-[#245c77]/05 border border-[#245c77]/10 p-3 rounded-[16px] transition-colors group-hover:bg-[#245c77]/08">
+                        <span className="text-[#245c77] block text-[8px] font-extrabold tracking-widest">Rent Rate</span>
+                        <span className="text-charcoal-ink font-bold text-xs mt-1 block">{prod.rentPrice}</span>
+                      </div>
+                      <div className="bg-[#B2905F]/05 border border-[#B2905F]/10 p-3 rounded-[16px] transition-colors group-hover:bg-[#B2905F]/08">
+                        <span className="text-[#B2905F] block text-[8px] font-extrabold tracking-widest">Buy Price</span>
+                        <span className="text-charcoal-ink font-bold text-xs mt-1 block">{prod.buyPrice}</span>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    {prod.active ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/product/${productId}`;
+                        }}
+                        className="w-full py-4 rounded-full bg-charcoal-ink text-white font-bold text-[9px] uppercase tracking-widest hover:bg-linen-gold hover:text-charcoal-ink shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+                      >
+                        Configure Order
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full py-4 rounded-full bg-charcoal-ink/05 border border-charcoal-ink/05 text-charcoal-ink/30 font-bold text-[9px] uppercase tracking-widest cursor-not-allowed"
+                      >
+                        Notify When Available
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4: THE EXPERIENCE (Manufacturing / Timeline - Cinematic Storybook Option 5) */}
+      <section id="experience" className="py-20 md:py-28 bg-alabaster-linen border-t border-b border-charcoal-ink/08">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Section Header */}
+          <div className="text-center space-y-3 mb-14">
+            <p className="text-micro-label">How We Do It</p>
+            <h2 className="text-section-header">The Cleaning & Sanitization Cycle</h2>
+            <p className="text-body text-charcoal-ink/60 max-w-xl mx-auto">
+              A meticulously engineered hygiene process designed to guarantee hotel-standard freshness at your doorstep.
+            </p>
+          </div>
+
+          {/* Cinematic Floating Split Slide Container */}
+          <div className="w-full min-h-[560px] md:h-[580px] rounded-[32px] overflow-hidden shadow-2xl flex flex-col md:flex-row bg-[#0F1A1C]/02 border border-charcoal-ink/10 relative">
+            
+            {/* Left Side: Cinematic Image Showcase */}
+            <div className="w-full md:w-1/2 h-[260px] md:h-full relative overflow-hidden bg-charcoal-ink">
+              {steps.map((step, idx) => (
+                <div
+                  key={idx}
+                  className={`absolute inset-0 transition-all duration-[1800ms] ease-out ${
+                    activeStep === idx
+                      ? "opacity-100 scale-105 z-10"
+                      : "opacity-0 scale-100 z-0 pointer-events-none"
+                  }`}
+                >
+                  <img
+                    src={step.image}
+                    alt={step.title}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Soft vignette overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-charcoal-ink/60 via-transparent to-transparent pointer-events-none" />
+                </div>
+              ))}
+              
+              {/* Process micro label */}
+              <div className="absolute left-6 bottom-6 z-20 bg-black/35 backdrop-blur-sm px-4 py-1.5 rounded-full text-white text-3xs font-extrabold tracking-widest uppercase border border-white/05">
+                🛡️ Professional Safety Standard
+              </div>
+            </div>
+
+            {/* Right Side: Editorial Texts panel */}
+            <div className="w-full md:w-1/2 min-h-[300px] md:h-full relative overflow-hidden bg-white flex flex-col justify-between p-8 sm:p-12 md:p-16">
+              
+              {/* Top Row: Elegant Number Nav */}
+              <div className="flex items-center gap-6 border-b border-charcoal-ink/08 pb-4 w-full">
+                {steps.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveStep(idx)}
+                    className={`font-serif text-base sm:text-lg font-extrabold transition-all border-none bg-transparent cursor-pointer relative pb-2 ${
+                      activeStep === idx
+                        ? "text-[#B2905F] scale-110"
+                        : "text-charcoal-ink/25 hover:text-charcoal-ink/50"
+                    }`}
+                  >
+                    {item.step}
+                    {activeStep === idx && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B2905F] rounded-full" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Middle Row: Content Card */}
+              <div className="relative flex-grow flex items-center py-8 min-h-[180px] md:h-auto w-full">
+                {steps.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`absolute inset-x-0 flex flex-col justify-center space-y-4 transition-all duration-[800ms] ease-in-out ${
+                      activeStep === idx
+                        ? "opacity-100 translate-y-0 z-10 pointer-events-auto"
+                        : "opacity-0 -translate-y-4 z-0 pointer-events-none"
+                    }`}
+                  >
+                    <span className="text-3xs font-extrabold uppercase tracking-widest text-[#B2905F] flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-[#B2905F]" /> Step {item.step} — System Cycle
+                    </span>
+                    <h3 className="font-serif text-2xl sm:text-3xl text-charcoal-ink font-semibold leading-tight tracking-tight">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-charcoal-ink/70 leading-relaxed font-sans max-w-md">
+                      {item.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Row: Loading bar timeline tracker */}
+              <div className="w-full space-y-2 pt-4 border-t border-charcoal-ink/08">
+                <div className="flex justify-between items-center text-3xs font-extrabold uppercase tracking-widest text-charcoal-ink/40">
+                  <span>Autoplay Progress</span>
+                  <span>{activeStep + 1} / {steps.length}</span>
+                </div>
+                <div className="h-1 bg-charcoal-ink/10 rounded-full overflow-hidden w-full relative">
+                  <div
+                    key={activeStep} // Changing key re-triggers the forwards animation
+                    className="h-full bg-[#B2905F]"
+                    style={{
+                      animation: "slideProgress 3500ms linear forwards"
+                    }}
+                  />
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* SECTION 5: THE LUXURY (Three Pillars Sensory Accordion Grid) */}
+      <section className="py-20 md:py-28 bg-white overflow-hidden">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Section Header */}
+          <div className="max-w-2xl mb-14">
+            <p className="text-micro-label">The Material</p>
+            <h2 className="text-section-header mt-2 leading-tight">
+              Hotel softness, crafted for the ultimate sensory sleep.
+            </h2>
+          </div>
+
+          {/* Three Pillars Accordion Grid */}
+          <div className="flex flex-col md:flex-row gap-6 h-auto md:h-[500px] w-full select-none">
+            {[
+              {
+                num: "01",
+                title: "THE TOUCH",
+                subtitle: "Super Soft Cotton Weave",
+                desc: "Woven with premium 100% long-staple organic cotton. Feel the buttery softness that mimics the finest 5-star hotel sheets, getting softer with every wash cycle.",
+                image: "/material_touch.png"
               },
               {
-                step: "05",
-                title: "5. We Deliver",
-                desc: "We bring fresh, ready-to-use sheets to your door whenever you want them.",
+                num: "02",
+                title: "THE HYGIENE",
+                subtitle: "Sanitized & Skin Safe",
+                desc: "Washed at high thermodynamic temperatures and UV-C treated. We guarantee zero dust mites, bed bugs, or chemical residues. Perfect for sensitive skin.",
+                image: "/material_hygiene.png"
               },
-            ].map((item, index) => (
+              {
+                num: "03",
+                title: "THE CRAFT",
+                subtitle: "Fits Any Bed Mattress",
+                desc: "Designed with deep 14-inch pockets and heavy-duty 360° elastic bands. Hugs single and double mattresses snugly, preventing any slips or wrinkles.",
+                image: "/material_craft.png"
+              }
+            ].map((col, idx) => (
               <div
-                key={index}
-                className="reveal-on-scroll p-6 bg-white border border-charcoal-ink/05 flex flex-col justify-between h-64 hover:border-linen-gold transition-colors duration-300"
-                style={{ transitionDelay: `${index * 100}ms` }}
+                key={idx}
+                onMouseEnter={() => setActiveMaterialCol(idx)}
+                onClick={() => setActiveMaterialCol(idx)}
+                className={`relative w-full overflow-hidden rounded-[28px] shadow-lg border border-charcoal-ink/10 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer group
+                  md:h-full
+                  ${
+                    activeMaterialCol === idx
+                      ? "h-[260px] md:flex-[2.2] shadow-2xl"
+                      : "h-[110px] md:flex-[0.9] hover:md:flex-[1.1]"
+                  }
+                `}
               >
-                <span className="font-serif text-2xl font-bold text-linen-gold">{item.step}</span>
-                <div className="space-y-2">
-                  <h4 className="text-sm uppercase tracking-wider font-extrabold text-charcoal-ink">
-                    {item.title}
-                  </h4>
-                  <p className="text-2xs sm:text-xs text-charcoal-ink/60 leading-relaxed">
-                    {item.desc}
-                  </p>
+                {/* Background Image */}
+                <img
+                  src={col.image}
+                  alt={col.title}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-105 pointer-events-none"
+                />
+                
+                {/* Dark Vignette Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 pointer-events-none" />
+
+                {/* Content Overlay */}
+                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8 text-white select-none pointer-events-none">
+                  
+                  {/* Header Row */}
+                  <div className="flex items-center gap-4">
+                    <span className="font-serif text-3xl font-extrabold text-[#B2905F] tracking-wide leading-none">
+                      {col.num}
+                    </span>
+                    <div className="h-6 w-[1px] bg-white/20" />
+                    <h3 className="text-3xs font-extrabold tracking-[0.2em] uppercase text-white/95">
+                      {col.title}
+                    </h3>
+                  </div>
+
+                  {/* Expanding description container */}
+                  <div
+                    className={`transition-all duration-700 ease-out overflow-hidden ${
+                      activeMaterialCol === idx
+                        ? "opacity-100 max-h-[160px] mt-4"
+                        : "opacity-0 max-h-0 mt-0"
+                    }`}
+                  >
+                    <h4 className="font-serif text-base font-semibold text-[#B2905F] mb-1.5 leading-snug">
+                      {col.subtitle}
+                    </h4>
+                    <p className="text-3xs sm:text-2xs text-white/80 leading-relaxed font-sans max-w-md">
+                      {col.desc}
+                    </p>
+                  </div>
+
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* SECTION 5: THE LUXURY (Textural Editorial Grid) */}
-      <section className="py-16 md:py-24 bg-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Graphics Grid */}
-            <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Tall Image Card */}
-              <div className="sm:col-span-1 relative border border-charcoal-ink/08 h-full min-h-[250px] sm:min-h-full bg-alabaster-linen group overflow-hidden">
-                <img
-                  src="/about_bedding.png"
-                  alt="Organic Cotton weave"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-ink/30 via-transparent to-transparent opacity-40 pointer-events-none" />
-              </div>
-              <div className="space-y-4 sm:col-span-1">
-                <div className="bg-alabaster-linen border border-charcoal-ink/05 p-6 h-[calc(50%-8px)] flex flex-col justify-center transition-all duration-300 hover:border-linen-gold">
-                  <CrownIcon className="w-8 h-8 text-linen-gold mb-3" />
-                  <h4 className="font-bold text-charcoal-ink text-sm uppercase tracking-wider mb-1">Super Soft</h4>
-                  <p className="text-3xs text-charcoal-ink/60 leading-relaxed uppercase tracking-wider">
-                    Very soft cotton sheets that feel like a luxury hotel.
-                  </p>
-                </div>
-                <div className="bg-charcoal-ink text-alabaster-linen p-6 h-[calc(50%-8px)] flex flex-col justify-center transition-all duration-300 hover:shadow-xl">
-                  <ShieldCheckIcon className="w-8 h-8 text-linen-gold mb-3" />
-                  <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-1">Germ Free</h4>
-                  <p className="text-3xs text-alabaster-linen/50 leading-relaxed uppercase tracking-wider">
-                    No germs or dust bugs left on the sheets. Safe for skin.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-0 sm:pt-8 sm:col-span-1">
-                <div className="bg-linen-gold/10 border border-linen-gold/20 p-6 h-[calc(50%-8px)] flex flex-col justify-center transition-all duration-300 hover:border-linen-gold">
-                  <TruckIcon className="w-8 h-8 text-linen-gold mb-3" />
-                  <h4 className="font-bold text-charcoal-ink text-sm uppercase tracking-wider mb-1">Eco Bags</h4>
-                  <p className="text-3xs text-charcoal-ink/60 leading-relaxed uppercase tracking-wider">
-                    We use reusable packages to protect nature.
-                  </p>
-                </div>
-                <div className="bg-alabaster-linen border border-charcoal-ink/05 p-6 h-[calc(50%-8px)] flex flex-col justify-center transition-all duration-300 hover:border-linen-gold">
-                  <BedIcon className="w-8 h-8 text-linen-gold mb-3" />
-                  <h4 className="font-bold text-charcoal-ink text-sm uppercase tracking-wider mb-1">Fits Any Bed</h4>
-                  <p className="text-3xs text-charcoal-ink/60 leading-relaxed uppercase tracking-wider">
-                    Fits both thin and thick mattresses easily.
-                  </p>
-                </div>
+          {/* Specification Spec Sheet at the bottom */}
+          <div className="mt-16 border-t border-charcoal-ink/08 pt-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+              <span className="text-3xl sm:text-4xl font-serif text-[#B2905F] font-extrabold leading-none">100%</span>
+              <div>
+                <p className="text-3xs sm:text-2xs font-extrabold uppercase tracking-widest text-charcoal-ink">Pure Organic Cotton</p>
+                <p className="text-[10px] text-charcoal-ink/50 mt-0.5">Sourced ethically, woven for long-lasting texture.</p>
               </div>
             </div>
-
-            {/* Right Story Details */}
-            <div className="lg:col-span-6 space-y-6">
-              <p className="text-micro-label">The Material</p>
-              <h2 className="text-section-header">
-                Hotel softness, made for your own home.
-              </h2>
-              <p className="text-body text-charcoal-ink/70">
-                At ClosetRush, we believe sleeping on clean sheets is important for your health. Made from 100% fine cotton, our sheets are cool and super soft. We wash and deliver them so you can sleep peacefully.
-              </p>
-              <p className="text-body text-charcoal-ink/70">
-                We take care of the entire washing chore, giving you back your weekends and fresh sheets every single time.
-              </p>
-
-              <div className="border-t border-charcoal-ink/08 pt-8 grid grid-cols-3 gap-6">
-                <div>
-                  <div className="text-2xl font-bold font-serif text-charcoal-ink">100%</div>
-                  <p className="text-[10px] text-charcoal-ink/50 uppercase tracking-widest font-bold mt-1">Pure Cotton</p>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold font-serif text-charcoal-ink">Hot</div>
-                  <p className="text-[10px] text-charcoal-ink/50 uppercase tracking-widest font-bold mt-1">Wash Standard</p>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold font-serif text-charcoal-ink">0%</div>
-                  <p className="text-[10px] text-charcoal-ink/50 uppercase tracking-widest font-bold mt-1">Harsh Bleach</p>
-                </div>
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+              <span className="text-3xl sm:text-4xl font-serif text-[#B2905F] font-extrabold leading-none">60°C+</span>
+              <div>
+                <p className="text-3xs sm:text-2xs font-extrabold uppercase tracking-widest text-charcoal-ink">Thermal Sanitization</p>
+                <p className="text-[10px] text-charcoal-ink/50 mt-0.5">Washed at high heats to break down allergens completely.</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+              <span className="text-3xl sm:text-4xl font-serif text-[#B2905F] font-extrabold leading-none">0%</span>
+              <div>
+                <p className="text-3xs sm:text-2xs font-extrabold uppercase tracking-widest text-charcoal-ink">Harsh Bleach / Chemicals</p>
+                <p className="text-[10px] text-charcoal-ink/50 mt-0.5">Hypoallergenic wash processes safe for all skin types.</p>
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
       {/* SECTION 6: THE ROUTINE UPGRADE (Calendar Compare) */}
       <section className="py-16 md:py-24 bg-alabaster-linen border-t border-b border-charcoal-ink/08">
-        <div className="max-w-5xl mx-auto px-6 sm:px-8 space-y-10">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 space-y-10">
           <div className="text-center space-y-3">
             <p className="text-micro-label">The Upgrade</p>
             <h2 className="text-section-header">A Month Reclaimed</h2>
@@ -453,53 +861,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Before */}
-            <div className="bg-white border border-charcoal-ink/08 p-8 space-y-6">
-              <h4 className="text-subheading font-bold text-[#E63946]">Month without ClosetRush</h4>
-              <ul className="space-y-4 text-sm text-charcoal-ink/70">
-                <li className="flex items-start gap-3">
-                  <span className="text-red-500 font-bold">✕</span>
-                  <span><strong>4 washes run</strong>: Energy, detergent, and water costs.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-red-500 font-bold">✕</span>
-                  <span><strong>8 hours lost</strong>: Stripping, monitoring, hanging, folding.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-red-500 font-bold">✕</span>
-                  <span><strong>Drying Clutter</strong>: Wet sheets draped over living furniture.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-red-500 font-bold">✕</span>
-                  <span><strong>Dust & Allergens</strong>: Accumulates gradually with late washes.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* After */}
-            <div className="bg-charcoal-ink text-alabaster-linen border border-charcoal-ink/20 p-8 space-y-6">
-              <h4 className="text-subheading font-bold text-linen-gold">Month with ClosetRush</h4>
-              <ul className="space-y-4 text-sm text-alabaster-linen/80">
-                <li className="flex items-start gap-3">
-                  <span className="text-linen-gold font-bold">✓</span>
-                  <span><strong>0 domestic washes</strong>: Entire cycle managed out-of-house.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-linen-gold font-bold">✓</span>
-                  <span><strong>0 minutes spent</strong>: Courier drops sealed fresh pack at door.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-linen-gold font-bold">✓</span>
-                  <span><strong>Immaculate Space</strong>: No damp laundry drying in your view.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-linen-gold font-bold">✓</span>
-                  <span><strong>Hotel feel</strong>: Soft, clean sheet swaps every 2 weeks.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+          <RoutineComparison />
         </div>
       </section>
 
@@ -543,42 +905,47 @@ export default function Home() {
       </section>
 
       {/* SECTION 9: FINAL CONVERSION */}
-      <section className="bg-alabaster-linen py-16 md:py-24 relative overflow-hidden border-b border-charcoal-ink/08">
-        <div className="max-w-4xl mx-auto px-6 sm:px-8 text-center space-y-6 relative z-10">
-          <p className="text-micro-label">The Invitation</p>
-          <h2 className="text-section-header">Your next fresh bed is already waiting.</h2>
-          <p className="text-body text-charcoal-ink/70 max-w-xl mx-auto">
-            Step into the ClosetRush standard of sleep. Reserve your subscription today and claim your introductory rates.
-          </p>
-
-          <a
-            href="#pricing"
-            onClick={(e) => handleScrollTo(e, "#pricing")}
-            className="inline-flex items-center gap-2 py-4 px-10 bg-charcoal-ink text-alabaster-linen font-bold text-xs uppercase tracking-widest hover:bg-linen-gold transition-all duration-300 hover:scale-101 active:scale-99"
-          >
-            Start Now <ArrowRightIcon className="w-4 h-4" />
-          </a>
+      <section className="bg-alabaster-linen py-20 md:py-28 relative overflow-hidden border-b border-charcoal-ink/08">
+        <div className="max-w-[1380px] mx-auto px-6 sm:px-8 relative z-10">
+          <div className="max-w-5xl mx-auto bg-white/70 backdrop-blur-md border border-white rounded-[32px] p-8 sm:p-12 md:p-16 text-center space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.02)] hover:shadow-[0_30px_80px_rgba(36,92,119,0.06)] hover:-translate-y-1 transition-all duration-500 ease-out">
+            <p className="text-micro-label text-[#245c77]">The Invitation</p>
+            <h2 className="text-3xl sm:text-5xl font-serif font-bold text-charcoal-ink leading-tight">
+              Your next fresh bed is <span className="text-[#245c77] italic font-normal">already waiting.</span>
+            </h2>
+            <p className="text-xs sm:text-sm md:text-base text-charcoal-ink/70 max-w-2xl mx-auto leading-relaxed font-semibold">
+              Step into the ClosetRush standard of sleep. Reserve your subscription today and claim your introductory rates.
+            </p>
+            <div className="pt-4">
+              <a
+                href="#pricing"
+                onClick={(e) => handleScrollTo(e, "#pricing")}
+                className="inline-flex items-center gap-2.5 py-4 px-10 bg-charcoal-ink text-white font-bold text-xs uppercase tracking-widest hover:bg-[#245c77] rounded-full transition-all duration-300 hover:scale-102 hover:shadow-lg active:scale-98 cursor-pointer"
+              >
+                Start Now <ArrowRightIcon className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Footer / Newsletter */}
-      <footer id="signup" className="bg-charcoal-ink text-alabaster-linen py-12">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 space-y-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center pb-8 border-b border-white/08">
+      <footer id="signup" className="bg-charcoal-ink text-alabaster-linen py-16">
+        <div className="max-w-[1380px] mx-auto px-6 sm:px-8 space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center pb-10 border-b border-white/08">
             {/* Brand/Pitch */}
             <div className="space-y-4">
               <p className="text-micro-label text-linen-gold">Newsletter</p>
-              <h2 className="text-3xl font-serif text-white">Stay Fresh, Informed.</h2>
-              <p className="text-alabaster-linen/50 text-xs max-w-md">
+              <h2 className="text-3xl font-serif text-white leading-tight">Stay Fresh, Informed.</h2>
+              <p className="text-alabaster-linen/50 text-xs max-w-md font-semibold leading-relaxed">
                 Join the ClosetRush circle for exclusive sleep tips, clean sheet updates, and new product news.
               </p>
             </div>
 
             {/* Email Form */}
-            <div className="space-y-4">
-              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-grow">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-alabaster-linen/40">
+            <div className="space-y-6">
+              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 bg-white/05 p-1.5 rounded-2xl md:rounded-full border border-white/10 focus-within:border-[#245c77] focus-within:bg-white/08 transition-all duration-300">
+                <div className="relative flex-grow flex items-center">
+                  <div className="pl-4 text-alabaster-linen/40">
                     <MailIcon className="w-5 h-5" />
                   </div>
                   <input
@@ -586,15 +953,15 @@ export default function Home() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full pl-11 pr-4 py-3.5 bg-white/05 border border-white/10 rounded-none text-white placeholder-white/30 focus:outline-none focus:border-linen-gold transition-colors text-xs"
+                    placeholder="Enter your email address"
+                    className="w-full pl-3 pr-4 py-3 bg-transparent text-white placeholder-white/35 focus:outline-none transition-colors text-xs font-semibold"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="py-3.5 px-6 bg-linen-gold text-charcoal-ink font-bold text-xs uppercase tracking-wider hover:bg-white hover:text-charcoal-ink transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="py-3 px-8 bg-linen-gold hover:bg-white text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-wider rounded-xl md:rounded-full transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
                 >
-                  Join
+                  Join Circle
                 </button>
               </form>
 
@@ -605,8 +972,8 @@ export default function Home() {
               )}
 
               <div className="flex items-center gap-2 text-3xs text-alabaster-linen/40 font-bold uppercase tracking-wider">
-                <LockIcon className="w-3.5 h-3.5" />
-                <span>Private • Weekly • Zero Spam</span>
+                <LockIcon className="w-3.5 h-3.5 text-linen-gold" />
+                <span>Private • Weekly Deliveries • Zero Spam</span>
               </div>
             </div>
           </div>
@@ -616,7 +983,7 @@ export default function Home() {
             <span className="text-xl font-serif font-bold text-linen-gold tracking-[0.1em] uppercase">
               ClosetRush
             </span>
-            <p className="text-2xs text-alabaster-linen/40">
+            <p className="text-2xs text-alabaster-linen/40 font-semibold">
               © {new Date().getFullYear()} ClosetRush. All rights reserved. • Built for healthier sleeping.
             </p>
           </div>
@@ -630,15 +997,7 @@ export default function Home() {
         />
       )}
 
-      {checkoutPlan && (
-        <CheckoutModal
-          plan={checkoutPlan}
-          user={user}
-          loading={submittingPlan}
-          onClose={() => setCheckoutPlan(null)}
-          onConfirm={handleConfirmCheckout}
-        />
-      )}
+
     </div>
   );
 }

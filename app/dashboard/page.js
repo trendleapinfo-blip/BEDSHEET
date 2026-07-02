@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
-import CheckoutModal from "../components/CheckoutModal";
 import { 
   User, 
   CreditCard, 
@@ -299,7 +298,8 @@ export default function Dashboard() {
 
   // Open checkout modal instead of immediate submission
   const handleSelectPlan = (bedType, planName, price, duration) => {
-    setCheckoutPlan({ bedType, planName, price, duration });
+    localStorage.setItem("checkout_pending", JSON.stringify({ bedType, planName, price, duration }));
+    window.location.href = "/checkout";
   };
 
   const handleConfirmCheckout = async (finalPlanData) => {
@@ -532,13 +532,15 @@ export default function Dashboard() {
                     
                     <div>
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-white/40 text-2xs uppercase tracking-widest font-bold">Current Service Plan</span>
+                        <span className="text-white/40 text-2xs uppercase tracking-widest font-bold">
+                          {user?.selectedPlan?.orderType === "BUY" ? "Purchased Collection" : "Current Service Plan"}
+                        </span>
                         <span className={`px-2 py-0.5 rounded-none text-3xs font-bold uppercase tracking-wider ${
                           user?.selectedPlan?.planName 
                             ? "bg-white/10 text-white border border-white/20"
                             : "bg-white/05 text-white/50 border border-white/10"
                         }`}>
-                          {user?.selectedPlan?.planName ? "ACTIVE" : "INACTIVE"}
+                          {user?.selectedPlan?.planName ? (user.selectedPlan.orderType === "BUY" ? "OWNED" : "ACTIVE") : "INACTIVE"}
                         </span>
                       </div>
                       
@@ -547,17 +549,21 @@ export default function Dashboard() {
                           <h3 className="text-xl sm:text-2xl font-bold font-serif text-white">{user.selectedPlan.planName}</h3>
                           <p className="text-white/70 text-xs font-semibold mt-1 flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-linen-gold"></span>
-                            {user.selectedPlan.bedType === "single" ? "Single Bed setup" : user.selectedPlan.bedType === "double" ? "Double Bed setup" : "Corporate custom rates"}
+                            {user.selectedPlan.bedType === "single" ? "Single Bed size" : user.selectedPlan.bedType === "double" ? "Double Bed size" : "Corporate custom rates"}
                             {" • "}
-                            <span className="text-linen-gold font-extrabold uppercase">{user.selectedPlan.subscriptionType === "weekly" ? "Weekly Change" : "Monthly Kit"}</span>
+                            <span className="text-linen-gold font-extrabold uppercase">
+                              {user.selectedPlan.orderType === "BUY" ? (user.selectedPlan.itemTier === "PREMIUM" ? "Premium Tier" : "Basic Tier") : (user.selectedPlan.subscriptionType === "weekly" ? "Weekly Change" : "Monthly Kit")}
+                            </span>
                           </p>
                           <div className="mt-4 flex items-baseline gap-1.5">
                             <span className="text-2xl sm:text-3xl font-bold font-serif text-white">₹{user.selectedPlan.price}</span>
-                            <span className="text-white/50 text-xs font-medium">/{user.selectedPlan.duration}</span>
+                            <span className="text-white/50 text-xs font-medium">
+                              {user.selectedPlan.orderType === "BUY" ? "One-Time" : `/${user.selectedPlan.duration}`}
+                            </span>
                           </div>
                           <div className="mt-2.5 text-[10px] text-white/50 space-y-0.5 border-t border-white/10 pt-2 font-semibold">
-                            <p>GST (18%): ₹{user.selectedPlan.gst || 0} • Deposit: ₹{user.selectedPlan.securityDeposit || 0}</p>
-                            <p className="font-extrabold text-linen-gold">Total Upfront Paid: ₹{user.selectedPlan.totalPrice || user.selectedPlan.price}</p>
+                            <p>GST (18%): ₹{user.selectedPlan.gst || 0} {user.selectedPlan.orderType !== "BUY" && `• Deposit: ₹${user.selectedPlan.securityDeposit || 0}`}</p>
+                            <p className="font-extrabold text-linen-gold">Total Amount Paid: ₹{user.selectedPlan.totalPrice || user.selectedPlan.price}</p>
                           </div>
                         </div>
                       ) : (
@@ -569,11 +575,14 @@ export default function Dashboard() {
                         </div>
                       )}
                     </div>
-
+ 
                     <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
                       {user?.selectedPlan?.planName ? (
                         <>
-                          <span className="text-white/40 text-2xs font-semibold">Started {new Date(user.selectedPlan.startDate).toLocaleDateString()}</span>
+                          <span className="text-white/40 text-2xs font-semibold">
+                            {user.selectedPlan.orderType === "BUY" ? "Purchased on " : "Started "}
+                            {new Date(user.selectedPlan.startDate).toLocaleDateString()}
+                          </span>
                           <button 
                             onClick={() => setActiveTab("subscription")}
                             className="text-linen-gold hover:text-white font-bold text-2xs flex items-center gap-1 cursor-pointer transition-colors"
@@ -591,47 +600,69 @@ export default function Dashboard() {
                       )}
                     </div>
                   </div>
-
-                  {/* Hygiene Swap Tracker Card */}
+ 
+                  {/* Hygiene Swap / Purchase Delivery Tracker Card */}
                   <div className="bg-white border border-charcoal-ink/10 rounded-none p-6 shadow-sm flex flex-col justify-between min-h-[220px]">
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="p-1.5 rounded-none bg-linen-gold/10 text-linen-gold">
-                          <RefreshCw className="w-4.5 h-4.5" />
+                    {user?.selectedPlan?.orderType === "BUY" ? (
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="p-1.5 rounded-none bg-linen-gold/10 text-linen-gold">
+                            <Package className="w-4.5 h-4.5" />
+                          </div>
+                          <h4 className="font-extrabold text-charcoal-ink text-sm">Purchase Dispatch Details</h4>
                         </div>
-                        <h4 className="font-extrabold text-charcoal-ink text-sm">Sheet Swap Cycle</h4>
+                        <div className="space-y-3 font-semibold text-xs text-charcoal-ink/70">
+                          <p>
+                            Order Type: <strong className="text-charcoal-ink uppercase">One-Time Buy</strong>
+                          </p>
+                          <p>
+                            Your purchased sheets will be delivered vacuum-sealed. Direct sales are yours permanently and do not require swaps.
+                          </p>
+                          <p className="text-[10px] text-charcoal-ink/40">
+                            Packaging process: Thermodynamic Sanitized & Sealed wrapper.
+                          </p>
+                        </div>
                       </div>
-
-                      {user?.selectedPlan?.planName ? (
-                        <div>
-                          <div className="flex justify-between items-baseline mb-2">
-                            <span className="text-charcoal-ink/50 text-xs font-semibold">Next sheets delivery in</span>
-                            <span className="text-lg font-black text-charcoal-ink">{getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType)} Days</span>
+                    ) : (
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="p-1.5 rounded-none bg-linen-gold/10 text-linen-gold">
+                            <RefreshCw className="w-4.5 h-4.5" />
                           </div>
-                          
-                          {/* Progress bar */}
-                          <div className="w-full bg-charcoal-ink/08 rounded-none h-2 overflow-hidden">
-                            <div 
-                              className="bg-linen-gold h-2 rounded-none transition-all duration-500" 
-                              style={{ width: `${Math.max(10, Math.min(100, ((user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) - getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType)) / (user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) * 100))}%` }}
-                            ></div>
+                          <h4 className="font-extrabold text-charcoal-ink text-sm">Sheet Swap Cycle</h4>
+                        </div>
+ 
+                        {user?.selectedPlan?.planName ? (
+                          <div>
+                            <div className="flex justify-between items-baseline mb-2">
+                              <span className="text-charcoal-ink/50 text-xs font-semibold">Next sheets delivery in</span>
+                              <span className="text-lg font-black text-charcoal-ink">{getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType)} Days</span>
+                            </div>
+                            
+                            {/* Progress bar */}
+                            <div className="w-full bg-charcoal-ink/08 rounded-none h-2 overflow-hidden">
+                              <div 
+                                className="bg-linen-gold h-2 rounded-none transition-all duration-500" 
+                                style={{ width: `${Math.max(10, Math.min(100, ((user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) - getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType)) / (user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) * 100))}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-charcoal-ink/40 text-[10px] mt-2 font-medium">
+                              {user.selectedPlan.subscriptionType === "weekly"
+                                ? "Weekly premium swap is scheduled. Our staff will swap and strip your bedding."
+                                : "Auto monthly kit swap is scheduled. Leave used sheets in our ClosetRush bags."}
+                            </p>
                           </div>
-                          <p className="text-charcoal-ink/40 text-[10px] mt-2 font-medium">
-                            {user.selectedPlan.subscriptionType === "weekly"
-                              ? "Weekly premium swap is scheduled. Our staff will swap and strip your bedding."
-                              : "Auto monthly kit swap is scheduled. Leave used sheets in our ClosetRush bags."}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="py-2 text-center">
-                          <Clock className="w-8 h-8 text-charcoal-ink/20 mx-auto mb-2" />
-                          <p className="text-charcoal-ink/40 text-2xs leading-relaxed max-w-[200px] mx-auto">
-                            Setup a bed sheet plan to start your regular monthly delivery timeline.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
+                        ) : (
+                          <div className="py-2 text-center">
+                            <Clock className="w-8 h-8 text-charcoal-ink/20 mx-auto mb-2" />
+                            <p className="text-charcoal-ink/40 text-2xs leading-relaxed max-w-[200px] mx-auto">
+                              Setup a bed sheet plan to start your regular monthly delivery timeline.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+ 
                     <div className="mt-4 pt-3.5 border-t border-charcoal-ink/08 flex items-center justify-between">
                       <span className="text-charcoal-ink/40 text-2xs font-semibold">Delivery address:</span>
                       <span className="text-charcoal-ink font-bold text-2xs max-w-[150px] truncate" title={user?.address || "No address entered"}>
@@ -639,13 +670,15 @@ export default function Dashboard() {
                       </span>
                     </div>
                   </div>
-
+ 
                 </div>
-
+ 
                 {/* Delivery Timeline / Steps Tracker */}
                 {user?.selectedPlan?.planName && (
                   <div className="bg-alabaster-linen rounded-none p-6 border border-charcoal-ink/10">
-                    <h4 className="font-extrabold text-charcoal-ink text-sm mb-4">Your Swap Progress</h4>
+                    <h4 className="font-extrabold text-charcoal-ink text-sm mb-4">
+                      {user.selectedPlan.orderType === "BUY" ? "Your Purchase Progress" : "Your Swap Progress"}
+                    </h4>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
                       {/* Step 1 */}
@@ -654,37 +687,47 @@ export default function Dashboard() {
                           <Check className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-charcoal-ink">01. Subscription Created</p>
+                          <p className="text-xs font-bold text-charcoal-ink">
+                            {user.selectedPlan.orderType === "BUY" ? "01. Purchase Confirmed" : "01. Subscription Created"}
+                          </p>
                           <p className="text-charcoal-ink/40 text-3xs font-semibold mt-0.5">Activated on {new Date(user.selectedPlan.startDate).toLocaleDateString()}</p>
                         </div>
                       </div>
-
+ 
                       {/* Step 2 */}
                       <div className="flex gap-3 items-start relative z-10">
                         <div className="w-7 h-7 rounded-none bg-linen-gold/10 text-linen-gold border border-linen-gold/20 flex items-center justify-center font-bold text-xs shrink-0">
                           02
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-charcoal-ink">02. Scheduled Swap</p>
+                          <p className="text-xs font-bold text-charcoal-ink">
+                            {user.selectedPlan.orderType === "BUY" ? "02. Packing & Dispatch" : "02. Scheduled Swap"}
+                          </p>
                           <p className="text-charcoal-ink/40 text-3xs font-semibold mt-0.5">
-                            {user.selectedPlan.subscriptionType === "weekly"
-                              ? "Weekly sheet change & pick-up in progress"
-                              : "Linen kit drop-off in progress"}
+                            {user.selectedPlan.orderType === "BUY"
+                              ? "Vacuum sealed bundle prepared for shipping"
+                              : (user.selectedPlan.subscriptionType === "weekly"
+                                ? "Weekly sheet change & pick-up in progress"
+                                : "Linen kit drop-off in progress")}
                           </p>
                         </div>
                       </div>
- 
+  
                       {/* Step 3 */}
                       <div className="flex gap-3 items-start relative z-10">
                         <div className="w-7 h-7 rounded-none bg-charcoal-ink/08 text-charcoal-ink/40 flex items-center justify-center font-bold text-xs shrink-0">
                           03
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-charcoal-ink/40">03. Swap Complete</p>
+                          <p className="text-xs font-bold text-charcoal-ink/40">
+                            {user.selectedPlan.orderType === "BUY" ? "03. Delivery Complete" : "03. Swap Complete"}
+                          </p>
                           <p className="text-charcoal-ink/30 text-3xs font-semibold mt-0.5">
-                            {user.selectedPlan.subscriptionType === "weekly"
-                              ? "Recurring weekly swaps"
-                              : "Recurring monthly swaps"}
+                            {user.selectedPlan.orderType === "BUY"
+                              ? "Direct retail sale delivery"
+                              : (user.selectedPlan.subscriptionType === "weekly"
+                                ? "Recurring weekly swaps"
+                                : "Recurring monthly swaps")}
                           </p>
                         </div>
                       </div>
@@ -709,6 +752,7 @@ export default function Dashboard() {
                           <tr>
                             <th className="py-3.5 px-4">Order ID</th>
                             <th className="py-3.5 px-4">Bundle Item</th>
+                            <th className="py-3.5 px-4">Type</th>
                             <th className="py-3.5 px-4">Start Date</th>
                             <th className="py-3.5 px-4">Status</th>
                             <th className="py-3.5 px-4 text-right">Price</th>
@@ -719,6 +763,15 @@ export default function Dashboard() {
                             <tr key={order._id} className="hover:bg-slate-50/50">
                               <td className="py-3.5 px-4 font-bold text-charcoal-ink">{order.bundleOrderId}</td>
                               <td className="py-3.5 px-4 text-charcoal-ink/70">{order.bundleName}</td>
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2 py-0.5 rounded-none text-3xs font-extrabold tracking-wider uppercase border ${
+                                  order.orderType === "BUY"
+                                    ? "bg-purple-50 text-purple-650 border-purple-200"
+                                    : "bg-blue-50 text-blue-650 border-blue-200"
+                                }`}>
+                                  {order.orderType || "RENT"}
+                                </span>
+                              </td>
                               <td className="py-3.5 px-4 text-charcoal-ink/60">{new Date(order.startDate).toLocaleDateString()}</td>
                               <td className="py-3.5 px-4">
                                 <span className={`px-2 py-0.5 rounded-none text-3xs font-bold tracking-wider uppercase inline-block border ${
@@ -1419,15 +1472,7 @@ export default function Dashboard() {
 
         </div>
       </div>
-      {checkoutPlan && (
-        <CheckoutModal
-          plan={checkoutPlan}
-          user={user}
-          loading={planSubmitting}
-          onClose={() => setCheckoutPlan(null)}
-          onConfirm={handleConfirmCheckout}
-        />
-      )}
+
     </div>
   );
 }

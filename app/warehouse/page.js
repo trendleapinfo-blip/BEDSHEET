@@ -465,7 +465,7 @@ export default function WarehouseDashboard() {
                   <p className="text-3xs text-charcoal-ink/40 mt-2 font-semibold uppercase tracking-wider">Requires stock checkout and seal</p>
                 </div>
  
-              </div>>
+              </div>
 
               {/* Quick operations & stats grid */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -825,11 +825,22 @@ export default function WarehouseDashboard() {
                   const isPending = order.status === "PENDING";
                   return (
                     <div key={order._id} className="bg-white border border-charcoal-ink/10 rounded-none p-5 hover:border-linen-gold transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
-                      <div className="space-y-2 max-w-xl">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <div className="space-y-2 max-w-xl">                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-2xs font-bold text-linen-gold bg-linen-gold/15 px-2.5 py-0.5 rounded-none border border-linen-gold/25 tracking-wider uppercase">
                             {order.bundleOrderId}
                           </span>
+                          <span className={`px-2 py-0.5 rounded-none text-3xs font-extrabold tracking-wider uppercase border ${
+                            order.orderType === "BUY"
+                              ? "bg-purple-50 text-purple-650 border-purple-200"
+                              : "bg-blue-50 text-blue-650 border-blue-200"
+                          }`}>
+                            {order.orderType || "RENT"}
+                          </span>
+                          {order.orderType === "BUY" && (
+                            <span className="px-2 py-0.5 rounded-none text-3xs font-extrabold tracking-wider uppercase border bg-indigo-50 text-indigo-650 border-indigo-200">
+                              {order.itemTier || "BASIC"} SET
+                            </span>
+                          )}
                           <span className={`inline-flex items-center gap-1 py-0.5 px-2 rounded-none text-[10px] font-bold uppercase tracking-wider border ${
                             isPending 
                               ? "bg-amber-500/15 text-amber-500 border border-amber-500/20" 
@@ -846,7 +857,9 @@ export default function WarehouseDashboard() {
 
                       <div className="shrink-0 flex flex-col items-end gap-2.5 w-full md:w-auto">
                         <div className="text-right">
-                          <p className="text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest leading-none">Price lease</p>
+                          <p className="text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest leading-none">
+                            {order.orderType === "BUY" ? "Retail Sale Price" : "Price lease"}
+                          </p>
                           <p className="text-sm font-bold text-charcoal-ink mt-1">₹{order.finalPrice}</p>
                         </div>
 

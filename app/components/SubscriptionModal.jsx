@@ -83,7 +83,7 @@ export default function SubscriptionModal({ plan, onClose }) {
               </div>
               <div>
                 <p className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider mb-1">Security Deposit</p>
-                <p className="font-extrabold text-slate-650">₹{plan.securityDeposit !== undefined ? plan.securityDeposit : 500}</p>
+                <p className="font-extrabold text-slate-650">₹{plan.securityDeposit !== undefined ? plan.securityDeposit : (isSingle ? 500 : 800)}</p>
               </div>
             </div>
 
@@ -102,7 +102,7 @@ export default function SubscriptionModal({ plan, onClose }) {
 
             <div className="pt-4 border-t border-[#245c77]/10 flex justify-between items-baseline">
               <p className="text-2xs font-extrabold text-[#245c77] uppercase tracking-wider">Total Paid Upfront</p>
-              <p className="text-lg font-black text-[#245c77]">₹{plan.totalPrice || (plan.price + Math.round(plan.price * 0.18) + (plan.securityDeposit || 500))}</p>
+              <p className="text-lg font-black text-[#245c77]">₹{plan.totalPrice || (plan.price + Math.round(plan.price * 0.18) + (plan.securityDeposit !== undefined ? plan.securityDeposit : (isSingle ? 500 : 800)))}</p>
             </div>
 
             <div className="pt-4 border-t border-charcoal-ink/10">

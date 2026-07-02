@@ -9,6 +9,43 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState("");
+
+  useEffect(() => {
+    const sectionIds = ["home", "products", "experience", "science", "pricing"];
+    const options = {
+      root: null,
+      rootMargin: "-25% 0px -55% 0px",
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, options);
+
+    sectionIds.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    const handleScroll = () => {
+      if (window.scrollY < 80) {
+        setActiveSection("home");
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -56,11 +93,12 @@ export default function Navbar() {
   }, []);
 
   const navItems = [
-    { name: "The Realization", href: "#home" },
-    { name: "The Science", href: "#science" },
+    { name: "The Catalog", href: "#products" },
     { name: "The Experience", href: "#experience" },
-    { name: "Value Visualizer", href: "/value-visualizer", isRoute: true },
+    { name: "The Science", href: "#science" },
     { name: "The Membership", href: "#pricing" },
+    { name: "Value Visualizer", href: "/value-visualizer", isRoute: true },
+    { name: "About", href: "/about", isRoute: true },
   ];
 
   const handleScrollTo = (e, href, isRoute) => {
@@ -88,16 +126,18 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out ${
         scrolled
-          ? "bg-alabaster-linen/80 backdrop-blur-md border-b border-charcoal-ink/08 py-4"
-          : "bg-transparent py-6"
+          ? "top-4 w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] md:w-[calc(100%-4rem)] max-w-[1380px] bg-alabaster-linen/90 backdrop-blur-md border border-[#245c77]/10 shadow-[0_12px_30px_rgba(15,26,28,0.08)] py-2 rounded-full"
+          : "top-0 w-full max-w-none bg-transparent border-b border-transparent py-6 rounded-none"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className={`transition-all duration-500 ${
+        scrolled ? "w-full px-6 sm:px-10 md:px-12" : "max-w-[1380px] mx-auto w-full px-4 sm:px-6 lg:px-8"
+      }`}>
         <div className="flex items-center justify-between h-10">
           {/* Logo / Brand */}
-          <div className="flex-shrink-0 flex items-center">
+          <div className="flex-shrink-0 flex items-center whitespace-nowrap">
             <a
               href="#home"
               onClick={(e) => handleScrollTo(e, "#home")}
@@ -108,14 +148,19 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className={`hidden md:flex items-center transition-all duration-500 ${
+            scrolled ? "space-x-2.5 lg:space-x-3.5 xl:space-x-4.5" : "space-x-6 lg:space-x-8"
+          }`}>
             {navItems.map((item) => {
+              const isActive = item.href === "#" + activeSection;
               if (item.isRoute) {
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="text-charcoal-ink/80 font-medium text-xs tracking-wider uppercase transition-colors duration-300 hover:text-linen-gold"
+                    className={`font-semibold tracking-wider uppercase transition-colors duration-300 hover:text-linen-gold whitespace-nowrap ${
+                      scrolled ? "text-[10px] xl:text-[11px]" : "text-xs text-charcoal-ink/80"
+                    }`}
                   >
                     {item.name}
                   </Link>
@@ -126,36 +171,49 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleScrollTo(e, item.href, false)}
-                  className="text-charcoal-ink/80 font-medium text-xs tracking-wider uppercase transition-colors duration-300 hover:text-linen-gold"
+                  className={`relative font-semibold tracking-wider uppercase transition-all duration-300 pb-1 whitespace-nowrap ${
+                    scrolled ? "text-[10px] xl:text-[11px]" : "text-xs"
+                  } ${
+                    isActive 
+                      ? "text-linen-gold font-bold" 
+                      : "text-charcoal-ink/80 hover:text-linen-gold"
+                  }`}
                 >
                   {item.name}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-linen-gold rounded-full animate-in fade-in zoom-in duration-300" />
+                  )}
                 </a>
               );
             })}
           </div>
 
           {/* Desktop CTA Button */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className={`hidden md:flex items-center transition-all duration-500 ${
+            scrolled ? "space-x-2 lg:space-x-3" : "space-x-4 lg:space-x-6"
+          }`}>
             {!loading && user ? (
-              <div className="flex items-center space-x-4">
+              <div className={`flex items-center transition-all duration-500 ${
+                scrolled ? "space-x-2 lg:space-x-3" : "space-x-4"
+              }`}>
                 {user.role === "warehouse" ? (
                   <Link
                     href="/warehouse"
-                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-linen-gold text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-linen-gold text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
                   >
                     Warehouse
                   </Link>
                 ) : user.role === "logistics" ? (
                   <Link
                     href="/logistics"
-                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-linen-gold text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-linen-gold text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
                   >
                     Logistics
                   </Link>
                 ) : (
                   <Link
                     href="/dashboard"
-                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-linen-gold text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-[#245c77] text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
                   >
                     Dashboard
                   </Link>
@@ -163,17 +221,17 @@ export default function Navbar() {
                 {user.role === "admin" && (
                   <Link
                     href="/admin"
-                    className="inline-flex items-center justify-center px-4 py-2 border border-charcoal-ink/20 text-charcoal-ink hover:bg-charcoal-ink hover:text-alabaster-linen text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center px-4 py-2 border border-charcoal-ink/20 text-charcoal-ink hover:bg-charcoal-ink hover:text-alabaster-linen text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
                   >
                     Admin
                   </Link>
                 )}
-                <span className="text-charcoal-ink/70 font-semibold text-xs uppercase tracking-wider">
+                <span className="text-charcoal-ink/70 font-bold text-2xs lg:text-xs uppercase tracking-wider whitespace-nowrap">
                   Hi, {user.name.split(" ")[0]}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="inline-flex items-center justify-center px-4 py-2 border border-charcoal-ink/10 text-2xs font-bold uppercase tracking-wider rounded-none text-charcoal-ink/60 hover:border-charcoal-ink/30 transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-charcoal-ink/10 text-2xs font-bold uppercase tracking-wider rounded-none text-charcoal-ink/60 hover:border-charcoal-ink/30 transition-all cursor-pointer whitespace-nowrap"
                 >
                   Logout
                 </button>
@@ -182,13 +240,13 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="text-charcoal-ink/80 hover:text-linen-gold font-bold text-xs uppercase tracking-wider transition-colors"
+                  className="text-charcoal-ink/80 hover:text-linen-gold font-bold text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center px-6 py-2.5 border border-charcoal-ink text-xs font-bold uppercase tracking-widest rounded-none text-alabaster-linen bg-charcoal-ink hover:bg-linen-gold hover:border-linen-gold transition-all duration-300 hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center px-6 py-2.5 border border-charcoal-ink text-xs font-bold uppercase tracking-widest rounded-none text-alabaster-linen bg-charcoal-ink hover:bg-linen-gold hover:border-linen-gold transition-all duration-300 hover:-translate-y-0.5 whitespace-nowrap"
                 >
                   Subscribe
                 </Link>
@@ -214,13 +272,14 @@ export default function Navbar() {
 
       {/* Mobile Menu Drawer */}
       <div
-        className={`md:hidden absolute top-full inset-x-0 bg-alabaster-linen border-b border-charcoal-ink/08 shadow-lg transition-all duration-300 ease-in-out ${
+        className={`md:hidden absolute top-[calc(100%+0.5rem)] inset-x-0 bg-alabaster-linen/95 backdrop-blur-md border border-charcoal-ink/08 rounded-3xl shadow-xl transition-all duration-300 ease-in-out ${
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
         id="mobile-menu"
       >
         <div className="px-4 pt-4 pb-6 space-y-3 bg-alabaster-linen">
           {navItems.map((item) => {
+            const isActive = item.href === "#" + activeSection;
             if (item.isRoute) {
               return (
                 <Link
@@ -238,7 +297,11 @@ export default function Navbar() {
                 key={item.name}
                 href={item.href}
                 onClick={(e) => handleScrollTo(e, item.href, false)}
-                className="block px-3 py-2 text-xs font-bold uppercase tracking-wider text-charcoal-ink/80 hover:text-linen-gold transition-all"
+                className={`block px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all border-l-2 ${
+                  isActive 
+                    ? "text-linen-gold border-linen-gold bg-linen-gold/05 pl-4" 
+                    : "text-charcoal-ink/80 border-transparent hover:text-linen-gold hover:border-linen-gold/30"
+                }`}
               >
                 {item.name}
               </a>
