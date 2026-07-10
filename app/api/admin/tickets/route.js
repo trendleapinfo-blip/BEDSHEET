@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
+import { verifyAdmin } from "@/lib/adminAuth";
 
 export async function GET() {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const tickets = await SupportTicket.find({}).sort({ createdAt: -1 });
     return NextResponse.json({ tickets });
@@ -15,6 +21,11 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { ticketId, subject, userName, userEmail, priority, status } = await request.json();
 
@@ -40,6 +51,11 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { ticketId, status, priority } = await request.json();
 
@@ -65,6 +81,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get("ticketId");

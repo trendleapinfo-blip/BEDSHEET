@@ -37,6 +37,22 @@ const OrderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    planId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Plan',
+    },
+    durationMonths: {
+      type: Number,
+    },
+    calculatedRent: {
+      type: Number,
+    },
+    depositCharged: {
+      type: Number,
+    },
+    totalAmount: {
+      type: Number,
+    },
     couponCode: {
       type: String,
       default: null,
@@ -50,6 +66,31 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       enum: ["ACTIVE", "CANCELLED", "PENDING", "DELIVERED"],
       default: "ACTIVE",
+    },
+    swapCycle: {
+      type: String,
+      default: "Monthly Swap",
+    },
+    paymentStyle: {
+      type: String,
+      default: "Monthly",
+    },
+    orderCategory: {
+      type: String,
+      enum: ["B2C", "B2B"],
+      default: "B2C",
+    },
+    frequency: {
+      type: String,
+      enum: ["ALL_AT_ONCE", "WEEKLY_SWAP", "MONTHLY_SWAP"],
+      default: "ALL_AT_ONCE",
+    },
+    agreementSignedAt: {
+      type: Date,
+    },
+    agreementSignedBy: {
+      type: String,
+      trim: true,
     },
     orderType: {
       type: String,

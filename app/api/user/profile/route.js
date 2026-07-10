@@ -67,7 +67,7 @@ export async function PUT(request) {
       return NextResponse.json({ error: "Invalid session token." }, { status: 401 });
     }
 
-    const { name, email, mobile, address, accountType } = await request.json();
+    const { name, email, mobile, address, city, pincode, accountType } = await request.json();
 
     if (!name || !email) {
       return NextResponse.json(
@@ -99,6 +99,8 @@ export async function PUT(request) {
         email: email.toLowerCase(),
         mobile: mobile || undefined,
         address,
+        city,
+        pincode,
         accountType,
       },
       { new: true, runValidators: true }

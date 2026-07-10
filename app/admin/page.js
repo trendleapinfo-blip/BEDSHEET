@@ -32,7 +32,12 @@ import {
   ChevronRight,
   ShieldAlert,
   Copy,
-  Ticket
+  Ticket,
+  QrCode,
+  Download,
+  Printer,
+  Warehouse,
+  Settings
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -40,6 +45,11 @@ export default function AdminDashboard() {
   const [sessionUser, setSessionUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [seedingLoading, setSeedingLoading] = useState(false);
+
+  // QR Code state
+  const [qrOrder, setQrOrder] = useState(null);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [qrLoading, setQrLoading] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -100,7 +110,37 @@ export default function AdminDashboard() {
   const [ticketForm, setTicketForm] = useState({ subject: "", userName: "", userEmail: "", priority: "MEDIUM", status: "OPEN" });
 
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [planForm, setPlanForm] = useState({ id: "", bedType: "single", name: "", duration: "", price: "", originalPrice: "", discount: "", features: "", cta: "Choose Plan", popular: false, badge: "" });
+  const [planForm, setPlanForm] = useState({ id: "", tier: "Normal", bedType: "single", monthlyRate: 0, depositAmount: 0 });
+
+  const [productColorsList, setProductColorsList] = useState([]);
+  const [colorBedType, setColorBedType] = useState("");
+  const [colorName, setColorName] = useState("");
+  const [colorHex, setColorHex] = useState("#FFFFFF");
+  const [colorImages, setColorImages] = useState("");
+
+  // WMS States
+  const [bundlesList, setBundlesList] = useState([]);
+  const [scanInput, setScanInput] = useState("");
+  const [activeBundleIdForSkus, setActiveBundleIdForSkus] = useState("");
+  const [editingSkus, setEditingSkus] = useState([]);
+  const [scannerAction, setScannerAction] = useState("scan_dispatch");
+  const [laundryStatusFilter, setLaundryStatusFilter] = useState("ALL");
+  const [settings, setSettings] = useState(null);
+  const [settingsForm, setSettingsForm] = useState({
+    brandName: "",
+    heroImage: "/banner_1.png",
+    installBannerText: "",
+    installBannerActive: true,
+    primaryColor: "",
+    accentColor: "",
+    contactEmail: "",
+    singleBedDeposit: 500,
+    doubleBedDeposit: 800,
+    paymentStyles: []
+  });
+
+  const [editingStyleId, setEditingStyleId] = useState(null);
+  const [editStyleForm, setEditStyleForm] = useState({ id: "", name: "", description: "", depositMultiplier: 1, commissionRate: 0 });
 
   // Custom Selection Modals States
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -118,6 +158,7 @@ export default function AdminDashboard() {
   const [quoteReplySubject, setQuoteReplySubject] = useState("");
   const [quoteReplyMessage, setQuoteReplyMessage] = useState("");
   const [quoteReplySending, setQuoteReplySending] = useState(false);
+  const [quotePrice, setQuotePrice] = useState(0);
 
   // User edit form state
   const [showUserModal, setShowUserModal] = useState(false);
@@ -166,6 +207,105 @@ export default function AdminDashboard() {
       console.error(e);
     }
   }, []);
+
+  // Load QRCode.js from CDN once on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.QRCode) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  // Generate QR code data URL for an order using canvas
+  const generateQR = async (order) => {
+    setQrOrder(order);
+    setQrDataUrl("");
+    setQrLoading(true);
+
+    const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+    const text = [
+      "CLOSETRUSH BUNDLE QR",
+      "--------------------",
+      `ORDER ID : ${order.bundleOrderId}`,
+      `CUSTOMER : ${order.userName || "—"}`,
+      `PHONE    : ${order.phone || "—"}`,
+      `EMAIL    : ${order.email || "—"}`,
+      `BUNDLE   : ${order.bundleName}`,
+      `STATUS   : ${order.status}`,
+      `PRICE    : Rs.${order.finalPrice}`,
+      `START    : ${fmt(order.startDate)}`,
+      `END      : ${fmt(order.endDate)}`,
+      `ADDRESS  : ${order.deliveryAddress || "—"}`,
+      "--------------------",
+      "ClosetRush | Clean Sheets, Delivered."
+    ].join("\n");
+
+    try {
+      // Use qrserver.com public API to generate a clean QR PNG
+      const encoded = encodeURIComponent(text);
+      const url = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encoded}&color=0d1117&bgcolor=ffffff&margin=10&format=png`;
+      setQrDataUrl(url);
+    } catch (e) {
+      console.error("QR generation failed:", e);
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const handlePrintQR = () => {
+    const printWindow = window.open("", "_blank", "width=500,height=700");
+    const order = qrOrder;
+    const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+    printWindow.document.write(`
+      <html><head><title>Bundle QR — ${order.bundleOrderId}</title>
+      <style>
+        body { font-family: 'Courier New', monospace; padding: 32px; background: #fff; color: #0d1117; }
+        .header { font-size: 18px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+        .sub { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+        .qr { text-align: center; margin: 16px 0; }
+        .qr img { width: 220px; height: 220px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 16px; }
+        td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+        td:first-child { font-weight: 700; color: #555; width: 110px; text-transform: uppercase; font-size: 9px; letter-spacing: 1px; }
+        td:last-child { font-weight: 600; color: #0d1117; }
+        .footer { margin-top: 20px; font-size: 9px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
+        .status-ACTIVE { color: #16a34a; font-weight: 900; }
+        .status-CANCELLED { color: #dc2626; font-weight: 900; }
+        .status-PENDING { color: #d97706; font-weight: 900; }
+        .status-DELIVERED { color: #0891b2; font-weight: 900; }
+      </style></head><body>
+      <div class="header">ClosetRush</div>
+      <div class="sub">Bundle Tracking QR — Scan to verify</div>
+      <div class="qr"><img src="${qrDataUrl}" /></div>
+      <table>
+        <tr><td>Order ID</td><td>${order.bundleOrderId}</td></tr>
+        <tr><td>Customer</td><td>${order.userName || "—"}</td></tr>
+        <tr><td>Phone</td><td>${order.phone || "—"}</td></tr>
+        <tr><td>Email</td><td>${order.email || "—"}</td></tr>
+        <tr><td>Bundle</td><td>${order.bundleName}</td></tr>
+        <tr><td>Status</td><td><span class="status-${order.status}">${order.status}</span></td></tr>
+        <tr><td>Price</td><td>Rs.${order.finalPrice}</td></tr>
+        <tr><td>Start</td><td>${fmt(order.startDate)}</td></tr>
+        <tr><td>End</td><td>${fmt(order.endDate)}</td></tr>
+        <tr><td>Address</td><td>${order.deliveryAddress || "—"}</td></tr>
+      </table>
+      <div class="footer">ClosetRush | Clean Sheets, Delivered.</div>
+      </body></html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
+  };
+
+  const handleDownloadQR = () => {
+    if (!qrDataUrl || !qrOrder) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `QR_${qrOrder.bundleOrderId}.png`;
+    a.click();
+  };
 
   // Load user session
   const fetchSession = async () => {
@@ -243,6 +383,39 @@ export default function AdminDashboard() {
         setCouponsList(couponsData.coupons || []);
       }
 
+      const colorsRes = await fetch("/api/colors");
+      if (colorsRes.ok) {
+        const colorsData = await colorsRes.json();
+        if (colorsData.colors) {
+          setProductColorsList(colorsData.colors);
+        }
+      }
+
+      const bundlesRes = await fetch("/api/admin/bundles");
+      if (bundlesRes.ok) {
+        const bundlesData = await bundlesRes.json();
+        setBundlesList(bundlesData.bundles || []);
+      }
+
+      const settingsRes = await fetch("/api/admin/settings");
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        if (settingsData.settings) {
+          setSettings(settingsData.settings);
+          setSettingsForm({
+            brandName: settingsData.settings.brandName || "ClosetRush",
+            heroImage: settingsData.settings.heroImage || "/banner_1.png",
+            installBannerText: settingsData.settings.installBannerText || "",
+            installBannerActive: settingsData.settings.installBannerActive ?? true,
+            primaryColor: settingsData.settings.primaryColor || "#0F172A",
+            accentColor: settingsData.settings.accentColor || "#245c77",
+            contactEmail: settingsData.settings.contactEmail || "support@closetrush.com",
+            singleBedDeposit: settingsData.settings.singleBedDeposit ?? 500,
+            doubleBedDeposit: settingsData.settings.doubleBedDeposit ?? 800,
+            paymentStyles: settingsData.settings.paymentStyles || []
+          });
+        }
+      }
 
     } catch (err) {
       console.error("Error fetching admin data:", err);
@@ -313,7 +486,12 @@ export default function AdminDashboard() {
   const triggerSeeder = async () => {
     setSeedingLoading(true);
     try {
-      const res = await fetch("/api/admin/seed");
+      const res = await fetch("/api/admin/seed", {
+        method: "POST",
+        headers: {
+          "x-seed-secret": "closerush_seed_bootstrap_2026"
+        }
+      });
       if (res.ok) {
         alert("Database successfully seeded with ClosetRush mock data!");
         await fetchSession();
@@ -495,16 +673,10 @@ export default function AdminDashboard() {
     const isEdit = !!planForm.id;
     const method = isEdit ? "PUT" : "POST";
     const body = {
+      tier: planForm.tier,
       bedType: planForm.bedType,
-      name: planForm.name,
-      duration: planForm.duration,
-      price: Number(planForm.price),
-      originalPrice: planForm.originalPrice ? Number(planForm.originalPrice) : null,
-      discount: planForm.discount || null,
-      features: planForm.features.split("\n").map(f => f.trim()).filter(Boolean),
-      cta: planForm.cta || "Choose Plan",
-      popular: !!planForm.popular,
-      badge: planForm.badge || null
+      monthlyRate: Number(planForm.monthlyRate),
+      depositAmount: Number(planForm.depositAmount)
     };
 
     if (isEdit) {
@@ -519,7 +691,7 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         setShowPlanModal(false);
-        setPlanForm({ id: "", bedType: "single", name: "", duration: "", price: "", originalPrice: "", discount: "", features: "", cta: "Choose Plan", popular: false, badge: "" });
+        setPlanForm({ id: "", tier: "Normal", bedType: "single", monthlyRate: 0, depositAmount: 0 });
         fetchData();
         alert(isEdit ? "Plan updated successfully!" : "Plan created successfully!");
       } else {
@@ -535,16 +707,10 @@ export default function AdminDashboard() {
   const handleEditPlan = (plan) => {
     setPlanForm({
       id: plan._id,
+      tier: plan.tier || "Normal",
       bedType: plan.bedType || "single",
-      name: plan.name || "",
-      duration: plan.duration || "",
-      price: plan.price || "",
-      originalPrice: plan.originalPrice || "",
-      discount: plan.discount || "",
-      features: plan.features ? plan.features.join("\n") : "",
-      cta: plan.cta || "Choose Plan",
-      popular: !!plan.popular,
-      badge: plan.badge || ""
+      monthlyRate: plan.monthlyRate || 0,
+      depositAmount: plan.depositAmount || 0
     });
     setShowPlanModal(true);
   };
@@ -619,6 +785,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const deleteOrder = async (orderId) => {
+    if (!confirm("Are you sure you want to delete this order?")) return;
+    try {
+      const res = await fetch(`/api/admin/orders?orderId=${orderId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        setOrdersList(ordersList.filter(o => o._id !== orderId));
+        alert("Order deleted successfully!");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Delete failed: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Delete failed: " + err.message);
+    }
+  };
+
   // Staff Approvals Actions
   const updateStaffStatus = async (staffId, status) => {
     try {
@@ -660,15 +846,19 @@ export default function AdminDashboard() {
   };
 
   // Quotes Actions
-  const updateQuoteStatus = async (quoteId, status) => {
+  const updateQuoteStatus = async (quoteId, status, priceQuote) => {
     try {
+      const body = { quoteId, status };
+      if (priceQuote !== undefined) {
+        body.priceQuote = Number(priceQuote);
+      }
       const res = await fetch("/api/admin/quotes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quoteId, status })
+        body: JSON.stringify(body)
       });
       if (res.ok) {
-        setQuotesList(quotesList.map(q => q._id === quoteId ? { ...q, status } : q));
+        setQuotesList(quotesList.map(q => q._id === quoteId ? { ...q, status, priceQuote: priceQuote !== undefined ? Number(priceQuote) : q.priceQuote } : q));
         fetchData();
       }
     } catch (err) {
@@ -807,6 +997,239 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAddColor = async (e) => {
+    e.preventDefault();
+    const bedType = colorBedType || (categoriesList[0]?.name || "Bedsheet + Pillow (Single)");
+    if (!bedType || !colorName.trim() || !colorHex.trim()) {
+      alert("Please fill all color configurations details.");
+      return;
+    }
+    
+    const imageList = colorImages.split(",")
+      .map(img => img.trim())
+      .filter(Boolean);
+
+    try {
+      const res = await fetch("/api/colors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bedType,
+          colorName: colorName.trim(),
+          hexCode: colorHex.trim(),
+          images: imageList
+        })
+      });
+      if (res.ok) {
+        alert("Color option added successfully!");
+        setColorName("");
+        setColorHex("#FFFFFF");
+        setColorImages("");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Failed to add color: " + (err.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add color: " + err.message);
+    }
+  };
+
+  const handleDeleteColor = async (colorId) => {
+    if (!confirm("Are you sure you want to delete this color option configuration?")) return;
+    try {
+      const res = await fetch(`/api/colors?id=${colorId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        alert("Color option deleted successfully!");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Failed to delete color: " + (err.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete color: " + err.message);
+    }
+  };
+
+  const handleCreateBundle = async (orderId) => {
+    try {
+      const res = await fetch("/api/admin/bundles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId })
+      });
+      if (res.ok) {
+        alert("WMS Bundle created successfully!");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Failed to create bundle: " + (err.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create bundle: " + err.message);
+    }
+  };
+
+  const handleUpdateSkus = async (bundleId, items) => {
+    try {
+      const res = await fetch("/api/admin/bundles", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_skus", bundleId, items })
+      });
+      if (res.ok) {
+        alert("SKUs updated and bundle packed successfully!");
+        setActiveBundleIdForSkus("");
+        setEditingSkus([]);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Failed to update SKUs: " + (err.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update SKUs: " + err.message);
+    }
+  };
+
+  const handleScanSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!scanInput.trim()) return;
+
+    try {
+      const res = await fetch("/api/admin/bundles", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: scannerAction, bundleId: scanInput.trim() })
+      });
+      if (res.ok) {
+        const statusText = scannerAction === "scan_dispatch" ? "Dispatched out of Warehouse" : "Collected and Sent to Laundry";
+        alert(`Scan Successful: ${scanInput} has been ${statusText}`);
+        setScanInput("");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Scan Failed: " + (err.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Scan Failed: " + err.message);
+    }
+  };
+
+  const handleLaundryAdvance = async (bundleId, nextStage) => {
+    try {
+      const res = await fetch("/api/admin/bundles", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_laundry", bundleId, laundryStatus: nextStage })
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Failed to update laundry status: " + (err.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update laundry status: " + err.message);
+    }
+  };
+
+  const handleDeleteBundle = async (bundleId) => {
+    if (!confirm("Are you sure you want to cancel/delete this bundle and return assigned items to stock?")) return;
+    try {
+      const res = await fetch(`/api/admin/bundles?bundleId=${bundleId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        alert("Bundle cancelled and inventory released.");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Failed to delete bundle: " + (err.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete bundle: " + err.message);
+    }
+  };
+
+  const handleAddPaymentStyle = () => {
+    const tempId = `Style_${Date.now()}`;
+    const newStyle = { id: tempId, name: "New Payment Style", description: "Requires refundable security deposit of ₹{deposit}", depositMultiplier: 1, commissionRate: 0 };
+    setSettingsForm(prev => ({
+      ...prev,
+      paymentStyles: [...(prev.paymentStyles || []), newStyle]
+    }));
+    setEditingStyleId(tempId);
+    setEditStyleForm(newStyle);
+  };
+
+  const handleStartEditStyle = (style) => {
+    setEditingStyleId(style.id);
+    setEditStyleForm({ ...style });
+  };
+
+  const handleSaveStyleEdit = (id) => {
+    if (!editStyleForm.name.trim() || !editStyleForm.description.trim()) {
+      alert("Name and Description are required.");
+      return;
+    }
+    // Update settingsForm
+    setSettingsForm(prev => ({
+      ...prev,
+      paymentStyles: (prev.paymentStyles || []).map(s => s.id === id ? { ...editStyleForm, id: editStyleForm.id.trim() } : s)
+    }));
+    setEditingStyleId(null);
+  };
+
+  const handleCancelStyleEdit = (id) => {
+    // If it's a newly added style that was not saved, remove it
+    if (id.startsWith("Style_")) {
+      setSettingsForm(prev => ({
+        ...prev,
+        paymentStyles: (prev.paymentStyles || []).filter(s => s.id !== id)
+      }));
+    }
+    setEditingStyleId(null);
+  };
+
+  const handleDeletePaymentStyle = (id) => {
+    if (window.confirm("Are you sure you want to delete this payment style?")) {
+      setSettingsForm(prev => ({
+        ...prev,
+        paymentStyles: (prev.paymentStyles || []).filter(s => s.id !== id)
+      }));
+    }
+  };
+
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settingsForm)
+      });
+      if (res.ok) {
+        alert("Brand Settings updated successfully!");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("Failed to save settings: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error saving settings: " + err.message);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
@@ -880,11 +1303,13 @@ export default function AdminDashboard() {
     { name: "Plans", icon: DollarSign },
     { name: "Coupons", icon: Ticket },
     { name: "Inventory", icon: Package },
+    { name: "Warehouse Manager", icon: Warehouse },
     { name: "Customer Dashboard", icon: Users },
     { name: "Staff Approvals", icon: UserCheck },
     { name: "Quotes", icon: FileText },
     { name: "Support Tickets", icon: HelpCircle },
-    { name: "Refunds", icon: RefreshCcw }
+    { name: "Refunds", icon: RefreshCcw },
+    { name: "Brand Settings", icon: Settings }
   ];
 
   return (
@@ -1148,38 +1573,34 @@ export default function AdminDashboard() {
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Average Order Value (AOV)</span>
                   <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-slate-900">₹450</h3>
-                    <span className="text-xs font-bold text-emerald-600">▲ 5.4%</span>
+                    <h3 className="text-2xl font-black text-slate-900">₹{stats.aov || 0}</h3>
                   </div>
                   <p className="text-[9px] text-slate-400 font-medium mt-1">Weighted average across all bundles</p>
                 </div>
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lifetime Value (LTV)</span>
                   <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-slate-900">₹2,800</h3>
-                    <span className="text-xs font-bold text-emerald-600">▲ 8.1%</span>
+                    <h3 className="text-2xl font-black text-slate-900">₹{stats.ltv || 0}</h3>
                   </div>
                   <p className="text-[9px] text-slate-400 font-medium mt-1">Estimated LTV per registered customer</p>
                 </div>
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">User Retention Rate</span>
                   <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-teal-650">82.4%</h3>
-                    <span className="text-xs font-bold text-emerald-600">▲ 2.8%</span>
+                    <h3 className="text-2xl font-black text-teal-650">{stats.retentionRate || 0}%</h3>
                   </div>
                   <p className="text-[9px] text-slate-400 font-medium mt-1">Average cohort retention (3-month window)</p>
                 </div>
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Monthly Churn Rate</span>
                   <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-slate-900">3.2%</h3>
-                    <span className="text-xs font-bold text-emerald-600">▼ 0.5%</span>
+                    <h3 className="text-2xl font-black text-slate-900">{stats.churnRate || 0}%</h3>
                   </div>
                   <p className="text-[9px] text-slate-400 font-medium mt-1">Average user cancellations rate</p>
                 </div>
               </div>
 
-              {/* Charts Mockup */}
+              {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                 {/* Cohort Retention Table */}
@@ -1200,48 +1621,48 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
-                          <td className="p-3 font-bold text-slate-800 text-center">Jan 2026</td>
-                          <td className="p-3 font-semibold text-slate-500 text-center">150 users</td>
-                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
-                          <td className="p-3 text-center bg-teal-500/80 text-white font-semibold rounded-xs">92%</td>
-                          <td className="p-3 text-center bg-teal-500/60 text-slate-800 font-medium rounded-xs">85%</td>
-                          <td className="p-3 text-center bg-teal-500/40 text-slate-800 rounded-xs">78%</td>
-                          <td className="p-3 text-center bg-teal-500/20 text-slate-800 rounded-xs">74%</td>
-                        </tr>
-                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
-                          <td className="p-3 font-bold text-slate-800 text-center">Feb 2026</td>
-                          <td className="p-3 font-semibold text-slate-500 text-center">180 users</td>
-                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
-                          <td className="p-3 text-center bg-teal-500/80 text-white font-semibold rounded-xs">90%</td>
-                          <td className="p-3 text-center bg-teal-500/60 text-slate-800 font-medium rounded-xs">82%</td>
-                          <td className="p-3 text-center bg-teal-500/30 text-slate-800 rounded-xs">75%</td>
-                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
-                        </tr>
-                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
-                          <td className="p-3 font-bold text-slate-800 text-center">Mar 2026</td>
-                          <td className="p-3 font-semibold text-slate-500 text-center">210 users</td>
-                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
-                          <td className="p-3 text-center bg-teal-500/80 text-white font-semibold rounded-xs">94%</td>
-                          <td className="p-3 text-center bg-teal-500/50 text-slate-800 font-medium rounded-xs">84%</td>
-                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
-                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
-                        </tr>
-                        <tr className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
-                          <td className="p-3 font-bold text-slate-800 text-center">Apr 2026</td>
-                          <td className="p-3 font-semibold text-slate-500 text-center">240 users</td>
-                          <td className="p-3 text-center bg-teal-650 text-white font-bold rounded-xs">100%</td>
-                          <td className="p-3 text-center bg-teal-500/70 text-slate-800 font-semibold rounded-xs">88%</td>
-                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
-                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
-                          <td className="p-3 text-center text-slate-400 font-semibold bg-slate-50/40 rounded-xs">—</td>
-                        </tr>
+                        {stats.cohorts && stats.cohorts.length > 0 ? (
+                          stats.cohorts.map((c, idx) => {
+                            const getRetentionColorClass = (val) => {
+                              if (val === null || val === undefined) return "bg-slate-50/40 text-slate-400 font-semibold";
+                              if (val >= 95) return "bg-teal-650 text-white font-bold";
+                              if (val >= 85) return "bg-teal-550 text-white font-semibold";
+                              if (val >= 75) return "bg-teal-500/60 text-slate-800 font-medium";
+                              if (val >= 60) return "bg-teal-500/40 text-slate-800";
+                              if (val >= 40) return "bg-teal-500/20 text-slate-800";
+                              return "bg-teal-500/05 text-slate-650";
+                            };
+                            return (
+                              <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
+                                <td className="p-3 font-bold text-slate-800 text-center">{c.month}</td>
+                                <td className="p-3 font-semibold text-slate-500 text-center">{c.size}</td>
+                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m0)}`}>{c.m0}%</td>
+                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m1)}`}>
+                                  {c.m1 !== null ? `${c.m1}%` : "—"}
+                                </td>
+                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m2)}`}>
+                                  {c.m2 !== null ? `${c.m2}%` : "—"}
+                                </td>
+                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m3)}`}>
+                                  {c.m3 !== null ? `${c.m3}%` : "—"}
+                                </td>
+                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m4)}`}>
+                                  {c.m4 !== null ? `${c.m4}%` : "—"}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="text-center p-8 text-slate-400 font-semibold">No cohort retention data available.</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                {/* Monthly Revenue Growth Chart */}
+                {/* Monthly Revenue Trend Chart */}
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
                   <div>
                     <h3 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-wider">Monthly Revenue Trend</h3>
@@ -1249,36 +1670,31 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="h-44 flex items-end justify-between px-4 mt-6">
-                    <div className="flex flex-col items-center gap-2 w-10">
-                      <span className="text-[9px] font-bold text-slate-500">₹8.0k</span>
-                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '50px' }} />
-                      <span className="text-[10px] font-extrabold text-slate-400">Jan</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 w-10">
-                      <span className="text-[9px] font-bold text-slate-500">₹12.5k</span>
-                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '78px' }} />
-                      <span className="text-[10px] font-extrabold text-slate-400">Feb</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 w-10">
-                      <span className="text-[9px] font-bold text-slate-500">₹15.0k</span>
-                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '94px' }} />
-                      <span className="text-[10px] font-extrabold text-slate-400">Mar</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 w-10">
-                      <span className="text-[9px] font-bold text-slate-500">₹18.5k</span>
-                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '115px' }} />
-                      <span className="text-[10px] font-extrabold text-slate-400">Apr</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 w-10">
-                      <span className="text-[9px] font-bold text-slate-500">₹22.1k</span>
-                      <div className="w-6 bg-slate-200/70 hover:bg-teal-500/40 rounded-t-lg transition-all" style={{ height: '138px' }} />
-                      <span className="text-[10px] font-extrabold text-slate-400">May</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 w-10">
-                      <span className="text-[9px] font-bold text-teal-650">₹28.5k</span>
-                      <div className="w-6 bg-gradient-to-t from-teal-550 to-emerald-400 rounded-t-lg shadow-sm transition-all" style={{ height: '178px' }} />
-                      <span className="text-[10px] font-extrabold text-slate-800">Jun</span>
-                    </div>
+                    {stats.revenueTrend && stats.revenueTrend.length > 0 ? (
+                      (() => {
+                        const maxVal = Math.max(...stats.revenueTrend.map(r => r.amount), 1);
+                        return stats.revenueTrend.map((r, idx) => {
+                          const percentHeight = Math.max(10, Math.round((r.amount / maxVal) * 140));
+                          const isCurrent = idx === stats.revenueTrend.length - 1;
+                          return (
+                            <div key={idx} className="flex flex-col items-center gap-2 w-10">
+                              <span className={`text-[9px] font-bold ${isCurrent ? "text-teal-650" : "text-slate-500"}`}>₹{r.amount}k</span>
+                              <div 
+                                className={`w-6 rounded-t-lg transition-all ${
+                                  isCurrent 
+                                    ? "bg-gradient-to-t from-teal-550 to-emerald-400 shadow-sm" 
+                                    : "bg-slate-200/70 hover:bg-teal-500/40"
+                                }`} 
+                                style={{ height: `${percentHeight}px` }} 
+                              />
+                              <span className={`text-[10px] font-extrabold ${isCurrent ? "text-slate-800" : "text-slate-400"}`}>{r.month}</span>
+                            </div>
+                          );
+                        });
+                      })()
+                    ) : (
+                      <div className="w-full text-center text-slate-400 font-semibold text-xs py-10">No revenue data available.</div>
+                    )}
                   </div>
                 </div>
 
@@ -1661,7 +2077,7 @@ export default function AdminDashboard() {
                               {o.deliveryAddress || "—"}
                             </td>
                             <td className="p-4">
-                              <div className="flex gap-1.5 items-center">
+                              <div className="flex gap-1.5 items-center flex-wrap">
                                 <button
                                   onClick={() => {
                                     setSelectedOrder(o);
@@ -1681,6 +2097,14 @@ export default function AdminDashboard() {
                                 >
                                   <Edit className="h-3 w-3" /> View & Edit
                                 </button>
+                                {/* QR CODE BUTTON */}
+                                <button
+                                  onClick={() => generateQR(o)}
+                                  className="px-2 py-1 bg-violet-50 hover:bg-violet-100 text-violet-700 text-[10px] font-bold border border-violet-200 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                  title="Generate Bundle QR Code"
+                                >
+                                  <QrCode className="h-3 w-3" /> QR
+                                </button>
                                 {o.status !== "ACTIVE" && (
                                   <button
                                     onClick={() => updateOrderStatus(o._id, "ACTIVE")}
@@ -1697,6 +2121,13 @@ export default function AdminDashboard() {
                                     Cancel
                                   </button>
                                 )}
+                                <button
+                                  onClick={() => deleteOrder(o._id)}
+                                  className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold border border-rose-200/50 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                  title="Delete Order"
+                                >
+                                  <Trash2 className="h-3 w-3" /> Delete
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -2323,6 +2754,7 @@ export default function AdminDashboard() {
                                   <button
                                     onClick={() => {
                                       setSelectedQuote(q);
+                                      setQuotePrice(q.priceQuote || 0);
                                       setQuoteReplySubject(`Re: ClosetRush Service Proposal for ${q.businessName}`);
                                       setQuoteReplyMessage(`Hi ${q.contactPerson},\n\nWe have generated a custom proposal for your business (${q.businessName}) consisting of ${q.propertiesCount} properties and ${q.unitsCount} units.\n\nSelections: ${q.bundleSelections}\nEstimated Total: ₹${q.estimatedTotal ? q.estimatedTotal.toLocaleString() : "0"}\n\nLet's connect to finalize the terms!\n\nBest regards,\nClosetRush B2B Sales Team`);
                                     }}
@@ -2333,12 +2765,14 @@ export default function AdminDashboard() {
                                   <select
                                     value={q.status}
                                     onChange={(e) => updateQuoteStatus(q._id, e.target.value)}
-                                    className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-2xs text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
+                                    className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-2xs text-slate-805 focus:outline-none focus:border-teal-500 cursor-pointer font-bold animate-pulse-slow"
                                   >
                                     <option value="PENDING">PENDING</option>
                                     <option value="NEGOTIATING">NEGOTIATING</option>
                                     <option value="QUOTE SENT">QUOTE SENT</option>
                                     <option value="ACCEPTED">ACCEPTED</option>
+                                    <option value="CONFIRMED">CONFIRMED (Paid)</option>
+                                    <option value="CANCELLED">CANCELLED (Rejected)</option>
                                   </select>
                                 </div>
                               </td>
@@ -2513,6 +2947,279 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* TAB: BRAND SETTINGS */}
+          {activeTab === "Brand Settings" && (
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Brand & Deposit Configurations</h1>
+                <p className="text-xs text-slate-500">Edit dynamic system parameters, client deposits, color palettes, and contact email settings</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Form configuration card */}
+                <form onSubmit={handleSaveSettings} className="lg:col-span-8 bg-white border border-slate-200/60 rounded-3xl p-8 shadow-sm space-y-6">
+                  <h3 className="font-extrabold text-slate-950 text-sm uppercase tracking-wider">System Settings Form</h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="text-2xs text-slate-450 font-bold uppercase block">Brand Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={settingsForm.brandName}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, brandName: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all font-semibold"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-2xs text-slate-450 font-bold uppercase block">Contact Support Email</label>
+                      <input
+                        type="email"
+                        required
+                        value={settingsForm.contactEmail}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, contactEmail: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all font-semibold"
+                      />
+                    </div>
+                  </div>
+
+
+                  <div className="space-y-1.5 border-t border-slate-100 pt-6">
+                    <label className="text-2xs text-slate-450 font-bold uppercase block">PWA Install Banner Text</label>
+                    <input
+                      type="text"
+                      value={settingsForm.installBannerText}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, installBannerText: e.target.value })}
+                      placeholder="Add to home screen for a better experience"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all font-semibold"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2.5 py-2">
+                    <input
+                      type="checkbox"
+                      id="installBannerActive"
+                      checked={settingsForm.installBannerActive}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, installBannerActive: e.target.checked })}
+                      className="rounded text-teal-600 focus:ring-teal-500 h-4.5 w-4.5 cursor-pointer"
+                    />
+                    <label htmlFor="installBannerActive" className="text-xs text-slate-600 font-bold select-none cursor-pointer">
+                      Enable PWA installation banner prompt on client browsers
+                    </label>
+                  </div>
+
+                  {/* Plan Payment Styles Section */}
+                  <div className="border-t border-slate-100 pt-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">Plan Payment Styles</h4>
+                        <p className="text-[10px] text-slate-400 font-medium">Configure base deposit amounts, payment models, descriptions, and commission rates</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddPaymentStyle}
+                        className="py-1.5 px-3 bg-teal-50 text-teal-750 hover:bg-teal-100 rounded-xl font-bold text-2xs uppercase flex items-center gap-1 transition-all cursor-pointer border border-teal-200/50"
+                      >
+                        <Plus className="h-3 w-3" /> Add Style
+                      </button>
+                    </div>
+
+                    {/* Base Deposit Amounts */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-900 rounded-2xl">
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-slate-400 font-bold uppercase block">Single Bed Base Deposit (₹)</label>
+                        <input
+                          type="number"
+                          value={settingsForm.singleBedDeposit}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, singleBedDeposit: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 text-sm text-white font-black focus:outline-none focus:border-teal-500 transition-all"
+                        />
+                        <p className="text-[9px] text-slate-500 font-medium">Deposit charged for Single bed sizes when multiplier is 1x</p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-slate-400 font-bold uppercase block">Double Bed Base Deposit (₹)</label>
+                        <input
+                          type="number"
+                          value={settingsForm.doubleBedDeposit}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, doubleBedDeposit: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 text-sm text-white font-black focus:outline-none focus:border-teal-500 transition-all"
+                        />
+                        <p className="text-[9px] text-slate-500 font-medium">Deposit charged for Double/Queen/King bed sizes when multiplier is 1x</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(settingsForm.paymentStyles || [
+                        { id: "Monthly", name: "Standard Monthly", description: "Requires refundable security deposit of ₹{deposit}", depositMultiplier: 1 },
+                        { id: "Advance", name: "Advance Plan", description: "Pay full subscription upfront. Zero security deposit required.", depositMultiplier: 0 }
+                      ]).map((style) => {
+                        const isEditing = editingStyleId === style.id;
+                        return (
+                          <div key={style.id} className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl transition-all relative">
+                            {isEditing ? (
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] text-slate-405 font-bold uppercase block">Style ID (Unique)</label>
+                                    <input
+                                      type="text"
+                                      value={editStyleForm.id}
+                                      onChange={(e) => setEditStyleForm({ ...editStyleForm, id: e.target.value })}
+                                      placeholder="e.g. Monthly"
+                                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-[11px] text-slate-800 font-bold focus:outline-none focus:border-teal-500"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] text-slate-405 font-bold uppercase block">Display Name</label>
+                                    <input
+                                      type="text"
+                                      value={editStyleForm.name}
+                                      onChange={(e) => setEditStyleForm({ ...editStyleForm, name: e.target.value })}
+                                      placeholder="e.g. Standard Monthly"
+                                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-[11px] text-slate-800 font-bold focus:outline-none focus:border-teal-500"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] text-slate-405 font-bold uppercase block">Deposit Multiplier</label>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      value={editStyleForm.depositMultiplier}
+                                      onChange={(e) => setEditStyleForm({ ...editStyleForm, depositMultiplier: parseFloat(e.target.value) || 0 })}
+                                      placeholder="1 for 100%, 0 for zero deposit"
+                                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-[11px] text-slate-800 font-bold focus:outline-none focus:border-teal-500"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] text-slate-405 font-bold uppercase block">Commission Rate (%)</label>
+                                    <input
+                                      type="number"
+                                      step="1"
+                                      min="0"
+                                      max="100"
+                                      value={editStyleForm.commissionRate ?? 0}
+                                      onChange={(e) => setEditStyleForm({ ...editStyleForm, commissionRate: parseFloat(e.target.value) || 0 })}
+                                      placeholder="e.g. 10"
+                                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-[11px] text-slate-800 font-bold focus:outline-none focus:border-teal-500"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[9px] text-slate-455 font-bold uppercase block">Description</label>
+                                  <input
+                                    type="text"
+                                    value={editStyleForm.description}
+                                    onChange={(e) => setEditStyleForm({ ...editStyleForm, description: e.target.value })}
+                                    placeholder="Use {deposit} placeholder for dynamic deposit display"
+                                    className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-[11px] text-slate-800 font-semibold focus:outline-none focus:border-teal-500"
+                                  />
+                                  <p className="text-[9px] text-slate-400 font-medium">Tip: Use <code>{"{deposit}"}</code> inside the text. It will dynamically calculate and show the deposit value (e.g. ₹800).</p>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2 border-t border-slate-200/50">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCancelStyleEdit(style.id)}
+                                    className="py-1.5 px-3 text-slate-500 hover:bg-slate-200 rounded-xl text-3xs uppercase font-bold cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveStyleEdit(style.id)}
+                                    className="py-1.5 px-3 bg-teal-650 hover:bg-teal-700 text-white rounded-xl text-3xs uppercase font-bold cursor-pointer"
+                                  >
+                                    Done
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-extrabold text-slate-800 text-[11px] uppercase tracking-wide">{style.name}</span>
+                                    <span className="text-[9px] bg-slate-200 text-slate-600 font-bold px-1.5 py-0.5 rounded-md">ID: {style.id}</span>
+                                    {style.depositMultiplier === 0 ? (
+                                      <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-250 font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                                        Zero Deposit
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-250 font-bold px-1.5 py-0.5 rounded-md">
+                                        {style.depositMultiplier}x Deposit
+                                      </span>
+                                    )}
+                                    <span className="text-[9px] bg-purple-50 text-purple-700 border border-purple-200 font-bold px-1.5 py-0.5 rounded-md">
+                                      {style.commissionRate ?? 0}% Commission
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-550 font-semibold leading-relaxed">
+                                    {(() => {
+                                      let previewDesc = style.description || "";
+                                      const doubleDepAmt = settingsForm.doubleBedDeposit * (style.depositMultiplier !== undefined ? style.depositMultiplier : 1);
+                                      const singleDepAmt = settingsForm.singleBedDeposit * (style.depositMultiplier !== undefined ? style.depositMultiplier : 1);
+                                      const replacementText = `${doubleDepAmt} (Double) / ₹${singleDepAmt} (Single)`;
+                                      return previewDesc.includes("₹{deposit}")
+                                        ? previewDesc.replace("₹{deposit}", `₹${replacementText}`)
+                                        : previewDesc.replace("{deposit}", `₹${replacementText}`);
+                                    })()}
+                                  </p>
+                                </div>
+
+                                <div className="flex gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditStyle(style)}
+                                    className="p-1 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-805 bg-white cursor-pointer"
+                                    title="Edit payment style"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeletePaymentStyle(style.id)}
+                                    className="p-1 rounded-lg border border-slate-200 text-red-500 hover:text-red-700 bg-white cursor-pointer"
+                                    title="Delete payment style"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 flex justify-end">
+                    <button
+                      type="submit"
+                      className="py-3 px-8 bg-teal-650 hover:bg-teal-700 text-white font-extrabold text-xs uppercase tracking-wider transition-all rounded-2xl shadow-md cursor-pointer"
+                    >
+                      Save Brand Configurations
+                    </button>
+                  </div>
+                </form>
+
+                {/* Right Column Help Notice card */}
+                <div className="lg:col-span-4 space-y-6">
+                  <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-sm border border-slate-800 space-y-3 font-sans">
+                    <h4 className="font-extrabold text-xs uppercase tracking-widest text-linen-gold">Subscription Deposit Logic</h4>
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-semibold">
+                      Security deposits protect your linen inventory. These settings dynamically control:
+                    </p>
+                    <ul className="text-[10px] text-slate-300 space-y-2 list-disc list-inside leading-relaxed font-medium">
+                      <li>B2C pricing breakdowns shown in checkout calculations.</li>
+                      <li>Standard Monthly checkout upfront deposit totals.</li>
+                      <li>Advance plan payment style bypasses deposits completely.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB: COUPONS */}
           {activeTab === "Coupons" && (
             <div className="space-y-8 animate-fadeIn">
@@ -2630,7 +3337,7 @@ export default function AdminDashboard() {
                 </div>
                 <button
                   onClick={() => {
-                    setPlanForm({ id: "", bedType: "single", name: "", duration: "", price: "", originalPrice: "", discount: "", features: "", cta: "Choose Plan", popular: false, badge: "" });
+                    setPlanForm({ id: "", bedType: categoriesList[0]?.name || "single", size: "", name: "", duration: "", price: "", originalPrice: "", discount: "", features: "", cta: "Choose Plan", popular: false, badge: "", securityDeposit: 0 });
                     setShowPlanModal(true);
                   }}
                   className="py-2.5 px-5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/10 flex items-center gap-1.5 transition-all cursor-pointer"
@@ -2640,132 +3347,440 @@ export default function AdminDashboard() {
               </div>
 
               {/* Plans Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Single Bed Plans Column */}
-                <div className="bg-white border border-slate-200/60 rounded-3xl p-6.5 shadow-sm space-y-6">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-teal-500"></span>
-                      Single Bed Plans
-                    </h3>
-                    <span className="text-3xs font-black bg-teal-50 text-teal-600 px-2 py-0.5 rounded uppercase">
-                      {plansList.filter(p => p.bedType === "single").length} Plans
-                    </span>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {(() => {
+                  const allUniquePlanTypes = Array.from(new Set([
+                    ...categoriesList.map(c => c.name),
+                    ...plansList.map(p => p.bedType)
+                  ])).filter(Boolean);
 
-                  <div className="space-y-4">
-                    {plansList.filter(p => p.bedType === "single").map((plan) => (
-                      <div key={plan._id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl relative hover:border-slate-250 transition-colors flex justify-between items-start">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-800 text-sm">{plan.name}</span>
-                            <span className="text-[10px] bg-slate-200 text-slate-600 font-extrabold px-1.5 py-0.5 rounded">{plan.duration}</span>
-                            {plan.popular && (
-                              <span className="text-[9px] bg-teal-100 text-teal-700 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                {plan.badge || "Popular"}
-                              </span>
-                            )}
+                  if (allUniquePlanTypes.length === 0) {
+                    return (
+                      <div className="col-span-full text-center py-20 text-slate-405 text-xs font-bold bg-white border border-slate-200/60 rounded-3xl">
+                        No active categories or plans found. Click "Add New Plan" to configure plans.
+                      </div>
+                    );
+                  }
+
+                  return allUniquePlanTypes.map((type) => {
+                    const filteredPlans = plansList.filter(p => p.bedType === type);
+                    return (
+                      <div key={type} className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-sm space-y-6 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                            <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                              <span className="h-2.5 w-2.5 rounded-full bg-teal-500"></span>
+                              {type} Plans
+                            </h3>
+                            <span className="text-3xs font-black bg-slate-100 text-slate-650 px-2 py-0.5 rounded uppercase">
+                              {filteredPlans.length} Plans
+                            </span>
                           </div>
-                          <div className="flex items-baseline gap-1.5 text-xs text-slate-500">
-                            <span className="text-slate-800 font-black text-sm">₹{plan.price}</span>
-                            {plan.originalPrice && (
-                              <span className="line-through text-slate-400">₹{plan.originalPrice}</span>
+
+                          <div className="space-y-4">
+                            {filteredPlans.map((plan) => (
+                              <div key={plan._id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl relative hover:border-slate-250 transition-colors flex justify-between items-start">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-800 text-sm">{plan.tier} Tier</span>
+                                    <span className="text-[10px] bg-slate-200 text-slate-600 font-extrabold px-1.5 py-0.5 rounded capitalize">{plan.bedType} Bed</span>
+                                  </div>
+                                  <div className="flex items-baseline gap-2 text-xs text-slate-500">
+                                    <span className="text-slate-800 font-black text-sm">₹{plan.monthlyRate}/mo Rent</span>
+                                    <span className="text-teal-600 font-extrabold text-[10px]">₹{plan.depositAmount} Deposit</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-2 shrink-0">
+                                  <button
+                                    onClick={() => handleEditPlan(plan)}
+                                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-850 shadow-xs cursor-pointer transition-colors"
+                                    title="Edit Plan"
+                                  >
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeletePlan(plan._id)}
+                                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-red-500 hover:text-red-700 shadow-xs cursor-pointer transition-colors"
+                                    title="Delete Plan"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            {filteredPlans.length === 0 && (
+                              <div className="text-center py-12 text-slate-400 text-xs">No {type} plans configured yet. Click "Add New Plan" to start.</div>
                             )}
-                            {plan.discount && (
-                              <span className="text-teal-600 font-extrabold text-3xs">{plan.discount}</span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-400 leading-relaxed font-semibold">
-                            <strong>Features:</strong> {plan.features && plan.features.length > 0 ? plan.features.join(", ") : "None"}
                           </div>
                         </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
 
-                        <div className="flex gap-2 shrink-0">
+          {activeTab === "Warehouse Manager" && (
+            <div className="space-y-8 animate-fadeIn text-slate-800">
+              {/* Header */}
+              <div>
+                <h1 className="text-2xl font-serif font-bold text-charcoal-ink mb-1">Warehouse WMS Manager</h1>
+                <p className="text-xs text-charcoal-ink/50 font-semibold uppercase tracking-wider">Linen packaging, SKU updates, QR logistics routing & thermodynamic laundry stages</p>
+              </div>
+
+              {/* Stats Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Bundles</span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">{bundlesList.length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Docks Dispatch Pending</span>
+                  <h3 className="text-xl font-black text-amber-600 mt-1">{bundlesList.filter(b => b.status === 'CREATED' || b.status === 'READY_TO_DISPATCH').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ongoing Rented Load</span>
+                  <h3 className="text-xl font-black text-teal-600 mt-1">{bundlesList.filter(b => b.status === 'DISPATCHED' || b.status === 'DELIVERED').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Laundry Wash Load</span>
+                  <h3 className="text-xl font-black text-rose-600 mt-1">{bundlesList.filter(b => b.status === 'SENT_TO_LAUNDRY' || b.status === 'IN_LAUNDRY').length}</h3>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* Left side: QR code logistics scanning & Laundry controller */}
+                <div className="lg:col-span-4 space-y-6">
+                  {/* Scanner terminal simulation */}
+                  <div className="bg-slate-900 text-white rounded-3xl p-6.5 shadow-md border border-slate-850">
+                    <div className="flex items-center gap-2 mb-4">
+                      <QrCode className="h-5 w-5 text-linen-gold animate-pulse" />
+                      <h3 className="font-extrabold text-xs uppercase tracking-wider text-white">Logistics Barcode Terminal</h3>
+                    </div>
+                    <p className="text-[10px] text-slate-440 font-medium leading-relaxed mb-4">
+                      Simulate a barcode/QR gun scanning physically printed bundle labels at warehouse docks.
+                    </p>
+                    
+                    <form onSubmit={handleScanSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Select Scan Event Action</label>
+                        <div className="grid grid-cols-2 gap-2 bg-slate-800 p-1 rounded-xl">
                           <button
-                            onClick={() => handleEditPlan(plan)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-850 shadow-xs cursor-pointer transition-colors"
-                            title="Edit Plan"
+                            type="button"
+                            onClick={() => setScannerAction("scan_dispatch")}
+                            className={`py-2 text-[9px] font-extrabold uppercase rounded-lg transition-colors cursor-pointer ${
+                              scannerAction === "scan_dispatch" ? "bg-teal-650 text-white" : "text-slate-400 hover:text-slate-200"
+                            }`}
                           >
-                            <Edit className="h-3.5 w-3.5" />
+                            Scan Out (Dispatch)
                           </button>
                           <button
-                            onClick={() => handleDeletePlan(plan._id)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-red-500 hover:text-red-700 shadow-xs cursor-pointer transition-colors"
-                            title="Delete Plan"
+                            type="button"
+                            onClick={() => setScannerAction("scan_return")}
+                            className={`py-2 text-[9px] font-extrabold uppercase rounded-lg transition-colors cursor-pointer ${
+                              scannerAction === "scan_return" ? "bg-rose-650 text-white" : "text-slate-400 hover:text-slate-200"
+                            }`}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            Scan In (Return/Wash)
                           </button>
                         </div>
                       </div>
-                    ))}
-                    {plansList.filter(p => p.bedType === "single").length === 0 && (
-                      <div className="text-center py-12 text-slate-400 text-xs">No Single Bed plans configured yet. Click "Add New Plan" to start.</div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Double Bed Plans Column */}
-                <div className="bg-white border border-slate-200/60 rounded-3xl p-6.5 shadow-sm space-y-6">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-teal-500"></span>
-                      Double Bed Plans
-                    </h3>
-                    <span className="text-3xs font-black bg-teal-50 text-teal-600 px-2 py-0.5 rounded uppercase">
-                      {plansList.filter(p => p.bedType === "double").length} Plans
-                    </span>
-                  </div>
-
-                  <div className="space-y-4">
-                    {plansList.filter(p => p.bedType === "double").map((plan) => (
-                      <div key={plan._id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl relative hover:border-slate-250 transition-colors flex justify-between items-start">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-800 text-sm">{plan.name}</span>
-                            <span className="text-[10px] bg-slate-200 text-slate-600 font-extrabold px-1.5 py-0.5 rounded">{plan.duration}</span>
-                            {plan.popular && (
-                              <span className="text-[9px] bg-teal-100 text-teal-700 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                {plan.badge || "Popular"}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-baseline gap-1.5 text-xs text-slate-500">
-                            <span className="text-slate-800 font-black text-sm">₹{plan.price}</span>
-                            {plan.originalPrice && (
-                              <span className="line-through text-slate-400">₹{plan.originalPrice}</span>
-                            )}
-                            {plan.discount && (
-                              <span className="text-teal-600 font-extrabold text-3xs">{plan.discount}</span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-400 leading-relaxed font-semibold">
-                            <strong>Features:</strong> {plan.features && plan.features.length > 0 ? plan.features.join(", ") : "None"}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 shrink-0">
-                          <button
-                            onClick={() => handleEditPlan(plan)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-850 shadow-xs cursor-pointer transition-colors"
-                            title="Edit Plan"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePlan(plan._id)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-red-500 hover:text-red-700 shadow-xs cursor-pointer transition-colors"
-                            title="Delete Plan"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                      <div className="space-y-1">
+                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest">Select Bundle ID</label>
+                        <select
+                          value={scanInput}
+                          onChange={(e) => setScanInput(e.target.value)}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-linen-gold cursor-pointer"
+                        >
+                          <option value="">— Select Target Bundle —</option>
+                          {bundlesList.map(b => (
+                            <option key={b.bundleId} value={b.bundleId}>{b.bundleId} ({b.bedType} - {b.status})</option>
+                          ))}
+                        </select>
                       </div>
-                    ))}
-                    {plansList.filter(p => p.bedType === "double").length === 0 && (
-                      <div className="text-center py-12 text-slate-400 text-xs">No Double Bed plans configured yet. Click "Add New Plan" to start.</div>
-                    )}
+
+                      <button
+                        type="submit"
+                        disabled={!scanInput}
+                        className={`w-full py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                          scannerAction === "scan_dispatch"
+                            ? "bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50"
+                            : "bg-rose-650 hover:bg-rose-700 text-white disabled:opacity-50"
+                        }`}
+                      >
+                        {scannerAction === "scan_dispatch" ? "Simulate Dispatch Scan" : "Simulate Return Scan"}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Laundry Disinfection Monitor */}
+                  <div className="bg-white border border-slate-200/60 rounded-3xl p-6.5 shadow-sm space-y-6">
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm">Thermodynamic Laundry Disinfection</h3>
+                      <p className="text-2xs text-slate-450 mt-1">Linen returned from customers undergoes 60°C+ thermodynamic heat sanitation cycles.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {bundlesList.filter(b => b.status === "SENT_TO_LAUNDRY" || b.status === "IN_LAUNDRY").map(b => {
+                        const activeItemStage = b.items[0]?.laundryStatus || "PENDING_WASH";
+                        return (
+                          <div key={b.bundleId} className="border border-slate-100 rounded-2xl p-4 bg-slate-50 space-y-3.5">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-slate-850 text-2xs uppercase">{b.bundleId}</span>
+                              <span className="text-[9px] bg-amber-50 text-amber-700 font-extrabold uppercase px-1.5 py-0.5 rounded border border-amber-200">
+                                {activeItemStage.replace("_", " ")}
+                              </span>
+                            </div>
+
+                            {/* Stepper Pipeline */}
+                            <div className="flex justify-between items-center gap-1">
+                              {[
+                                { stage: "PENDING_WASH", name: "Wash Pnd" },
+                                { stage: "WASHING", name: "60°C Wash" },
+                                { stage: "SANITIZING", name: "UV Sanit." },
+                                { stage: "STEAM_PRESSING", name: "Pressing" },
+                                { stage: "VACUUM_PACKING", name: "Seal Pack" },
+                                { stage: "CLEAN_STOCK", name: "Completed" }
+                              ].map((step, idx, arr) => {
+                                const isCurrent = activeItemStage === step.stage;
+                                const isPassed = arr.findIndex(x => x.stage === activeItemStage) > idx;
+                                return (
+                                  <div key={step.stage} className="flex-1 flex flex-col items-center relative">
+                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black z-10 ${
+                                      isCurrent ? "bg-amber-500 text-white animate-pulse" :
+                                      isPassed ? "bg-teal-600 text-white" : "bg-slate-200 text-slate-400"
+                                    }`}>
+                                      {isPassed ? "✓" : idx + 1}
+                                    </div>
+                                    <span className="text-[7px] text-slate-450 font-bold uppercase tracking-tighter mt-1 text-center truncate w-full">{step.name}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Action to advance stage */}
+                            <div className="pt-2">
+                              {activeItemStage !== "CLEAN_STOCK" && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const stages = ["PENDING_WASH", "WASHING", "SANITIZING", "STEAM_PRESSING", "VACUUM_PACKING", "CLEAN_STOCK"];
+                                    const currentIdx = stages.indexOf(activeItemStage);
+                                    const nextStage = stages[currentIdx + 1] || "CLEAN_STOCK";
+                                    handleLaundryAdvance(b.bundleId, nextStage);
+                                  }}
+                                  className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white text-3xs font-extrabold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+                                >
+                                  Advance to Next Laundry Stage
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {bundlesList.filter(b => b.status === "SENT_TO_LAUNDRY" || b.status === "IN_LAUNDRY").length === 0 && (
+                        <p className="text-2xs text-slate-400 italic">No linen bundles currently in laundry sanitation pipeline.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                {/* Right side: Orders listing, bundle configuration and SKU updates */}
+                <div className="lg:col-span-8 space-y-6">
+                  
+                  {/* Bundle Generator Panel */}
+                  <div className="bg-white border border-slate-200/60 rounded-3xl p-6.5 shadow-sm space-y-6">
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm">WMS Bundle Generator & SKU Registry</h3>
+                      <p className="text-2xs text-slate-450 mt-1">Generate physical tracking bundles for subscription orders and configure SKU bar-codes.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {(() => {
+                        return ordersList.map(order => {
+                          const matchingBundle = bundlesList.find(b => b.orderId === order._id.toString());
+                          return (
+                            <div key={order._id} className="border border-slate-150 hover:border-slate-250 p-4.5 rounded-2xl bg-white transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-black text-slate-900 text-2xs uppercase">{order.bundleOrderId}</span>
+                                  <span className="text-[10px] bg-slate-100 text-slate-600 font-extrabold px-1.5 py-0.5 rounded">{order.bundleName}</span>
+                                  <span className="text-[10px] font-bold text-slate-500">{order.userName}</span>
+                                  {order.status === "CANCELLED" && (
+                                    <span className="text-[8px] bg-rose-50 text-rose-700 font-black uppercase px-2 py-0.5 rounded">Cancelled</span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-semibold leading-relaxed font-sans">
+                                  Color: <span className="text-slate-800 font-extrabold uppercase">{order.deliveryAddress?.split("|")[1] || "Classic White"}</span> | Duration: {order.duration}
+                                </div>
+                                
+                                {matchingBundle && (
+                                  <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2 max-w-lg">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-3xs font-extrabold text-slate-500 uppercase">Physical WMS Bundle: <strong className="text-slate-800">{matchingBundle.bundleId}</strong></span>
+                                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
+                                        matchingBundle.status === 'CREATED' ? 'bg-slate-50 text-slate-650 border-slate-200' :
+                                        matchingBundle.status === 'READY_TO_DISPATCH' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                        matchingBundle.status === 'DISPATCHED' ? 'bg-teal-50 text-teal-705 border-teal-200' :
+                                        matchingBundle.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-707 border-emerald-200' :
+                                        matchingBundle.status === 'SENT_TO_LAUNDRY' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        matchingBundle.status === 'IN_LAUNDRY' ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse' :
+                                        'bg-slate-100 text-slate-450'
+                                      }`}>{matchingBundle.status}</span>
+                                    </div>
+                                    
+                                    {/* SKU listing */}
+                                    <div className="space-y-1.5 pt-1.5 border-t border-slate-200/50">
+                                      {matchingBundle.items.map((item, itemIdx) => (
+                                        <div key={itemIdx} className="flex justify-between items-center text-[10px]">
+                                          <span className="font-bold text-slate-600">{item.itemType}</span>
+                                          {activeBundleIdForSkus === matchingBundle.bundleId ? (
+                                            <input
+                                              type="text"
+                                              value={editingSkus[itemIdx]?.sku || ""}
+                                              onChange={(e) => {
+                                                const updated = [...editingSkus];
+                                                updated[itemIdx] = { ...updated[itemIdx], sku: e.target.value };
+                                                setEditingSkus(updated);
+                                              }}
+                                              className="bg-white border border-slate-200 rounded py-0.5 px-1.5 font-bold font-mono text-[9px] w-48 focus:outline-none focus:border-teal-500"
+                                            />
+                                          ) : (
+                                            <span className="font-mono font-bold text-slate-800">{item.sku}</span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {/* Edit SKUs action triggers */}
+                                    <div className="flex gap-2 pt-2 justify-end">
+                                      {activeBundleIdForSkus === matchingBundle.bundleId ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => setActiveBundleIdForSkus("")}
+                                            className="px-2 py-1 bg-transparent hover:bg-slate-100 text-slate-500 text-3xs font-extrabold uppercase rounded-lg transition-colors cursor-pointer"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleUpdateSkus(matchingBundle.bundleId, editingSkus)}
+                                            className="px-2.5 py-1 bg-teal-650 hover:bg-teal-700 text-white text-3xs font-extrabold uppercase rounded-lg transition-colors cursor-pointer"
+                                          >
+                                            Save SKUs
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          {matchingBundle.status === "CREATED" && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setActiveBundleIdForSkus(matchingBundle.bundleId);
+                                                setEditingSkus(matchingBundle.items);
+                                              }}
+                                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white text-3xs font-extrabold uppercase rounded-lg transition-colors cursor-pointer"
+                                            >
+                                              Assign SKU Barcodes
+                                            </button>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex gap-2 shrink-0">
+                                {!matchingBundle ? (
+                                  order.status !== "CANCELLED" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCreateBundle(order._id.toString())}
+                                      className="py-2.5 px-4 bg-teal-600 hover:bg-teal-700 text-white text-3xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                    >
+                                      Generate WMS Bundle
+                                    </button>
+                                  )
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // Open print QR modal
+                                        setQrOrder(order);
+                                        setQrDataUrl(`CLOSE-WMS-${matchingBundle.bundleId}`);
+                                        setQrLoading(false);
+                                      }}
+                                      className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-650 rounded-xl transition-all cursor-pointer"
+                                      title="Print Logistics QR label"
+                                    >
+                                      <QrCode className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteBundle(matchingBundle.bundleId)}
+                                      className="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition-all cursor-pointer"
+                                      title="Cancel Bundle / Release Stock"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Cancelled orders and return release monitor */}
+                  <div className="bg-white border border-slate-200/60 rounded-3xl p-6.5 shadow-sm space-y-6">
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm">Cancellations & Return Monitoring</h3>
+                      <p className="text-2xs text-slate-450 mt-1">Review orders that have been cancelled to ensure inventory is correctly returned to stock.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {ordersList.filter(o => o.status === "CANCELLED").map(order => {
+                        const matchingBundle = bundlesList.find(b => b.orderId === order._id.toString());
+                        return (
+                          <div key={order._id} className="p-4 bg-rose-50/30 border border-rose-200/50 rounded-2xl flex justify-between items-center text-xs">
+                            <div className="space-y-1">
+                              <span className="font-black text-rose-800 text-2xs uppercase tracking-wider">{order.bundleOrderId}</span>
+                              <p className="text-[10px] text-slate-500 font-bold">Linen Set: {order.bundleName}</p>
+                              {matchingBundle ? (
+                                <p className="text-[10px] text-amber-700 font-bold">WMS Bundle ID: {matchingBundle.bundleId} ({matchingBundle.status})</p>
+                              ) : (
+                                <p className="text-[10px] text-slate-455 italic">No bundle generated</p>
+                              )}
+                            </div>
+
+                            {matchingBundle && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBundle(matchingBundle.bundleId)}
+                                className="py-2 px-3.5 bg-rose-650 hover:bg-rose-700 text-white text-3xs font-extrabold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                              >
+                                Release Bundle Stock
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {ordersList.filter(o => o.status === "CANCELLED").length === 0 && (
+                        <p className="text-2xs text-slate-400 italic">No cancelled orders found.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
@@ -2790,6 +3805,17 @@ export default function AdminDashboard() {
             <form onSubmit={handleSavePlan} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Tier</label>
+                  <select
+                    value={planForm.tier}
+                    onChange={(e) => setPlanForm({ ...planForm, tier: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white font-bold transition-all"
+                  >
+                    <option value="Normal">Normal</option>
+                    <option value="Premium">Premium</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
                   <label className="text-2xs text-slate-450 font-bold uppercase block">Bed Type</label>
                   <select
                     value={planForm.bedType}
@@ -2800,114 +3826,31 @@ export default function AdminDashboard() {
                     <option value="double">Double Bed</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-2xs text-slate-450 font-bold uppercase block">Plan Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={planForm.name}
-                    onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                    placeholder="e.g. Starter"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-2xs text-slate-450 font-bold uppercase block">Duration</label>
-                  <input
-                    type="text"
-                    required
-                    value={planForm.duration}
-                    onChange={(e) => setPlanForm({ ...planForm, duration: e.target.value })}
-                    placeholder="e.g. 3 Months"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-2xs text-slate-450 font-bold uppercase block">Price (₹)</label>
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Monthly Rate (₹)</label>
                   <input
                     type="number"
                     required
-                    value={planForm.price}
-                    onChange={(e) => setPlanForm({ ...planForm, price: e.target.value })}
-                    placeholder="e.g. 855"
+                    value={planForm.monthlyRate}
+                    onChange={(e) => setPlanForm({ ...planForm, monthlyRate: e.target.value })}
+                    placeholder="e.g. 300"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all font-semibold"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-2xs text-slate-450 font-bold uppercase block">Original Price (₹) (Opt)</label>
+                  <label className="text-2xs text-slate-450 font-bold uppercase block">Deposit Amount (₹)</label>
                   <input
                     type="number"
-                    value={planForm.originalPrice}
-                    onChange={(e) => setPlanForm({ ...planForm, originalPrice: e.target.value })}
-                    placeholder="e.g. 900"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-2xs text-slate-450 font-bold uppercase block">Discount Badge (Opt)</label>
-                  <input
-                    type="text"
-                    value={planForm.discount}
-                    onChange={(e) => setPlanForm({ ...planForm, discount: e.target.value })}
-                    placeholder="e.g. 5% off"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-2xs text-slate-450 font-bold uppercase block">Features (One per line)</label>
-                <textarea
-                  required
-                  rows="3"
-                  value={planForm.features}
-                  onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })}
-                  placeholder="4 Single Bedsheets&#10;4 Pillow Covers&#10;Free delivery & pickup"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all min-h-[70px] resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-2xs text-slate-450 font-bold uppercase block">Button CTA Text</label>
-                  <input
-                    type="text"
                     required
-                    value={planForm.cta}
-                    onChange={(e) => setPlanForm({ ...planForm, cta: e.target.value })}
-                    placeholder="e.g. Choose Growth"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                    value={planForm.depositAmount}
+                    onChange={(e) => setPlanForm({ ...planForm, depositAmount: e.target.value })}
+                    placeholder="e.g. 500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all font-bold"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-2xs text-slate-450 font-bold uppercase block">Popular Highlight Badge (Opt)</label>
-                  <input
-                    type="text"
-                    value={planForm.badge}
-                    onChange={(e) => setPlanForm({ ...planForm, badge: e.target.value })}
-                    placeholder="e.g. Best Value"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 py-2">
-                <input
-                  type="checkbox"
-                  id="planPopular"
-                  checked={planForm.popular}
-                  onChange={(e) => setPlanForm({ ...planForm, popular: e.target.checked })}
-                  className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4 cursor-pointer"
-                />
-                <label htmlFor="planPopular" className="text-xs text-slate-600 font-bold select-none cursor-pointer">
-                  Highlight this plan as Popular / Best Value
-                </label>
               </div>
 
               <div className="flex gap-4 pt-4 border-t border-slate-100">
@@ -3344,37 +4287,71 @@ export default function AdminDashboard() {
                 {selectedQuote.status}
               </span>
               <h2 className="text-xl font-black text-slate-900 mt-3">{selectedQuote.businessName}</h2>
-              <p className="text-2xs text-slate-400 mt-1">Requested on: {new Date(selectedQuote.receivedAt).toLocaleString()}</p>
+              <p className="text-2xs text-slate-400 mt-1">Requested on: {selectedQuote.receivedAt ? new Date(selectedQuote.receivedAt).toLocaleString() : ""}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-6">
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mb-15">Contact Details</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1.5">Contact Details</p>
                 <div className="space-y-1 text-xs">
                   <p><strong>Contact Person:</strong> {selectedQuote.contactPerson}</p>
+                  {selectedQuote.ownerName && <p><strong>Owner Name:</strong> {selectedQuote.ownerName}</p>}
+                  {selectedQuote.propertyName && <p><strong>Property Name:</strong> {selectedQuote.propertyName}</p>}
                   <p><strong>Email:</strong> {selectedQuote.email}</p>
                   <p><strong>Phone:</strong> {selectedQuote.phone}</p>
+                  {selectedQuote.gstNumber && <p><strong>GST Number:</strong> {selectedQuote.gstNumber}</p>}
                   <p><strong>Business Type:</strong> <span className="uppercase font-bold">{selectedQuote.businessType}</span></p>
                 </div>
               </div>
 
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mb-15">Request Specifications</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1.5">Request Specifications</p>
                 {selectedQuote.type === "connection" ? (
                   <div className="text-xs">
                     <p><strong>Message / Inquiry:</strong></p>
-                    <p className="text-slate-600 bg-white border border-slate-100 rounded-xl p-3 mt-1.5 leading-relaxed font-medium italic">
+                    <p className="text-slate-650 bg-white border border-slate-100 rounded-xl p-3 mt-1.5 leading-relaxed font-medium italic">
                       "{selectedQuote.message || "—"}"
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-1 text-xs">
-                    <p><strong>Properties Count:</strong> {selectedQuote.propertiesCount || 0}</p>
-                    <p><strong>Units Count:</strong> {selectedQuote.unitsCount || 0}</p>
+                  <div className="space-y-1.5 text-xs">
+                    {selectedQuote.propertyAddress && <p><strong>Property Address:</strong> {selectedQuote.propertyAddress}</p>}
+                    {selectedQuote.roomsCount !== undefined && <p><strong>Rooms Count:</strong> {selectedQuote.roomsCount}</p>}
+                    {selectedQuote.bedsCount !== undefined && <p><strong>Beds Count:</strong> {selectedQuote.bedsCount}</p>}
+                    {selectedQuote.bedType && <p><strong>Bed Type:</strong> {selectedQuote.bedType}</p>}
+                    {selectedQuote.bedsheetRequirements && selectedQuote.bedsheetRequirements.length > 0 && (
+                      <p><strong>Requirements:</strong> {selectedQuote.bedsheetRequirements.join(", ")}</p>
+                    )}
+                    {!selectedQuote.roomsCount && (
+                      <>
+                        <p><strong>Properties Count:</strong> {selectedQuote.propertiesCount || 0}</p>
+                        <p><strong>Units Count:</strong> {selectedQuote.unitsCount || 0}</p>
+                      </>
+                    )}
                     <p><strong>Selected Bundles:</strong> {selectedQuote.bundleSelections}</p>
-                    <p className="text-sm font-black text-teal-600 mt-1 bg-white border border-slate-100 p-2 rounded-xl text-center">
-                      Estimated Total: ₹{selectedQuote.estimatedTotal ? selectedQuote.estimatedTotal.toLocaleString() : "0"}
-                    </p>
+                    <div className="pt-2 border-t border-slate-200 mt-2 space-y-1">
+                      <p className="text-sm font-black text-teal-600 bg-white border border-slate-100 p-2 rounded-xl text-center">
+                        Estimated: ₹{selectedQuote.estimatedTotal ? selectedQuote.estimatedTotal.toLocaleString() : "0"}
+                      </p>
+                      {selectedQuote.priceQuote > 0 && (
+                        <p className="text-sm font-black text-linen-gold bg-charcoal-ink text-white p-2 rounded-xl text-center">
+                          Prepared Quote: ₹{selectedQuote.priceQuote.toLocaleString()}
+                        </p>
+                      )}
+                      {selectedQuote.signatureData && (
+                        <div className="pt-2.5 border-t border-slate-200 mt-2.5 text-center">
+                          <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Customer E-Signature</p>
+                          {selectedQuote.signatureData.startsWith("TYPED:") ? (
+                            <p className="text-base font-serif italic font-black border border-slate-200 p-2 bg-slate-50 mt-1 select-all text-charcoal-ink">
+                              {selectedQuote.signatureData.replace("TYPED:", "")}
+                            </p>
+                          ) : (
+                            <img src={selectedQuote.signatureData} alt="E-Signature" className="max-h-[50px] mx-auto border border-slate-200 bg-white mt-1 shadow-xs" />
+                          )}
+                          <p className="text-[9px] text-slate-500 font-semibold mt-1">Signed by {selectedQuote.signedBy} on {new Date(selectedQuote.signedAt).toLocaleDateString()}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -3391,8 +4368,8 @@ export default function AdminDashboard() {
 
                 // Auto-update status depending on type
                 const newStatus = selectedQuote.type === "connection" ? "CONTACTED" : "QUOTE SENT";
-                await updateQuoteStatus(selectedQuote._id, newStatus);
-                setSelectedQuote({ ...selectedQuote, status: newStatus });
+                await updateQuoteStatus(selectedQuote._id, newStatus, selectedQuote.type === "quotation" ? quotePrice : undefined);
+                setSelectedQuote({ ...selectedQuote, status: newStatus, priceQuote: selectedQuote.type === "quotation" ? quotePrice : selectedQuote.priceQuote });
 
                 alert(`Email response successfully dispatched to ${selectedQuote.email}!\nSubject: ${quoteReplySubject}`);
 
@@ -3409,7 +4386,7 @@ export default function AdminDashboard() {
                   <select
                     value={selectedQuote.status}
                     onChange={(e) => {
-                      updateQuoteStatus(selectedQuote._id, e.target.value);
+                      updateQuoteStatus(selectedQuote._id, e.target.value, selectedQuote.type === "quotation" ? quotePrice : undefined);
                       setSelectedQuote({ ...selectedQuote, status: e.target.value });
                     }}
                     className="bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-2xs text-slate-805 focus:outline-none cursor-pointer"
@@ -3419,9 +4396,25 @@ export default function AdminDashboard() {
                     <option value="NEGOTIATING">NEGOTIATING</option>
                     <option value="QUOTE SENT">QUOTE SENT</option>
                     <option value="ACCEPTED">ACCEPTED</option>
+                    <option value="PAID">PAID</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="CANCELLED">CANCELLED</option>
                   </select>
                 </div>
               </div>
+
+              {selectedQuote.type === "quotation" && (
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-450 font-bold uppercase block">Prepare Quote Pricing (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={quotePrice}
+                    onChange={(e) => setQuotePrice(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white font-bold"
+                  />
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="text-[10px] text-slate-450 font-bold uppercase block">Subject</label>
@@ -4065,6 +5058,105 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* QR CODE MODAL */}
+      {qrOrder && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-none border border-black/10 shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-black/08 bg-charcoal-ink text-white">
+              <div className="flex items-center gap-2.5">
+                <QrCode className="h-5 w-5 text-linen-gold" />
+                <div>
+                  <h3 className="text-xs font-extrabold uppercase tracking-widest">Bundle QR Code</h3>
+                  <p className="text-[10px] text-white/50 font-semibold">{qrOrder.bundleOrderId}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setQrOrder(null); setQrDataUrl(""); }}
+                className="p-1.5 rounded-none hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* QR Image Area */}
+            <div className="px-6 pt-6 pb-4 flex flex-col items-center">
+              {qrLoading ? (
+                <div className="w-[280px] h-[280px] flex items-center justify-center bg-slate-50 border border-slate-200">
+                  <RefreshCcw className="h-8 w-8 animate-spin text-slate-400" />
+                </div>
+              ) : qrDataUrl ? (
+                <div className="border-4 border-charcoal-ink p-2 bg-white shadow-lg">
+                  <img
+                    src={qrDataUrl}
+                    alt={`QR for ${qrOrder.bundleOrderId}`}
+                    width={280}
+                    height={280}
+                    className="block"
+                  />
+                </div>
+              ) : (
+                <div className="w-[280px] h-[280px] flex items-center justify-center bg-slate-50 border border-dashed border-slate-300 text-slate-400 text-xs">
+                  Failed to generate QR
+                </div>
+              )}
+
+              {/* Scan Hint */}
+              <p className="mt-3 text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-widest text-center">
+                Scan to verify bundle details
+              </p>
+            </div>
+
+            {/* Order Details Grid */}
+            <div className="mx-6 mb-4 bg-alabaster-linen border border-black/06 divide-y divide-black/06 text-[11px]">
+              {[
+                ["Order ID", qrOrder.bundleOrderId],
+                ["Customer", qrOrder.userName || "—"],
+                ["Phone", qrOrder.phone || "—"],
+                ["Email", qrOrder.email || "—"],
+                ["Bundle", qrOrder.bundleName],
+                ["Status", qrOrder.status],
+                ["Price", `₹${qrOrder.finalPrice}`],
+                ["Start", qrOrder.startDate ? new Date(qrOrder.startDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"],
+                ["End", qrOrder.endDate ? new Date(qrOrder.endDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"],
+                ["Address", qrOrder.deliveryAddress || "—"],
+              ].map(([label, value]) => (
+                <div key={label} className="flex px-4 py-2.5 gap-3">
+                  <span className="text-charcoal-ink/40 font-extrabold uppercase tracking-wider w-16 shrink-0">{label}</span>
+                  <span className="text-charcoal-ink font-semibold break-all leading-relaxed">
+                    {label === "Status" ? (
+                      <span className={`font-extrabold uppercase px-1.5 py-0.5 text-[9px] ${
+                        value === "ACTIVE" ? "bg-emerald-50 text-emerald-700" :
+                        value === "CANCELLED" ? "bg-rose-50 text-rose-700" :
+                        value === "DELIVERED" ? "bg-teal-50 text-teal-700" :
+                        "bg-amber-50 text-amber-700"
+                      }`}>{value}</span>
+                    ) : value}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={handlePrintQR}
+                disabled={!qrDataUrl}
+                className="flex-1 py-3 px-4 bg-charcoal-ink hover:bg-charcoal-ink/90 text-white text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 rounded-none"
+              >
+                <Printer className="h-4 w-4" /> Print QR
+              </button>
+              <button
+                onClick={handleDownloadQR}
+                disabled={!qrDataUrl}
+                className="flex-1 py-3 px-4 bg-linen-gold hover:bg-[#9a7c5a] text-white text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 rounded-none"
+              >
+                <Download className="h-4 w-4" /> Download PNG
+              </button>
+            </div>
           </div>
         </div>
       )}

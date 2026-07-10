@@ -53,6 +53,8 @@ export default function ProductDetailPage() {
   // User State for Navbar
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState([]);
+  const [settings, setSettings] = useState(null);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -70,7 +72,35 @@ export default function ProductDetailPage() {
         setLoading(false);
       }
     };
+    const fetchPlans = async () => {
+      try {
+        const res = await fetch("/api/plans");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.plans) {
+            setPlans(data.plans);
+          }
+        }
+      } catch (err) {
+        console.error("Fetch plans error:", err);
+      }
+    };
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.settings) {
+            setSettings(data.settings);
+          }
+        }
+      } catch (err) {
+        console.error("Fetch settings error in product detail:", err);
+      }
+    };
     fetchSession();
+    fetchPlans();
+    fetchSettings();
   }, []);
 
   const handleLogout = async () => {
@@ -93,26 +123,35 @@ export default function ProductDetailPage() {
       const total = base + gst;
       return { base, originalPrice: null, discount: 0, deposit: 0, gst, total };
     } else {
-      const baseMonthly = rentTier === "PREMIUM"
-        ? (size === "single" ? 1200 : 2000)
-        : (size === "single" ? 300 : 800);
+      // New Pricing Logic
+      let baseMonthly = 0;
+      let depositAmt = 0;
 
-      const customExtraPerMonth = isCustom ? (size === "single" ? 50 : 0) : 0;
+      if (rentTier === "BASIC") { // Normal
+        baseMonthly = size === "single" ? 300 : 800;
+        depositAmt = size === "single" ? 500 : 800;
+      } else { // Premium
+        baseMonthly = size === "single" ? 750 : 950;
+        depositAmt = 0;
+      }
 
-      let multiplier = 1;
+      // Duration Discount Logic
+      let durationMonths = 1;
       let discountRate = 0;
-      if (duration === "3 Months") { multiplier = 3; discountRate = 0.05; }
-      else if (duration === "6 Months") { multiplier = 6; discountRate = 0.10; }
-      else if (duration === "12 Months") { multiplier = 12; discountRate = 0.20; }
+      if (duration === "3 Months") { durationMonths = 3; discountRate = 0.05; }
+      else if (duration === "6 Months") { durationMonths = 6; discountRate = 0.10; }
+      else if (duration === "9 Months") { durationMonths = 9; discountRate = 0.10; }
+      else if (duration === "12 Months") { durationMonths = 12; discountRate = 0.20; }
 
-      const base = Math.round((baseMonthly + customExtraPerMonth) * multiplier * (1 - discountRate));
-      const originalPrice = discountRate > 0 ? ((baseMonthly + customExtraPerMonth) * multiplier) : null;
-      const discount = discountRate > 0 ? (originalPrice - base) : 0;
-      const deposit = rentTier === "BASIC" ? (size === "single" ? 500 : 800) : 0;
-      const gst = Math.round(base * 0.18);
-      const total = base + gst + deposit;
+      // Calculate rent
+      let originalRent = baseMonthly * durationMonths;
+      let base = Math.round(originalRent * (1 - discountRate));
+      let discount = originalRent - base;
+      let deposit = depositAmt;
+      let gst = Math.round(base * 0.18);
+      let total = base + gst + deposit;
 
-      return { base, originalPrice, discount, deposit, gst, total };
+      return { base, originalPrice: discount > 0 ? originalRent : null, discount, deposit, gst, total, durationMonths };
     }
   };
 
@@ -300,7 +339,7 @@ export default function ProductDetailPage() {
                       <span className="text-[10px] font-black uppercase tracking-wider block">Premium Rent</span>
                       <span className="text-[8px] text-charcoal-ink/50 block leading-tight mt-1 font-semibold">Weekly staff swap. ₹0 deposit.</span>
                       <span className="text-2xs font-bold text-linen-gold mt-1.5 block">
-                        {size === "single" ? "₹1,200/mo" : "₹2,000/mo"}
+                        {size === "single" ? "₹750/mo" : "₹950/mo"}
                       </span>
                     </button>
                   </div>
@@ -314,6 +353,7 @@ export default function ProductDetailPage() {
                       { duration: "1 Month", discount: null },
                       { duration: "3 Months", discount: "5% off" },
                       { duration: "6 Months", discount: "10% off" },
+                      { duration: "9 Months", discount: "10% off" },
                       { duration: "12 Months", discount: "20% off" }
                     ].map((item) => (
                       <button

@@ -59,6 +59,8 @@ export async function GET(request) {
 
     await dbConnect();
 
+    let isNewUser = false;
+
     // 1. Find user by googleId
     let user = await User.findOne({ googleId: profile.id });
 
@@ -69,14 +71,17 @@ export async function GET(request) {
       if (user) {
         // Link googleId to existing account
         user.googleId = profile.id;
+        // Prefill name from Google if missing
+        if (!user.name && profile.name) user.name = profile.name;
         await user.save();
       } else {
-        // 3. Register a new user
+        // 3. Register a brand new user — profile incomplete (no mobile)
+        isNewUser = true;
         user = await User.create({
-          name: profile.name,
+          name: profile.name || "",
           email: profile.email.toLowerCase(),
           googleId: profile.id,
-          accountType: "Individual User", // Default type
+          accountType: "Individual User",
           address: "",
         });
       }
@@ -95,12 +100,17 @@ export async function GET(request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+      maxAge: 7 * 24 * 60 * 60,
       path: "/",
     });
 
-    // Redirect user to home page
-    return NextResponse.redirect(new URL("/", request.url));
+    // New users or users missing mobile → complete profile first
+    if (isNewUser || !user.mobile) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+
+    // Existing complete users → go to dashboard
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   } catch (err) {
     console.error("Google OAuth Callback Error:", err);
     return NextResponse.redirect(new URL("/login?error=callback_internal_error", request.url));

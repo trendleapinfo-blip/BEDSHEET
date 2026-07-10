@@ -5,6 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Mail, Phone, Shield, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
 
+const safeParseJson = async (res) => {
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      return await res.json();
+    } catch (err) {
+      throw new Error("Failed to parse response JSON from server.");
+    }
+  } else {
+    throw new Error(`Server Error (Status ${res.status}). Please check your connection or server logs.`);
+  }
+};
+
 export default function StaffSignupPage() {
   const router = useRouter();
 
@@ -46,7 +59,7 @@ export default function StaffSignupPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
 
       if (!res.ok) {
         throw new Error(data.error || "Staff registration failed.");

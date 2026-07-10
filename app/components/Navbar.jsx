@@ -4,15 +4,16 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MenuIcon, CloseIcon } from "./Icons";
 
-export default function Navbar() {
+export default function Navbar({ forceSolid = false }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolledState, setScrolled] = useState(false);
+  const scrolled = scrolledState || forceSolid;
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("");
 
   useEffect(() => {
-    const sectionIds = ["home", "products", "experience", "science", "pricing"];
+    const sectionIds = ["home", "how-it-works"];
     const options = {
       root: null,
       rootMargin: "-25% 0px -55% 0px",
@@ -93,11 +94,8 @@ export default function Navbar() {
   }, []);
 
   const navItems = [
-    { name: "The Catalog", href: "#products" },
-    { name: "The Experience", href: "#experience" },
-    { name: "The Science", href: "#science" },
-    { name: "The Membership", href: "#pricing" },
-    { name: "Value Visualizer", href: "/value-visualizer", isRoute: true },
+    { name: "Shop", href: "/shop", isRoute: true },
+    { name: "How It Works", href: "#how-it-works" },
     { name: "About", href: "/about", isRoute: true },
   ];
 
@@ -126,14 +124,14 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out ${
+      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-700 ease-in-out ${
         scrolled
-          ? "top-4 w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] md:w-[calc(100%-4rem)] max-w-[1380px] bg-alabaster-linen/90 backdrop-blur-md border border-[#245c77]/10 shadow-[0_12px_30px_rgba(15,26,28,0.08)] py-2 rounded-full"
-          : "top-0 w-full max-w-none bg-transparent border-b border-transparent py-6 rounded-none"
+          ? "top-4 w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] md:w-[calc(100%-6rem)] max-w-[1200px] bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.06)] py-3 sm:py-3.5 rounded-full"
+          : "top-0 w-full max-w-none bg-transparent border-b border-transparent py-6 sm:py-8 rounded-none"
       }`}
     >
-      <div className={`transition-all duration-500 ${
-        scrolled ? "w-full px-6 sm:px-10 md:px-12" : "max-w-[1380px] mx-auto w-full px-4 sm:px-6 lg:px-8"
+      <div className={`transition-all duration-700 ${
+        scrolled ? "w-full px-6 sm:px-8" : "max-w-[1380px] mx-auto w-full px-6 sm:px-10 lg:px-12"
       }`}>
         <div className="flex items-center justify-between h-10">
           {/* Logo / Brand */}
@@ -141,7 +139,9 @@ export default function Navbar() {
             <a
               href="#home"
               onClick={(e) => handleScrollTo(e, "#home")}
-              className="flex items-center space-x-2 text-linen-gold font-serif text-xl sm:text-2xl font-bold tracking-[0.1em] uppercase transition-transform hover:scale-102"
+              className={`flex items-center space-x-2 font-serif text-xl sm:text-2xl font-black tracking-[0.15em] uppercase transition-all duration-500 hover:opacity-80 ${
+                scrolled ? "text-charcoal-ink" : "text-charcoal-ink"
+              }`}
             >
               <span>ClosetRush</span>
             </a>
@@ -149,7 +149,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation Links */}
           <div className={`hidden md:flex items-center transition-all duration-500 ${
-            scrolled ? "space-x-2.5 lg:space-x-3.5 xl:space-x-4.5" : "space-x-6 lg:space-x-8"
+            scrolled ? "space-x-6 lg:space-x-8" : "space-x-8 lg:space-x-10"
           }`}>
             {navItems.map((item) => {
               const isActive = item.href === "#" + activeSection;
@@ -158,8 +158,8 @@ export default function Navbar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`font-semibold tracking-wider uppercase transition-colors duration-300 hover:text-linen-gold whitespace-nowrap ${
-                      scrolled ? "text-[10px] xl:text-[11px]" : "text-xs text-charcoal-ink/80"
+                    className={`font-extrabold tracking-widest uppercase transition-colors duration-300 hover:text-linen-gold whitespace-nowrap text-[10px] sm:text-[11px] ${
+                      scrolled ? "text-charcoal-ink/80" : "text-charcoal-ink/70"
                     }`}
                   >
                     {item.name}
@@ -171,17 +171,15 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleScrollTo(e, item.href, false)}
-                  className={`relative font-semibold tracking-wider uppercase transition-all duration-300 pb-1 whitespace-nowrap ${
-                    scrolled ? "text-[10px] xl:text-[11px]" : "text-xs"
-                  } ${
+                  className={`relative font-extrabold tracking-widest uppercase transition-all duration-300 pb-1 whitespace-nowrap text-[10px] sm:text-[11px] ${
                     isActive 
-                      ? "text-linen-gold font-bold" 
-                      : "text-charcoal-ink/80 hover:text-linen-gold"
+                      ? "text-linen-gold" 
+                      : "text-charcoal-ink/70 hover:text-linen-gold"
                   }`}
                 >
                   {item.name}
                   {isActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-linen-gold rounded-full animate-in fade-in zoom-in duration-300" />
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-linen-gold rounded-full animate-in fade-in zoom-in duration-300" />
                   )}
                 </a>
               );
@@ -190,63 +188,67 @@ export default function Navbar() {
 
           {/* Desktop CTA Button */}
           <div className={`hidden md:flex items-center transition-all duration-500 ${
-            scrolled ? "space-x-2 lg:space-x-3" : "space-x-4 lg:space-x-6"
+            scrolled ? "space-x-3" : "space-x-4"
           }`}>
             {!loading && user ? (
               <div className={`flex items-center transition-all duration-500 ${
-                scrolled ? "space-x-2 lg:space-x-3" : "space-x-4"
+                scrolled ? "space-x-3" : "space-x-4"
               }`}>
+                <span className="text-charcoal-ink/60 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap pr-2">
+                  Hi, {user.name.split(" ")[0]}
+                </span>
+                
+                {user.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="inline-flex items-center justify-center px-5 py-2.5 border border-charcoal-ink/15 text-charcoal-ink hover:bg-charcoal-ink/05 text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 whitespace-nowrap"
+                  >
+                    Admin
+                  </Link>
+                )}
+
                 {user.role === "warehouse" ? (
                   <Link
                     href="/warehouse"
-                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-linen-gold text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-5 py-2.5 bg-charcoal-ink text-white hover:bg-black text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                   >
                     Warehouse
                   </Link>
                 ) : user.role === "logistics" ? (
                   <Link
                     href="/logistics"
-                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-linen-gold text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-5 py-2.5 bg-charcoal-ink text-white hover:bg-black text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                   >
                     Logistics
                   </Link>
                 ) : (
                   <Link
                     href="/dashboard"
-                    className="inline-flex items-center justify-center px-4 py-2 bg-charcoal-ink text-alabaster-linen hover:bg-[#245c77] text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-5 py-2.5 bg-charcoal-ink text-white hover:bg-black text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                   >
                     Dashboard
                   </Link>
                 )}
-                {user.role === "admin" && (
-                  <Link
-                    href="/admin"
-                    className="inline-flex items-center justify-center px-4 py-2 border border-charcoal-ink/20 text-charcoal-ink hover:bg-charcoal-ink hover:text-alabaster-linen text-2xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer whitespace-nowrap"
-                  >
-                    Admin
-                  </Link>
-                )}
-                <span className="text-charcoal-ink/70 font-bold text-2xs lg:text-xs uppercase tracking-wider whitespace-nowrap">
-                  Hi, {user.name.split(" ")[0]}
-                </span>
+                
                 <button
                   onClick={handleLogout}
-                  className="inline-flex items-center justify-center px-4 py-2 border border-charcoal-ink/10 text-2xs font-bold uppercase tracking-wider rounded-none text-charcoal-ink/60 hover:border-charcoal-ink/30 transition-all cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center justify-center w-9 h-9 border border-charcoal-ink/10 text-charcoal-ink/50 hover:text-charcoal-ink hover:border-charcoal-ink/30 hover:bg-charcoal-ink/05 rounded-full transition-all duration-300 focus:outline-none"
+                  title="Logout"
                 >
-                  Logout
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
               </div>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className="text-charcoal-ink/80 hover:text-linen-gold font-bold text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
+                  className="text-charcoal-ink/80 hover:text-charcoal-ink font-extrabold text-[10px] uppercase tracking-widest transition-colors whitespace-nowrap px-4"
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center px-6 py-2.5 border border-charcoal-ink text-xs font-bold uppercase tracking-widest rounded-none text-alabaster-linen bg-charcoal-ink hover:bg-linen-gold hover:border-linen-gold transition-all duration-300 hover:-translate-y-0.5 whitespace-nowrap"
+                  className="inline-flex items-center justify-center px-6 py-3 border border-charcoal-ink text-[10px] font-extrabold uppercase tracking-widest rounded-full text-white bg-charcoal-ink hover:bg-black hover:border-black transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                 >
                   Subscribe
                 </Link>

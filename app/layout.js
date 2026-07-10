@@ -1,6 +1,7 @@
 import { Cormorant_Garamond, Plus_Jakarta_Sans, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import Chatbot from "./components/Chatbot";
+import Script from "next/script";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-serif",
@@ -38,7 +39,9 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <script
+        <Script
+          id="service-worker-cleanup"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {

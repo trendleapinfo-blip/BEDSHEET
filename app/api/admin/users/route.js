@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { verifyAdmin } from "@/lib/adminAuth";
 
 export async function GET() {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const users = await User.find({}).select("-password").sort({ createdAt: -1 });
     return NextResponse.json({ users });
@@ -16,6 +22,11 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const {
       name,
@@ -83,6 +94,11 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const {
       userId,
@@ -131,6 +147,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");

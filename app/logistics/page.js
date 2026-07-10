@@ -91,7 +91,13 @@ export default function LogisticsDashboard() {
       });
 
       if (res.ok) {
-        alert(`Shipment status updated to ${newStatus} successfully!`);
+        if (newStatus === "DELIVERED") {
+          alert("Shipment Delivered! WMS Bundle updated successfully.");
+        } else if (newStatus === "CANCELLED") {
+          alert("Shipment Cancelled. Bundle routed to Thermodynamic Laundry for safety.");
+        } else {
+          alert(`Shipment status updated to ${newStatus} successfully!`);
+        }
         fetchData();
       } else {
         const data = await res.json();

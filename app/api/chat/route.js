@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import dbConnect from "@/lib/db";
+import Plan from "@/models/Plan";
 
 export async function POST(request) {
   try {
@@ -20,29 +22,37 @@ export async function POST(request) {
       );
     }
 
+    await dbConnect();
+    const dbPlans = await Plan.find({}).lean();
+
+    const uniquePlanCategories = Array.from(new Set(dbPlans.map(p => p.bedType))).filter(Boolean);
+    let plansPromptStr = "";
+
+    if (uniquePlanCategories.length === 0) {
+      plansPromptStr = "   - No pricing plans configured currently.\n";
+    } else {
+      uniquePlanCategories.forEach(catName => {
+        plansPromptStr += `   - ${catName} Plans:\n`;
+        const filtered = dbPlans.filter(p => p.bedType === catName);
+        filtered.forEach(p => {
+          plansPromptStr += `      * ${p.name}: ₹${p.price} for ${p.duration} (${p.discount ? p.discount + ' savings applied' : 'no discount'})\n`;
+        });
+      });
+    }
+
     // Define the system prompt with brand context, rules, pricing plans, and hygiene standards.
     const systemPrompt = `You are "Rushy", the friendly and professional AI virtual guide for ClosetRush (India's premium bedding and linen rental service). 
 Your goal is to assist users with their queries about bedding rentals, pricing plans, washing standards, and delivery swaps.
 
 Here is the essential ClosetRush information you MUST use to answer questions:
-1. Brand tagline: Rent Clean Sheets @ just ₹10 per day.
+1. Brand tagline: Rent Clean Sheets at competitive daily rates.
 2. Washing & Cleanliness Standards:
    - All linens are professionally hot-washed at 60°C+ minimum.
    - Made from 100% premium, 400 Thread Count (TC) Organic Cotton sheets.
    - Sealed and delivered in clean, dust-free packaging.
    - Zero chemical residues. Completely clean and safe for babies & sensitive skin.
 3. Rental Plans (Free delivery and pickup included):
-   - Single Bed Plans (includes 4 Single Sheets + 4 Pillow Covers):
-     * Starter: ₹300 per month (daily equivalent ₹10)
-     * Growth: ₹855 for 3 months (Save 5%, original ₹900)
-     * Professional: ₹1620 for 6 months (Save 10%, original ₹1800, popular plan)
-     * Enterprise: ₹2880 for 12 months (Save 20%, original ₹3600)
-   - Double Bed Plans (includes 4 Double Sheets + 8 Pillow Covers):
-     * Starter: ₹500 per month
-     * Growth: ₹1425 for 3 months (Save 5%, original ₹1500)
-     * Professional: ₹2700 for 6 months (Save 10%, original ₹3000, popular plan)
-     * Enterprise: ₹4800 for 12 months (Save 20%, original ₹6000)
-   - Corporate Solutions (for PGs, hostels, Airbnbs, and hospitality properties): Custom bulk billing quote. Features same-day emergency swaps, dedicated support desk, and priority replacements.
+${plansPromptStr}   - Corporate Solutions (for PGs, hostels, Airbnbs, and hospitality properties): Custom bulk billing quote. Features same-day emergency swaps, dedicated support desk, and priority replacements.
 4. Swap & Delivery Workflow:
    - Step 1: Select Bed Plan (Single/Double/Corporate) based on mattress configuration.
    - Step 2: Delivery of fresh, clean sheets.

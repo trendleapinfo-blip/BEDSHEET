@@ -98,8 +98,29 @@ export default function Dashboard() {
       const res = await fetch("/api/user/profile");
       if (res.ok) {
         const data = await res.json();
-        setUser(data.user);
-        setOrders(data.orders || []);
+        
+        let fetchedUser = data.user;
+        const fetchedOrders = data.orders || [];
+        
+        // Handle B2B confirmed quotes where plan is empty but order is active
+        const activeOrder = fetchedOrders.find(o => o.status === "ACTIVE");
+        if ((!fetchedUser.selectedPlan || !fetchedUser.selectedPlan.planName) && activeOrder) {
+           fetchedUser.selectedPlan = {
+              planName: activeOrder.bundleName || "Custom Setup",
+              bedType: activeOrder.bundleName?.toLowerCase().includes("single") ? "single" : "double",
+              price: activeOrder.finalPrice || 0,
+              duration: activeOrder.duration || "12 Months",
+              subscriptionType: "monthly",
+              orderType: activeOrder.orderType || "RENT",
+              itemTier: activeOrder.itemTier || "PREMIUM",
+              gst: Math.round((activeOrder.finalPrice || 0) * 0.18),
+              totalPrice: (activeOrder.finalPrice || 0) + Math.round((activeOrder.finalPrice || 0) * 0.18),
+              startDate: activeOrder.startDate || new Date(),
+           };
+        }
+
+        setUser(fetchedUser);
+        setOrders(fetchedOrders);
         setQuotes(data.quotes || []);
         
         // Pre-fill profile form
@@ -296,6 +317,25 @@ export default function Dashboard() {
     }
   };
 
+  const handleUpdateUserQuoteStatus = async (quoteId, status) => {
+    try {
+      const res = await fetch("/api/user/quote", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quoteId, status })
+      });
+      if (res.ok) {
+        await fetchDashboardData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update quote status.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error updating quote status.");
+    }
+  };
+
   // Open checkout modal instead of immediate submission
   const handleSelectPlan = (bedType, planName, price, duration) => {
     localStorage.setItem("checkout_pending", JSON.stringify({ bedType, planName, price, duration }));
@@ -432,7 +472,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-alabaster-linen text-charcoal-ink font-sans pb-16 antialiased">
-      <Navbar />
+      <Navbar forceSolid={true} />
       
       {/* Header spacing */}
       <div className="pt-28 pb-6 bg-charcoal-ink text-white border-b border-charcoal-ink/08">
@@ -872,23 +912,18 @@ export default function Dashboard() {
 
                 {/* Available Plans Selector */}
                 {(() => {
-                  const singlePlans = dbPlans.length > 0 
-                    ? dbPlans.filter(p => p.bedType === "single").sort((a, b) => a.price - b.price)
-                    : [
-                        { name: "Starter", duration: "1 Month", price: 300, features: ["4 Single Bedsheets", "4 Pillow Covers", "Free delivery & pickup"] },
-                        { name: "Growth", duration: "3 Months", price: 855, features: ["4 Single Bedsheets", "4 Pillow Covers", "Priority support desk"] },
-                        { name: "Professional", duration: "6 Months", price: 1620, features: ["4 Single Bedsheets", "4 Pillow Covers", "Premium support hotline"] },
-                        { name: "Enterprise", duration: "12 Months", price: 2880, features: ["4 Single Bedsheets", "4 Pillow Covers", "Dedicated account manager"] }
-                      ];
+                  const singlePlans = dbPlans.filter(p => p.bedType === "single").sort((a, b) => a.price - b.price);
+                  const doublePlans = dbPlans.filter(p => p.bedType === "double").sort((a, b) => a.price - b.price);
 
-                  const doublePlans = dbPlans.length > 0 
-                    ? dbPlans.filter(p => p.bedType === "double").sort((a, b) => a.price - b.price)
-                    : [
-                        { name: "Starter", duration: "1 Month", price: 500, features: ["4 Double Bedsheets", "8 Pillow Covers", "Free delivery & pickup"] },
-                        { name: "Growth", duration: "3 Months", price: 1425, features: ["4 Double Bedsheets", "8 Pillow Covers", "Priority support desk"] },
-                        { name: "Professional", duration: "6 Months", price: 2700, features: ["4 Double Bedsheets", "8 Pillow Covers", "Premium support hotline"] },
-                        { name: "Enterprise", duration: "12 Months", price: 4800, features: ["4 Double Bedsheets", "8 Pillow Covers", "Dedicated account manager"] }
-                      ];
+                  if (singlePlans.length === 0 && doublePlans.length === 0) {
+                    return (
+                      <div className="text-center py-10 border border-charcoal-ink/10 rounded-none bg-white p-6.5 shadow-sm">
+                        <Package className="w-8 h-8 text-charcoal-ink/30 mx-auto mb-3" />
+                        <h4 className="font-serif font-bold text-charcoal-ink text-sm">No subscription plans available</h4>
+                        <p className="text-charcoal-ink/65 text-xs mt-1">Please configure subscription plans in the admin dashboard.</p>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div>
@@ -1022,143 +1057,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* B2B Estimate Calculator Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  
-                  {/* Estimator input form */}
-                  <form onSubmit={handleQuoteSubmit} className="lg:col-span-7 space-y-4">
-                    <h4 className="font-extrabold text-charcoal-ink text-sm">Bulk Price Estimator</h4>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Business Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={quoteForm.businessName}
-                          onChange={(e) => setQuoteForm({...quoteForm, businessName: e.target.value})}
-                          placeholder="e.g. Trend Leap PGs"
-                          className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold"
-                        />
-                      </div>
 
-                      <div>
-                        <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Property Category</label>
-                        <select
-                          value={quoteForm.businessType}
-                          onChange={(e) => setQuoteForm({...quoteForm, businessType: e.target.value})}
-                          className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                        >
-                          <option value="PG">Paying Guest (PG)</option>
-                          <option value="HOTEL">Boutique Hotel</option>
-                          <option value="AIRBNB">Homestay / Airbnb</option>
-                          <option value="HOSTEL">Student Hostel</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Properties Count</label>
-                        <input
-                          type="number"
-                          min="1"
-                          required
-                          value={quoteForm.propertiesCount}
-                          onChange={(e) => setQuoteForm({...quoteForm, propertiesCount: Math.max(1, parseInt(e.target.value) || 1)})}
-                          className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Units (Beds) Count</label>
-                        <input
-                          type="number"
-                          min="1"
-                          required
-                          value={quoteForm.unitsCount}
-                          onChange={(e) => setQuoteForm({...quoteForm, unitsCount: Math.max(1, parseInt(e.target.value) || 1)})}
-                          className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Bundle Selection</label>
-                      <select
-                        value={quoteForm.bundleSelections}
-                        onChange={(e) => setQuoteForm({...quoteForm, bundleSelections: e.target.value})}
-                        className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                      >
-                        <option value="Single Bed Bundle">Single Bed Bundle (₹250/mo commercial rate)</option>
-                        <option value="Double Bed Bundle">Double Bed Bundle (₹400/mo commercial rate)</option>
-                        <option value="Premium Set">Premium Sateen Suite (₹600/mo commercial rate)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Custom requests / Message</label>
-                      <textarea
-                        value={quoteForm.message}
-                        onChange={(e) => setQuoteForm({...quoteForm, message: e.target.value})}
-                        placeholder="State any specific swap frequencies or special requirements..."
-                        rows="3"
-                        className="w-full p-4 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold text-xs resize-none font-semibold"
-                      ></textarea>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={quoteSubmitting}
-                      className="w-full py-3.5 rounded-none bg-charcoal-ink hover:bg-linen-gold text-white font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                    >
-                      {quoteSubmitting ? "Submitting Quote..." : "Submit Quotation Request"}
-                    </button>
-                  </form>
-
-                  {/* Estimate Preview card */}
-                  <div className="lg:col-span-5 bg-charcoal-ink text-white rounded-none p-6.5 shadow-sm border border-charcoal-ink/20 flex flex-col justify-between">
-                    <div>
-                      <span className="text-linen-gold text-3xs uppercase tracking-widest font-extrabold bg-linen-gold/10 border border-linen-gold/20 px-2 py-0.5">
-                        Live Quote Preview
-                      </span>
-                      
-                      <div className="mt-6 space-y-4">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-white/40">Monthly rate / unit:</span>
-                          <span className="font-bold text-white">₹{quoteEstimator.unitPrice}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-white/40">Total properties:</span>
-                          <span className="font-bold text-white">{quoteForm.propertiesCount}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-white/40">Total units/beds:</span>
-                          <span className="font-bold text-white">{quoteForm.unitsCount}</span>
-                        </div>
-                        
-                        {quoteEstimator.bulkDiscount > 0 && (
-                          <div className="flex justify-between text-xs text-linen-gold">
-                            <span>Bulk volume discount:</span>
-                            <span className="font-extrabold">-{quoteEstimator.bulkDiscount}%</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-8 pt-6 border-t border-slate-800">
-                      <p className="text-white/40 text-3xs font-semibold uppercase tracking-wider">Estimated Monthly Billing</p>
-                      <div className="flex items-baseline mt-1">
-                        <span className="text-3xl font-black text-white">₹{quoteEstimator.estimatedTotal}</span>
-                        <span className="text-white/40 text-xs ml-1 font-semibold">/month</span>
-                      </div>
-                      <p className="text-white/30 text-[10px] mt-4 leading-relaxed font-semibold">
-                        * Custom B2B contracts are finalized post properties audit by ClosetRush logistics staff.
-                      </p>
-                    </div>
-                  </div>
-
-                </div>
 
                 {/* Submitted Quotes list */}
                 <div className="space-y-4 pt-4">
@@ -1166,15 +1065,16 @@ export default function Dashboard() {
                   
                   {quotes.length > 0 ? (
                     <div className="border border-charcoal-ink/10 rounded-none overflow-hidden overflow-x-auto">
-                      <table className="w-full text-left text-xs min-w-[600px]">
+                      <table className="w-full text-left text-xs min-w-[700px]">
                         <thead className="bg-alabaster-linen text-charcoal-ink/65 font-bold uppercase tracking-wider text-3xs border-b border-charcoal-ink/10">
                           <tr>
                             <th className="py-3 px-4">Business</th>
                             <th className="py-3 px-4">Setup</th>
                             <th className="py-3 px-4">Properties</th>
                             <th className="py-3 px-4">Beds</th>
-                            <th className="py-3 px-4">Estimated Price</th>
+                            <th className="py-3 px-4">Price</th>
                             <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-medium">
@@ -1182,21 +1082,71 @@ export default function Dashboard() {
                             <tr key={quote._id} className="hover:bg-slate-50/50">
                               <td className="py-3.5 px-4 font-bold text-[#0F172A]">{quote.businessName}</td>
                               <td className="py-3.5 px-4 text-slate-655">{quote.bundleSelections}</td>
-                              <td className="py-3.5 px-4 text-center text-slate-600">{quote.propertiesCount}</td>
-                              <td className="py-3.5 px-4 text-center text-slate-600">{quote.unitsCount}</td>
-                              <td className="py-3.5 px-4 font-black text-[#0F172A]">₹{quote.estimatedTotal}</td>
+                              <td className="py-3.5 px-4 text-center text-slate-600">{quote.propertiesCount || quote.roomsCount || 0}</td>
+                              <td className="py-3.5 px-4 text-center text-slate-600">{quote.unitsCount || quote.bedsCount || 0}</td>
+                              <td className="py-3.5 px-4 font-black text-[#0F172A]">
+                                {quote.priceQuote > 0 ? (
+                                  <div className="space-y-0.5">
+                                    <span className="text-linen-gold font-extrabold block">₹{quote.priceQuote}</span>
+                                    <span className="text-[9px] text-slate-400 block font-normal">Final Quote</span>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-0.5">
+                                    <span>₹{quote.estimatedTotal}</span>
+                                    <span className="text-[9px] text-slate-400 block font-normal">Estimated</span>
+                                  </div>
+                                )}
+                              </td>
                               <td className="py-3.5 px-4">
                                 <span className={`px-2.5 py-0.5 rounded-none text-3xs font-bold tracking-wider uppercase border ${
                                   quote.status === "PENDING"
                                     ? "bg-amber-50 text-amber-600 border-amber-100"
                                     : quote.status === "ACCEPTED"
-                                    ? "bg-teal-50 text-teal-600 border-teal-100"
+                                    ? "bg-purple-50 text-purple-600 border-purple-100"
                                     : quote.status === "QUOTE SENT"
                                     ? "bg-blue-50 text-blue-600 border-blue-100"
+                                    : quote.status === "PAID" || quote.status === "CONFIRMED"
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100"
                                     : "bg-slate-100 text-slate-600 border-slate-200"
                                 }`}>
                                   {quote.status}
                                 </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="flex gap-2 justify-end">
+                                  {quote.status === "QUOTE SENT" && (
+                                    <button
+                                      onClick={() => handleUpdateUserQuoteStatus(quote._id, "ACCEPTED")}
+                                      className="py-1 px-2.5 bg-linen-gold text-charcoal-ink font-bold text-[9px] uppercase tracking-wider hover:bg-charcoal-ink hover:text-white transition-all cursor-pointer"
+                                    >
+                                      Accept Proposal
+                                    </button>
+                                  )}
+                                  {quote.status === "ACCEPTED" && (
+                                    <button
+                                      onClick={() => {
+                                        const choice = confirm("Proceeding to payment gateway simulation. Click OK to Pay, Cancel to trigger Failed Payment.");
+                                        if (choice) {
+                                          handleUpdateUserQuoteStatus(quote._id, "CONFIRMED");
+                                          alert("Simulated B2B Payment Success! Status updated to Confirmed.");
+                                        } else {
+                                          alert("Simulated B2B Payment Failed.");
+                                        }
+                                      }}
+                                      className="py-1 px-2.5 bg-emerald-600 text-white font-bold text-[9px] uppercase tracking-wider hover:bg-emerald-700 transition-all cursor-pointer"
+                                    >
+                                      Pay Now
+                                    </button>
+                                  )}
+                                  {["CONFIRMED", "PAID"].includes(quote.status) && (
+                                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                                      <Check className="w-3.5 h-3.5" /> Order Confirmed
+                                    </span>
+                                  )}
+                                  {quote.status === "PENDING" && (
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Awaiting Review</span>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}

@@ -2,45 +2,23 @@ import mongoose from "mongoose";
 
 const PlanSchema = new mongoose.Schema(
   {
+    tier: {
+      type: String, // "Normal" | "Premium"
+      required: true,
+      enum: ["Normal", "Premium"],
+    },
     bedType: {
-      type: String, // 'single' | 'double'
+      type: String, // "single" | "double"
       required: true,
+      enum: ["single", "double"],
     },
-    name: {
-      type: String, // 'Starter' | 'Growth' | 'Professional' | 'Enterprise'
-      required: true,
-    },
-    duration: {
-      type: String, // '1 Month' | '3 Months' | '6 Months' | '12 Months'
-      required: true,
-    },
-    price: {
+    monthlyRate: {
       type: Number,
       required: true,
     },
-    originalPrice: {
+    depositAmount: {
       type: Number,
-      default: null,
-    },
-    discount: {
-      type: String,
-      default: null,
-    },
-    features: {
-      type: [String],
-      default: [],
-    },
-    cta: {
-      type: String,
-      default: "Choose Plan",
-    },
-    popular: {
-      type: Boolean,
-      default: false,
-    },
-    badge: {
-      type: String,
-      default: null,
+      required: true,
     },
   },
   { timestamps: true }

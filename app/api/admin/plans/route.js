@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Plan from "@/models/Plan";
+import { verifyAdmin } from "@/lib/adminAuth";
 
 export async function GET() {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const plans = await Plan.find({}).sort({ bedType: 1, price: 1 });
     return NextResponse.json({ success: true, plans }, {
@@ -19,35 +25,28 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const {
+      tier,
       bedType,
-      name,
-      duration,
-      price,
-      originalPrice,
-      discount,
-      features,
-      cta,
-      popular,
-      badge
+      monthlyRate,
+      depositAmount
     } = await request.json();
 
-    if (!bedType || !name || !duration || price === undefined) {
-      return NextResponse.json({ error: "Bed type, name, duration, and price are required" }, { status: 400 });
+    if (!tier || !bedType || monthlyRate === undefined || depositAmount === undefined) {
+      return NextResponse.json({ error: "Tier, bed type, monthly rate, and deposit amount are required" }, { status: 400 });
     }
 
     const newPlan = await Plan.create({
+      tier,
       bedType,
-      name,
-      duration,
-      price: Number(price),
-      originalPrice: originalPrice ? Number(originalPrice) : null,
-      discount: discount || null,
-      features: Array.isArray(features) ? features : [],
-      cta: cta || "Choose Plan",
-      popular: !!popular,
-      badge: badge || null
+      monthlyRate: Number(monthlyRate),
+      depositAmount: Number(depositAmount)
     });
 
     return NextResponse.json({ success: true, plan: newPlan });
@@ -59,19 +58,18 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const {
       planId,
+      tier,
       bedType,
-      name,
-      duration,
-      price,
-      originalPrice,
-      discount,
-      features,
-      cta,
-      popular,
-      badge
+      monthlyRate,
+      depositAmount
     } = await request.json();
 
     if (!planId) {
@@ -79,21 +77,15 @@ export async function PUT(request) {
     }
 
     const updateData = {};
+    if (tier !== undefined) updateData.tier = tier;
     if (bedType !== undefined) updateData.bedType = bedType;
-    if (name !== undefined) updateData.name = name;
-    if (duration !== undefined) updateData.duration = duration;
-    if (price !== undefined) updateData.price = Number(price);
-    if (originalPrice !== undefined) updateData.originalPrice = originalPrice ? Number(originalPrice) : null;
-    if (discount !== undefined) updateData.discount = discount || null;
-    if (features !== undefined) updateData.features = Array.isArray(features) ? features : [];
-    if (cta !== undefined) updateData.cta = cta;
-    if (popular !== undefined) updateData.popular = !!popular;
-    if (badge !== undefined) updateData.badge = badge || null;
+    if (monthlyRate !== undefined) updateData.monthlyRate = Number(monthlyRate);
+    if (depositAmount !== undefined) updateData.depositAmount = Number(depositAmount);
 
     const updated = await Plan.findByIdAndUpdate(
       planId,
       updateData,
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
@@ -109,6 +101,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const planId = searchParams.get("planId");

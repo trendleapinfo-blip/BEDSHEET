@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Order from "@/models/Order";
 import Coupon from "@/models/Coupon";
+import BrandSettings from "@/models/BrandSettings";
 
 export async function POST(request) {
   try {
@@ -40,7 +41,9 @@ export async function POST(request) {
       couponCode,
       discount,
       orderType,
-      itemTier
+      itemTier,
+      status,
+      paymentStyleId
     } = await request.json();
 
     if (!bedType || !planName || price === undefined || !duration) {
@@ -104,9 +107,30 @@ export async function POST(request) {
       }
     }
 
+    // Fetch Brand Settings to check dynamic security deposits and payment style multipliers
+    const settings = await BrandSettings.findOne();
+    const singleDeposit = settings?.singleBedDeposit ?? 500;
+    const doubleDeposit = settings?.doubleBedDeposit ?? 800;
+    
+    const isSingleBed = (bedType || "").toLowerCase().includes("single");
+    const baseDeposit = isSingleBed ? singleDeposit : doubleDeposit;
+
+    let depositMultiplier = 1;
+    if (paymentStyleId) {
+      const matchedStyle = settings?.paymentStyles?.find(s => s.id === paymentStyleId);
+      if (matchedStyle) {
+        depositMultiplier = matchedStyle.depositMultiplier !== undefined ? matchedStyle.depositMultiplier : 1;
+      }
+    } else {
+      // Fallback: If itemTier is PREMIUM, deposit multiplier is 0 (Advance Plan)
+      if (itemTier === "PREMIUM") {
+        depositMultiplier = 0;
+      }
+    }
+
     const discountedBase = Number(price) - calculatedDiscount;
     const computedGst = Math.round(discountedBase * 0.18);
-    const computedDeposit = (orderType === "BUY") ? 0 : ((subscriptionType === "weekly") ? 0 : (bedType === "single" ? 500 : 800));
+    const computedDeposit = (orderType === "BUY") ? 0 : ((subscriptionType === "weekly") ? 0 : Math.round(baseDeposit * depositMultiplier));
     const computedTotalPrice = discountedBase + computedGst + computedDeposit;
 
     const updateFields = {
@@ -172,17 +196,17 @@ export async function POST(request) {
     }
 
     // Generate dynamic bundleOrderId
-    const codePrefix = bedType === "single" ? "SIN" : "DOU";
+    const codePrefix = isSingleBed ? "SIN" : "DOU";
     let bundleOrderId = "";
     let bundleName = "";
 
     if (orderType === "BUY") {
       bundleOrderId = `B${codePrefix}PUR-${Math.floor(10000 + Math.random() * 90000)}`;
-      bundleName = `${bedType === "single" ? "Single" : "Double"} Bed Sheets (${itemTier === "PREMIUM" ? "Premium Set" : "Basic Set"})`;
+      bundleName = `${bedType} Sheets (${itemTier === "PREMIUM" ? "Premium Set" : "Basic Set"})`;
     } else {
       const subPrefix = (subscriptionType || "monthly") === "weekly" ? "WK" : "MO";
       bundleOrderId = `B${codePrefix}BUN-${subPrefix}-${Math.floor(10000 + Math.random() * 90000)}`;
-      bundleName = `${bedType === "single" ? "Single" : "Double"} Bed ${
+      bundleName = `${bedType} ${
         subscriptionType === "weekly" ? "Weekly Change Service" : "Bundle"
       }`;
     }
@@ -201,12 +225,18 @@ export async function POST(request) {
       email: updatedUser.email,
       bundleName,
       duration,
+      durationMonths: duration === "1 Month" ? 1 : duration === "3 Months" ? 3 : duration === "6 Months" ? 6 : duration === "9 Months" ? 9 : 12,
+      calculatedRent: Number(price), // Passed from checkout
+      depositCharged: computedDeposit,
+      totalAmount: computedTotalPrice,
       finalPrice: computedTotalPrice,
       couponCode: coupon ? coupon.code : null,
       discount: calculatedDiscount,
-      status: "ACTIVE",
+      status: status || "ACTIVE",
       orderType: orderType || "RENT",
       itemTier: itemTier || "BASIC",
+      orderCategory: "B2C",
+      frequency: subscriptionType === "weekly" ? "WEEKLY_SWAP" : "MONTHLY_SWAP",
       startDate: new Date(),
       endDate,
       deliveryAddress: updatedUser.address || "—",

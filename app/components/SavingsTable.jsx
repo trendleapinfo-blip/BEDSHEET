@@ -1,83 +1,70 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckIcon, StarIcon } from "./Icons";
 
 export default function SavingsTable() {
-  const [selectedTier, setSelectedTier] = useState("professional"); // starter | growth | professional | enterprise
+  const [dbPlans, setDbPlans] = useState([]);
+  const [selectedTier, setSelectedTier] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const tiers = [
-    {
-      id: "starter",
-      name: "Starter",
-      months: 1,
-      price: 300,
-      basePrice: 300,
-      discount: "0%",
-      savings: 0,
-      features: [
-        "All bundle features included",
-        "Free delivery & pickup",
-        "Flexible scheduling",
-        "Standard customer support",
-        "24/7 delivery tracking",
-      ],
-      badge: "Flexible Option",
-    },
-    {
-      id: "growth",
-      name: "Growth",
-      months: 3,
-      price: 855,
-      basePrice: 900,
-      discount: "5%",
-      savings: 45,
-      features: [
-        "Everything in Starter",
-        "Fast support when you need it",
-        "Easy to change delivery days",
-        "Cleanliness guarantee",
-        "Fast sheet swaps",
-      ],
-      badge: "Popular Selection",
-    },
-    {
-      id: "professional",
-      name: "Professional",
-      months: 6,
-      price: 1620,
-      basePrice: 1800,
-      discount: "10%",
-      savings: 180,
-      features: [
-        "Everything in Growth",
-        "Best helper support",
-        "Guaranteed fast delivery",
-        "Free damage protection",
-        "Free replacement if needed",
-      ],
-      badge: "Best Value",
-    },
-    {
-      id: "enterprise",
-      name: "Enterprise",
-      months: 12,
-      price: 2880,
-      basePrice: 3600,
-      discount: "20%",
-      savings: 720,
-      features: [
-        "Everything in Professional",
-        "Your own personal support helper",
-        "Same-day priority delivery",
-        "Unlimited free sheet replacements",
-        "Special rewards status",
-      ],
-      badge: "Super Saver",
-    },
-  ];
+  useEffect(() => {
+    async function loadPlans() {
+      try {
+        const res = await fetch("/api/plans");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.plans && data.plans.length > 0) {
+            setDbPlans(data.plans);
+            const singles = data.plans.filter(p => p.bedType === "single");
+            const prof = singles.find(p => p.name.toLowerCase() === "professional");
+            if (prof) {
+              setSelectedTier(prof._id);
+            } else if (singles.length > 0) {
+              setSelectedTier(singles[0]._id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load plans in SavingsTable:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadPlans();
+  }, []);
 
-  const currentTier = tiers.find((t) => t.id === selectedTier) || tiers[2];
+  const singlePlans = dbPlans.filter(p => p.bedType === "single");
+  
+  const tiers = singlePlans.map(plan => {
+    const originalPriceVal = Number(plan.originalPrice) || Number(plan.price);
+    const savingsVal = Math.max(0, originalPriceVal - Number(plan.price));
+    return {
+      id: plan._id,
+      name: plan.name,
+      months: plan.duration.includes("Month") ? Number(plan.duration.split(" ")[0]) : 1,
+      price: plan.price,
+      basePrice: originalPriceVal,
+      discount: plan.discount || "0%",
+      savings: savingsVal,
+      features: plan.features || [],
+      badge: plan.badge || (plan.popular ? "Popular Selection" : "Flexible Option"),
+    };
+  });
+
+  if (loading) {
+    return (
+      <section className="py-24 bg-alabaster-linen/50 border-t border-charcoal-ink/05">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-charcoal-ink mx-auto" />
+        </div>
+      </section>
+    );
+  }
+
+  if (tiers.length === 0) return null;
+
+  const currentTier = tiers.find((t) => t.id === selectedTier) || tiers[0];
 
   return (
     <section className="py-24 bg-alabaster-linen/50 border-t border-charcoal-ink/05">

@@ -54,38 +54,8 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
   const [customFabric, setCustomFabric] = useState("400 TC Organic Cotton");
   const [customPrint, setCustomPrint] = useState("Solid / Minimalist");
 
-  const defaultPlansData = {
-    single: {
-      title: "Single Bed Plan",
-      subtitle: "For one person sleeping alone. Always clean.",
-      basePrice: 300,
-      image: "/hero_bedding.png",
-      cottonType: "Very Soft Clean Cotton",
-      frequency: "Fresh Sheets Every 2 Weeks",
-      durations: [
-        { name: "1 Month Plan", duration: "1 Month", price: "300", originalPrice: null, discount: null, cta: "Get 1 Month Plan" },
-        { name: "3 Months Plan", duration: "3 Months", price: "855", originalPrice: "900", discount: "5% off", cta: "Get 3 Months Plan" },
-        { name: "6 Months Plan", duration: "6 Months", price: "1620", originalPrice: "1800", discount: "10% off", cta: "Get 6 Months Plan", popular: true, badge: "Best Value" },
-        { name: "12 Months Plan", duration: "12 Months", price: "2880", originalPrice: "3600", discount: "20% off", cta: "Get 12 Months Plan" },
-      ],
-    },
-    double: {
-      title: "Double Bed Plan",
-      subtitle: "For two people or bigger beds. Includes 4 bedsheets + 8 pillow covers.",
-      basePrice: 800,
-      image: "/about_bedding.png",
-      cottonType: "Super Soft Egyptian Cotton",
-      frequency: "Fresh Sheets Every 2 Weeks",
-      durations: [
-        { name: "1 Month Plan", duration: "1 Month", price: "800", originalPrice: null, discount: null, cta: "Get 1 Month Plan" },
-        { name: "3 Months Plan", duration: "3 Months", price: "2280", originalPrice: "2400", discount: "5% off", cta: "Get 3 Months Plan" },
-        { name: "6 Months Plan", duration: "6 Months", price: "4320", originalPrice: "4800", discount: "10% off", cta: "Get 6 Months Plan", popular: true, badge: "Best Value" },
-        { name: "12 Months Plan", duration: "12 Months", price: "7680", originalPrice: "9600", discount: "20% off", cta: "Get 12 Months Plan" },
-      ],
-    },
-  };
-
   const [dbPlans, setDbPlans] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadPlans() {
@@ -117,7 +87,10 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
             };
 
             data.plans.forEach(plan => {
-              const bedType = plan.bedType === "single" ? "single" : "double";
+              const bedTypeLower = (plan.bedType || "").toLowerCase();
+              const isSingleType = bedTypeLower.includes("single") || bedTypeLower.includes("6x3");
+              const bedType = isSingleType ? "single" : "double";
+              
               grouped[bedType].durations.push({
                 name: plan.name,
                 duration: plan.duration,
@@ -141,12 +114,33 @@ export default function InteractivePlans({ handleSelectPlan, submittingPlan }) {
         }
       } catch (err) {
         console.error("Failed to fetch dynamic plans:", err);
+      } finally {
+        setLoading(false);
       }
     }
     loadPlans();
   }, []);
 
-  const activePlans = dbPlans || defaultPlansData;
+  if (loading) {
+    return (
+      <div className="text-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-charcoal-ink mx-auto" />
+      </div>
+    );
+  }
+
+  if (!dbPlans) {
+    return (
+      <div className="text-center py-20 border border-charcoal-ink/10 rounded-[32px] bg-white p-8 max-w-2xl mx-auto shadow-sm">
+        <h3 className="font-serif font-bold text-charcoal-ink text-xl mb-2">No active plans available</h3>
+        <p className="text-charcoal-ink/65 text-xs leading-relaxed">
+          Our bedding pricing plans are currently being updated by our system administrators. Please check back soon or configure plans in the admin panel.
+        </p>
+      </div>
+    );
+  }
+
+  const activePlans = dbPlans;
 
   // Resolve the dynamic selected plan based on Suite and Duration
   const getSelectedPlanData = () => {

@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Category from "@/models/Category";
+import { verifyAdmin } from "@/lib/adminAuth";
 
 export async function GET() {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const categories = await Category.find({}).sort({ createdAt: -1 });
     return NextResponse.json({ categories });
@@ -15,6 +21,11 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { name, description, pricePerItem, status, totalStock, availableStock, rentedStock, laundryStock } = await request.json();
 
@@ -42,6 +53,11 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { categoryId, name, description, pricePerItem, status, totalStock, availableStock, rentedStock, laundryStock } = await request.json();
 
@@ -78,6 +94,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");

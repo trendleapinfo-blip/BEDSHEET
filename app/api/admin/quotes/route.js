@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Quote from "@/models/Quote";
+import { verifyAdmin } from "@/lib/adminAuth";
 
 export async function GET() {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const quotes = await Quote.find({}).sort({ receivedAt: -1 });
     return NextResponse.json({ quotes });
@@ -15,6 +21,11 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const body = await request.json();
     const newQuote = await Quote.create(body);
@@ -27,14 +38,31 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
-    const { quoteId, status } = await request.json();
+    const { quoteId, status, priceQuote, finalPrice, durationMonths, vendorEmail } = await request.json();
 
     if (!quoteId || !status) {
       return NextResponse.json({ error: "Quote ID and Status are required" }, { status: 400 });
     }
 
-    const updated = await Quote.findByIdAndUpdate(quoteId, { status }, { new: true });
+    const updateFields = { status };
+    if (priceQuote !== undefined) updateFields.priceQuote = Number(priceQuote) || 0;
+    if (finalPrice !== undefined) updateFields.finalPrice = Number(finalPrice) || 0;
+    if (durationMonths !== undefined) updateFields.durationMonths = Number(durationMonths) || 0;
+    if (vendorEmail !== undefined) updateFields.vendorEmail = vendorEmail;
+    
+    if (status === "QUOTE SENT") {
+        updateFields.agreementSentAt = new Date();
+        // Mock sending email
+        console.log(`Sending agreement email to ${vendorEmail || 'vendor'} for Quote ID: ${quoteId}`);
+    }
+
+    const updated = await Quote.findByIdAndUpdate(quoteId, updateFields, { new: true });
     if (!updated) {
       return NextResponse.json({ error: "Quote not found" }, { status: 404 });
     }
@@ -48,6 +76,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const quoteId = searchParams.get("quoteId");

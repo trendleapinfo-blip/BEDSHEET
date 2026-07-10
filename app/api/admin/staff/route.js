@@ -3,9 +3,15 @@ import dbConnect from "@/lib/db";
 import StaffApproval from "@/models/StaffApproval";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { verifyAdmin } from "@/lib/adminAuth";
 
 export async function GET() {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const staff = await StaffApproval.find({}).sort({ registeredAt: -1 });
     return NextResponse.json({ staff });
@@ -17,6 +23,11 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { name, email, mobile, role, status } = await request.json();
 
@@ -41,6 +52,11 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { staffId, status } = await request.json();
 
@@ -80,6 +96,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const admin = await verifyAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const staffId = searchParams.get("staffId");

@@ -1,15 +1,15 @@
 "use client";
- 
+
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Sparkles, 
-  MapPin, 
-  Phone, 
-  Check, 
-  ShieldCheck, 
-  RefreshCw, 
+import {
+  Sparkles,
+  MapPin,
+  Phone,
+  Check,
+  ShieldCheck,
+  RefreshCw,
   AlertCircle,
   Truck,
   Layers,
@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import SubscriptionModal from "../components/SubscriptionModal";
- 
+
 const CUSTOMIZATION_PRICING = {
   colors: {
     "Classic White": 0,
@@ -42,15 +42,15 @@ const CUSTOMIZATION_PRICING = {
     "Floral Bloom": 150
   }
 };
- 
+
 function CheckoutFormContent() {
   const router = useRouter();
- 
+
   // Session & Plan States
   const [user, setUser] = useState(null);
   const [plan, setPlan] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
- 
+
   // Form States
   const [subscriptionType, setSubscriptionType] = useState("monthly"); // "monthly" or "weekly"
   const [address, setAddress] = useState("");
@@ -58,14 +58,14 @@ function CheckoutFormContent() {
   const [error, setError] = useState("");
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [successPlan, setSuccessPlan] = useState(null); // Shows success screen if set
- 
+
   // Coupon States
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
- 
+
   // Fetch session and retrieve plan
   useEffect(() => {
     const fetchSessionAndPlan = async () => {
@@ -92,7 +92,7 @@ function CheckoutFormContent() {
           window.location.href = "/login?redirect=checkout";
           return;
         }
- 
+
         const pendingPlan = localStorage.getItem("checkout_pending");
         if (pendingPlan) {
           const parsed = JSON.parse(pendingPlan);
@@ -111,7 +111,7 @@ function CheckoutFormContent() {
         setLoadingSession(false);
       }
     };
- 
+
     fetchSessionAndPlan();
   }, []);
 
@@ -122,7 +122,7 @@ function CheckoutFormContent() {
     setCouponError("");
     setCouponSuccess("");
   }, [subscriptionType]);
- 
+
   if (loadingSession) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center text-charcoal-ink">
@@ -131,7 +131,7 @@ function CheckoutFormContent() {
       </div>
     );
   }
- 
+
   if (!plan) {
     return (
       <div className="max-w-md mx-auto bg-white border border-charcoal-ink/10 p-8 text-center shadow-md space-y-6">
@@ -140,8 +140,8 @@ function CheckoutFormContent() {
         <p className="text-xs text-charcoal-ink/60 font-semibold leading-relaxed">
           Please select a bedding plan from our plans catalog before attempting to checkout.
         </p>
-        <Link 
-          href="/#pricing" 
+        <Link
+          href="/#pricing"
           className="block w-full text-center py-3.5 px-6 bg-charcoal-ink hover:bg-linen-gold text-white font-bold text-xs uppercase tracking-widest transition-colors"
         >
           View Bedding Plans
@@ -149,34 +149,9 @@ function CheckoutFormContent() {
       </div>
     );
   }
- 
+
   const isSingle = plan.bedType === "single";
- 
-  const getCustomExtra = () => {
-    if (!plan.isCustom) return 0;
-    
-    const colorCost = CUSTOMIZATION_PRICING.colors[plan.color] || 0;
-    const fabricCost = CUSTOMIZATION_PRICING.fabrics[plan.fabric] || 0;
-    const printCost = CUSTOMIZATION_PRICING.prints[plan.print] || 0;
-    const extraPerMonth = colorCost + fabricCost + printCost;
- 
-    let multiplier = 1;
-    let discountRate = 0;
-    if (plan.duration === "3 Months") {
-      multiplier = 3;
-      discountRate = 0.05;
-    } else if (plan.duration === "6 Months") {
-      multiplier = 6;
-      discountRate = 0.10;
-    } else if (plan.duration === "12 Months") {
-      multiplier = 12;
-      discountRate = 0.20;
-    }
- 
-    const rawExtra = extraPerMonth * multiplier;
-    return Math.round(rawExtra * (1 - discountRate));
-  };
- 
+
   // Calculate pricing breakdown
   const getPricing = () => {
     if (plan.orderType === "BUY") {
@@ -198,39 +173,31 @@ function CheckoutFormContent() {
       return { base, couponDiscount, discountedBase, gst, deposit: 0, total };
     }
 
-    const customExtra = getCustomExtra();
-    let base = 0;
-    let deposit = 0;
- 
-    if (subscriptionType === "monthly") {
-      let basePlanPrice = Number(plan.basePlanPrice || plan.price) || 0;
-      if (plan.isCustom) {
-        basePlanPrice = Number(plan.basePlanPrice) || (Number(plan.price) - customExtra);
-      }
-      base = basePlanPrice + customExtra;
-      deposit = isSingle ? 500 : 800;
-    } else {
-      const baseWeeklyMonthly = isSingle ? 1200 : 2000;
-      
-      let multiplier = 1;
-      let discountRate = 0;
-      if (plan.duration === "3 Months") {
-        multiplier = 3;
-        discountRate = 0.05;
-      } else if (plan.duration === "6 Months") {
-        multiplier = 6;
-        discountRate = 0.10;
-      } else if (plan.duration === "12 Months") {
-        multiplier = 12;
-        discountRate = 0.20;
-      }
- 
-      const rawBase = baseWeeklyMonthly * multiplier;
-      const baseWeekly = Math.round(rawBase * (1 - discountRate));
-      base = baseWeekly + customExtra;
-      deposit = 0;
+    // New Pricing Logic for RENT
+    const isSingle = plan.bedType === "single";
+    let baseMonthly = 0;
+    let depositAmt = 0;
+
+    if (subscriptionType === "weekly") { // Premium
+      baseMonthly = isSingle ? 750 : 950;
+      depositAmt = 0;
+    } else { // Basic
+      baseMonthly = isSingle ? 300 : 500;
+      depositAmt = isSingle ? 500 : 800;
     }
- 
+
+    let durationMonths = 1;
+    let discountRate = 0;
+    if (plan.duration === "3 Months") { durationMonths = 3; discountRate = 0.05; }
+    else if (plan.duration === "6 Months") { durationMonths = 6; discountRate = 0.10; }
+    else if (plan.duration === "9 Months") { durationMonths = 9; discountRate = 0.10; }
+    else if (plan.duration === "12 Months") { durationMonths = 12; discountRate = 0.20; }
+
+    const originalRent = baseMonthly * durationMonths;
+    let base = Math.round(originalRent * (1 - discountRate));
+    let deposit = depositAmt;
+
+    // Apply Checkout Coupon
     let couponDiscount = 0;
     if (appliedCoupon) {
       if (appliedCoupon.discountType === "percentage") {
@@ -245,16 +212,16 @@ function CheckoutFormContent() {
         couponDiscount = base;
       }
     }
- 
+
     const discountedBase = base - couponDiscount;
     const gst = Math.round(discountedBase * 0.18);
     const total = discountedBase + gst + deposit;
- 
-    return { base, couponDiscount, discountedBase, gst, deposit, total };
+
+    return { base, couponDiscount, discountedBase, gst, deposit, total, durationMonths };
   };
- 
+
   const pricing = getPricing();
- 
+
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setValidatingCoupon(true);
@@ -269,7 +236,7 @@ function CheckoutFormContent() {
           subtotal: pricing.base
         })
       });
- 
+
       const data = await res.json();
       if (res.ok && data.success) {
         setAppliedCoupon({
@@ -290,26 +257,26 @@ function CheckoutFormContent() {
       setValidatingCoupon(false);
     }
   };
- 
 
- 
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoadingSubmit(true);
- 
+
     if (!mobile || mobile.length !== 10) {
       setError("Please provide a valid 10-digit mobile number.");
       setLoadingSubmit(false);
       return;
     }
- 
+
     if (!address.trim()) {
       setError("Delivery address is required to dispatch fresh linens.");
       setLoadingSubmit(false);
       return;
     }
- 
+
     try {
       const payload = {
         bedType: plan.bedType,
@@ -331,13 +298,13 @@ function CheckoutFormContent() {
         orderType: plan.orderType || "RENT",
         itemTier: plan.orderType === "BUY" ? (plan.itemTier || "BASIC") : (subscriptionType === "weekly" ? "PREMIUM" : "BASIC")
       };
- 
+
       const res = await fetch("/api/user/select-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
- 
+
       const data = await res.json();
       if (res.ok) {
         localStorage.removeItem("checkout_pending");
@@ -360,45 +327,45 @@ function CheckoutFormContent() {
       setLoadingSubmit(false);
     }
   };
- 
+
   // Render Success State directly on Page
   if (successPlan) {
     return (
       <div className="max-w-2xl mx-auto py-10 px-4">
-        <SubscriptionModal 
-          plan={successPlan} 
+        <SubscriptionModal
+          plan={successPlan}
           onClose={() => {
             router.push("/dashboard");
-          }} 
+          }}
         />
       </div>
     );
   }
- 
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-charcoal-ink font-sans">
       {/* Back button link */}
       <div className="mb-8">
-        <Link 
-          href="/#pricing" 
+        <Link
+          href="/#pricing"
           className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-charcoal-ink/50 hover:text-charcoal-ink transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Return to bedding plans
         </Link>
       </div>
- 
+
       {error && (
         <div className="mb-8 p-4 bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold rounded-none flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
           {error}
         </div>
       )}
- 
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        
+
         {/* Left Column: Form Details */}
         <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white border border-charcoal-ink/08 p-6 sm:p-8 rounded-none space-y-8 shadow-sm">
-          
+
           {plan.orderType === "BUY" ? (
             <div className="p-6 border border-charcoal-ink/10 bg-charcoal-ink/03 space-y-3">
               <span className="text-3xs uppercase tracking-widest text-[#B2905F] font-black block">Step 01</span>
@@ -427,11 +394,10 @@ function CheckoutFormContent() {
                 <button
                   type="button"
                   onClick={() => setSubscriptionType("monthly")}
-                  className={`text-left p-6 border rounded-none flex flex-col justify-between h-40 transition-all duration-300 cursor-pointer ${
-                    subscriptionType === "monthly"
+                  className={`text-left p-6 border rounded-none flex flex-col justify-between h-40 transition-all duration-300 cursor-pointer ${subscriptionType === "monthly"
                       ? "bg-charcoal-ink/05 border-charcoal-ink ring-1 ring-charcoal-ink"
                       : "bg-white border-charcoal-ink/10 hover:border-charcoal-ink/25"
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-start w-full">
                     <span className={`p-2 rounded-none ${subscriptionType === "monthly" ? "bg-charcoal-ink text-white" : "bg-slate-100 text-slate-500"}`}>
@@ -460,11 +426,10 @@ function CheckoutFormContent() {
                 <button
                   type="button"
                   onClick={() => setSubscriptionType("weekly")}
-                  className={`text-left p-6 border rounded-none flex flex-col justify-between h-40 transition-all duration-300 cursor-pointer ${
-                    subscriptionType === "weekly"
+                  className={`text-left p-6 border rounded-none flex flex-col justify-between h-40 transition-all duration-300 cursor-pointer ${subscriptionType === "weekly"
                       ? "bg-charcoal-ink/05 border-charcoal-ink ring-1 ring-charcoal-ink"
                       : "bg-white border-charcoal-ink/10 hover:border-charcoal-ink/25"
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-start w-full">
                     <span className={`p-2 rounded-none ${subscriptionType === "weekly" ? "bg-charcoal-ink text-white" : "bg-slate-100 text-slate-500"}`}>
@@ -491,9 +456,9 @@ function CheckoutFormContent() {
               </div>
             </>
           )}
- 
+
           <hr className="border-charcoal-ink/08" />
- 
+
           {/* Dispatch Details form */}
           <div className="space-y-6">
             <div>
@@ -502,7 +467,7 @@ function CheckoutFormContent() {
                 Confirm Delivery Coordinates
               </h2>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Phone Field */}
               <div className="space-y-2">
@@ -520,7 +485,7 @@ function CheckoutFormContent() {
                   className="w-full px-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold"
                 />
               </div>
- 
+
               {/* Account Type info */}
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider flex items-center gap-1.5">
@@ -531,7 +496,7 @@ function CheckoutFormContent() {
                 </div>
               </div>
             </div>
- 
+
             {/* Address Field */}
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider flex items-center gap-1.5">
@@ -547,9 +512,9 @@ function CheckoutFormContent() {
               ></textarea>
             </div>
           </div>
- 
+
           <hr className="border-charcoal-ink/08" />
- 
+
           {/* Coupon Code Selection (B2C users) */}
           {user?.accountType === "Individual User" && (
             <div className="space-y-3 bg-charcoal-ink/02 border border-charcoal-ink/05 p-6">
@@ -590,16 +555,16 @@ function CheckoutFormContent() {
             </div>
           )}
         </form>
- 
+
         {/* Right Column: Invoice & Summary */}
         <div className="lg:col-span-5 space-y-6">
-          
+
           {/* Plan Summary Card */}
           <div className="bg-white border border-charcoal-ink/08 p-6 shadow-sm space-y-4">
             <h4 className="text-xs font-black uppercase tracking-wider text-charcoal-ink border-b border-charcoal-ink/08 pb-3">
               Subscription Plan Summary
             </h4>
- 
+
             <div className="space-y-4 text-xs font-semibold">
               <div className="flex justify-between items-start gap-4">
                 <div>
@@ -611,7 +576,7 @@ function CheckoutFormContent() {
                   <p className="text-charcoal-ink font-bold text-sm mt-0.5 uppercase">{plan.bedType} Bed</p>
                 </div>
               </div>
- 
+
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-charcoal-ink/05">
                 <div>
                   <span className="text-3xs uppercase tracking-wider text-charcoal-ink/40 font-bold block">Cycle Period</span>
@@ -622,7 +587,7 @@ function CheckoutFormContent() {
                   <p className="text-charcoal-ink">60°C Thermodynamic</p>
                 </div>
               </div>
- 
+
               {/* If Custom Selection exists */}
               {plan.isCustom && (plan.color || plan.fabric || plan.print) && (
                 <div className="pt-3 border-t border-charcoal-ink/05 space-y-2">
@@ -651,7 +616,7 @@ function CheckoutFormContent() {
               )}
             </div>
           </div>
- 
+
           {/* Payment Invoice details */}
           <div className="bg-charcoal-ink text-white p-6 shadow-md space-y-6">
             <div className="flex justify-between items-center border-b border-white/08 pb-4">
@@ -660,7 +625,7 @@ function CheckoutFormContent() {
               </h4>
               <span className="text-3xs text-white/40 uppercase tracking-widest font-bold">Billing summary</span>
             </div>
- 
+
             <div className="space-y-3 text-2xs font-semibold text-white/70">
               <div className="flex justify-between">
                 <span>
@@ -668,26 +633,26 @@ function CheckoutFormContent() {
                 </span>
                 <span className="text-white">₹{pricing.base}</span>
               </div>
- 
+
               {pricing.couponDiscount > 0 && (
                 <div className="flex justify-between font-bold text-linen-gold">
                   <span>Coupon Code Discount ({appliedCoupon?.couponCode}):</span>
                   <span>-₹{pricing.couponDiscount}</span>
                 </div>
               )}
- 
+
               <div className="flex justify-between">
                 <span>GST Tax (18%):</span>
                 <span className="text-white">₹{pricing.gst}</span>
               </div>
- 
+
               {plan.orderType !== "BUY" && (
                 <div className="flex justify-between">
                   <span>Refundable Security Deposit:</span>
                   <span className="text-white">₹{pricing.deposit}</span>
                 </div>
               )}
- 
+
               <div className="border-t border-white/08 my-4 pt-4 flex justify-between items-baseline">
                 <span className="text-xs font-black text-white uppercase tracking-wider">
                   {plan.orderType === "BUY" ? "Total Payable Amount:" : "Total Upfront Payable:"}
@@ -702,7 +667,7 @@ function CheckoutFormContent() {
                 </div>
               </div>
             </div>
- 
+
             {/* Pay Button inside invoice */}
             <button
               onClick={handleSubmit}
@@ -717,7 +682,7 @@ function CheckoutFormContent() {
               {loadingSubmit ? "Processing Transaction..." : (plan.orderType === "BUY" ? "Confirm & Purchase Now" : "Confirm & Subscribe Now")}
             </button>
           </div>
- 
+
           {/* Trust Guarantees */}
           <div className="bg-white border border-charcoal-ink/08 p-6 text-3xs text-charcoal-ink/50 uppercase tracking-widest font-bold space-y-3.5">
             <span className="flex items-center gap-2"><Truck className="w-4 h-4 text-[#B2905F]" /> {plan.orderType === "BUY" ? "Free Doorstep Delivery" : "Free Doorstep Delivery & Pickup"}</span>
@@ -726,14 +691,14 @@ function CheckoutFormContent() {
               <span className="flex items-center gap-2"><Layers className="w-4 h-4 text-[#B2905F]" /> Pause or Cancel Subscription Anytime</span>
             )}
           </div>
- 
+
         </div>
- 
+
       </div>
     </div>
   );
 }
- 
+
 export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-alabaster-linen flex flex-col justify-between">
@@ -743,7 +708,7 @@ export default function CheckoutPage() {
         {/* Spacer for sticky navbar */}
         <div className="h-[80px]" />
       </div>
- 
+
       {/* Checkout Content Form */}
       <div className="flex-grow">
         <Suspense
@@ -757,7 +722,7 @@ export default function CheckoutPage() {
           <CheckoutFormContent />
         </Suspense>
       </div>
- 
+
       {/* Simple Footer details */}
       <footer className="bg-charcoal-ink text-white/50 text-[10px] font-bold uppercase tracking-widest py-8 border-t border-white/05 text-center">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">

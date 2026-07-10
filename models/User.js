@@ -32,6 +32,14 @@ const UserSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    city: {
+      type: String,
+      trim: true,
+    },
+    pincode: {
+      type: String,
+      trim: true,
+    },
     accountType: {
       type: String,
       enum: ["Individual User", "Commercial Partner"],
