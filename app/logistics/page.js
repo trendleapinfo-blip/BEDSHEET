@@ -18,7 +18,8 @@ import {
   Calendar,
   Search,
   ExternalLink,
-  Package
+  Package,
+  RotateCcw
 } from "lucide-react";
 
 export default function LogisticsDashboard() {
@@ -30,6 +31,9 @@ export default function LogisticsDashboard() {
   const [shipmentsList, setShipmentsList] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Toast notification
+  const [toast, setToast] = useState("");
+
   // Filters
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,10 +83,17 @@ export default function LogisticsDashboard() {
     }
   }, [sessionUser]);
 
-  // Delivery Status Action
+  // Delivery Status Action — optimistic UI update
   const updateDeliveryStatus = async (bundleId, newStatus) => {
-    const confirmation = window.confirm(`Are you sure you want to mark shipment ${bundleId} as ${newStatus}?`);
+    const labels = { DELIVERED: "Delivered", COLLECT_RETURN: "Collect Used Sheets", CANCELLED: "Cancelled" };
+    const confirmation = window.confirm(`Mark shipment ${bundleId} as ${labels[newStatus] || newStatus}?`);
     if (!confirmation) return;
+
+    // Optimistic: update UI instantly
+    const newBundleStatus = newStatus === "DELIVERED" ? "DELIVERED" : newStatus === "COLLECT_RETURN" ? "COLLECTED" : "SENT_TO_LAUNDRY";
+    setShipmentsList(prev => prev.map(s =>
+      s.bundleId === bundleId ? { ...s, bundleStatus: newBundleStatus } : s
+    ));
 
     try {
       const res = await fetch("/api/logistics/runs", {
@@ -93,15 +104,22 @@ export default function LogisticsDashboard() {
 
       if (res.ok) {
         const data = await res.json();
-        alert(data.message || `Shipment ${newStatus} successfully!`);
+        setToast(data.message || `${labels[newStatus]} successful!`);
+        setTimeout(() => setToast(""), 3000);
+        // Background re-fetch for consistency
         fetchData();
       } else {
         const data = await res.json();
-        alert("Status update failed: " + data.error);
+        setToast("❌ " + (data.error || "Update failed"));
+        setTimeout(() => setToast(""), 4000);
+        // Revert optimistic update on failure
+        fetchData();
       }
     } catch (err) {
       console.error(err);
-      alert("Status update failed: " + err.message);
+      setToast("❌ Network error: " + err.message);
+      setTimeout(() => setToast(""), 4000);
+      fetchData();
     }
   };
 
@@ -501,7 +519,7 @@ export default function LogisticsDashboard() {
 
                       </div>
 
-                      {/* Bottom Row Actions (Only for Pending/Active bundles that can be delivered) */}
+                      {/* Bottom Row Actions */}
                       {(isPending || isActive) && (
                         <div className="border-t border-charcoal-ink/08 pt-4 flex flex-wrap gap-3">
                           <button
@@ -518,6 +536,19 @@ export default function LogisticsDashboard() {
                           >
                             <XCircle className="h-4 w-4" />
                             Mark Cancelled / Returned
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Collect Used Sheets action — only for DELIVERED RENT bundles */}
+                      {isDelivered && shipment.orderType === "RENT" && (
+                        <div className="border-t border-charcoal-ink/08 pt-4 flex flex-wrap gap-3">
+                          <button
+                            onClick={() => updateDeliveryStatus(shipment.bundleId, "COLLECT_RETURN")}
+                            className="py-2.5 px-4 rounded-none bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            Collect Used Sheets from Customer
                           </button>
                         </div>
                       )}

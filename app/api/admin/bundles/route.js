@@ -142,12 +142,12 @@ export async function PUT(request) {
 
       // Adjust inventory stocks: decrement available, increment rented
       if (category) {
-        category.availableStock = Math.max(0, category.availableStock - 1);
+        category.availableStock = Math.max(0, (category.availableStock || 0) - 1);
         category.rentedStock = (category.rentedStock || 0) + 1;
         await category.save();
       }
 
-      // Automatically update parent order status to DELIVERED / ACTIVE
+      // Automatically update parent order status to ACTIVE
       await Order.findByIdAndUpdate(bundle.orderId, { status: "ACTIVE" });
 
       return NextResponse.json({ success: true, bundle });

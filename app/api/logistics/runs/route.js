@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Order from "@/models/Order";
 import Bundle from "@/models/Bundle";
+import Category from "@/models/Category";
 
 // Helper to verify logistics/admin/warehouse role
 async function verifyLogisticsAccess() {
@@ -102,11 +103,13 @@ export async function PUT(request) {
     }
 
     const operatorName = user.name || "Logistics Partner";
-    
+    const category = await Category.findOne({ name: bundle.bedType });
+
+    // ── DELIVERED: Logistics hands package to customer ──
     if (action === "DELIVERED") {
       bundle.status = "DELIVERED";
       bundle.logisticsHistory.push({
-        action: "Delivered to Customer",
+        action: "Delivered to Customer — package handed over successfully.",
         operator: operatorName,
       });
       await bundle.save();
@@ -114,9 +117,33 @@ export async function PUT(request) {
       // Sync the order status
       await Order.findByIdAndUpdate(bundle.orderId, { status: "DELIVERED" });
 
-      return NextResponse.json({ success: true, message: "Shipment marked as Delivered." });
+      return NextResponse.json({ success: true, message: "Shipment delivered successfully." });
     }
 
+    // ── COLLECT_RETURN: Delivery boy collects used sheets from customer ──
+    if (action === "COLLECT_RETURN") {
+      if (bundle.status !== "DELIVERED") {
+        return NextResponse.json({ error: "Can only collect from delivered bundles." }, { status: 400 });
+      }
+
+      bundle.status = "COLLECTED";
+      bundle.logisticsHistory.push({
+        action: "Used sheets collected from customer doorstep. In transit back to warehouse.",
+        operator: operatorName,
+      });
+      await bundle.save();
+
+      // Inventory: rented → laundry (sheets are no longer with customer)
+      if (category) {
+        category.rentedStock = Math.max(0, (category.rentedStock || 0) - 1);
+        category.laundryStock = (category.laundryStock || 0) + 1;
+        await category.save();
+      }
+
+      return NextResponse.json({ success: true, message: "Used sheets collected. Bundle in transit to warehouse." });
+    }
+
+    // ── CANCELLED: Delivery failed / customer refused ──
     if (action === "CANCELLED") {
       bundle.status = "SENT_TO_LAUNDRY";
       bundle.items = bundle.items.map(item => ({
@@ -124,20 +151,28 @@ export async function PUT(request) {
         laundryStatus: "PENDING_WASH",
       }));
       bundle.logisticsHistory.push({
-        action: "Delivery cancelled/returned. Bundle routed to laundry dock.",
+        action: "Delivery cancelled/refused. Bundle returned to warehouse laundry dock.",
         operator: operatorName,
       });
       await bundle.save();
 
+      // Inventory: rented → laundry (package came back unused, still needs sanitization)
+      if (category) {
+        category.rentedStock = Math.max(0, (category.rentedStock || 0) - 1);
+        category.laundryStock = (category.laundryStock || 0) + 1;
+        await category.save();
+      }
+
       // Sync the order status
       await Order.findByIdAndUpdate(bundle.orderId, { status: "CANCELLED" });
 
-      return NextResponse.json({ success: true, message: "Shipment cancelled. Bundle routed to laundry." });
+      return NextResponse.json({ success: true, message: "Delivery cancelled. Bundle routed to laundry." });
     }
 
-    return NextResponse.json({ error: "Invalid action. Use DELIVERED or CANCELLED." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid action. Use DELIVERED, COLLECT_RETURN, or CANCELLED." }, { status: 400 });
   } catch (error) {
     console.error("Logistics Status Update Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
