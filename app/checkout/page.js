@@ -65,6 +65,17 @@ function CheckoutFormContent() {
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  
+  // Load Razorpay script dynamically
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   // Fetch session and retrieve plan
   useEffect(() => {
@@ -277,53 +288,126 @@ function CheckoutFormContent() {
       return;
     }
 
-    try {
-      const payload = {
-        bedType: plan.bedType,
-        planName: plan.planName,
-        price: pricing.base,
-        duration: plan.duration,
-        subscriptionType: plan.orderType === "BUY" ? "one-time" : subscriptionType,
-        securityDeposit: pricing.deposit,
-        gst: pricing.gst,
-        totalPrice: pricing.total,
-        address,
-        mobile,
-        isCustom: !!plan.isCustom,
-        color: plan.color,
-        fabric: plan.fabric,
-        print: plan.print,
-        couponCode: appliedCoupon ? appliedCoupon.couponCode : null,
-        discount: pricing.couponDiscount,
-        orderType: plan.orderType || "RENT",
-        itemTier: plan.orderType === "BUY" ? (plan.itemTier || "BASIC") : (subscriptionType === "weekly" ? "PREMIUM" : "BASIC")
-      };
+    // Active Service Area Check (Delhi & Haryana only)
+    const pincodeMatch = address.match(/\b\d{6}\b/);
+    if (!pincodeMatch) {
+      setError("Please include a valid 6-digit delivery pincode in your address.");
+      setLoadingSubmit(false);
+      return;
+    }
+    const pin = pincodeMatch[0];
+    const pinPrefix = pin.substring(0, 2);
+    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13") {
+      setError("ClosetRush is currently active only in Delhi and Haryana. Pincode must start with 11, 12, or 13.");
+      setLoadingSubmit(false);
+      return;
+    }
 
-      const res = await fetch("/api/user/select-plan", {
+    try {
+      // 1. Create order on backend
+      const res = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ totalPrice: pricing.total })
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.removeItem("checkout_pending");
-        setSuccessPlan({
-          ...payload,
-          totalPrice: pricing.total,
-          gst: pricing.gst,
-          securityDeposit: pricing.deposit,
-          price: pricing.base,
-          planName: plan.planName,
-          duration: plan.duration
-        });
-      } else {
-        setError(data.error || "Failed to confirm subscription. Please try again.");
+      const orderData = await res.json();
+      if (!res.ok) {
+        throw new Error(orderData.error || "Failed to initialize payment gateway order.");
       }
+
+      // 2. Configure and open Razorpay Checkout Modal
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "ClosetRush",
+        description: `${plan.planName} (${plan.duration})`,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            setError("");
+            setLoadingSubmit(true);
+
+            // 3. Verify signature on backend & create order on success
+            const verifyPayload = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderDetails: {
+                bedType: plan.bedType,
+                planName: plan.planName,
+                price: pricing.base,
+                duration: plan.duration,
+                subscriptionType: plan.orderType === "BUY" ? "one-time" : subscriptionType,
+                securityDeposit: pricing.deposit,
+                gst: pricing.gst,
+                totalPrice: pricing.total,
+                address,
+                mobile,
+                isCustom: !!plan.isCustom,
+                color: plan.color,
+                fabric: plan.fabric,
+                print: plan.print,
+                couponCode: appliedCoupon ? appliedCoupon.couponCode : null,
+                discount: pricing.couponDiscount,
+                orderType: plan.orderType || "RENT",
+                itemTier: plan.orderType === "BUY" ? (plan.itemTier || "BASIC") : (subscriptionType === "weekly" ? "PREMIUM" : "BASIC")
+              }
+            };
+
+            const verifyRes = await fetch("/api/payment/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(verifyPayload)
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.success) {
+              localStorage.removeItem("checkout_pending");
+              setSuccessPlan({
+                bedType: plan.bedType,
+                planName: plan.planName,
+                price: pricing.base,
+                duration: plan.duration,
+                subscriptionType: plan.orderType === "BUY" ? "one-time" : subscriptionType,
+                securityDeposit: pricing.deposit,
+                gst: pricing.gst,
+                totalPrice: pricing.total,
+                address,
+                mobile
+              });
+            } else {
+              setError(verifyData.error || "Payment verification failed. Please contact support.");
+            }
+          } catch (verifyErr) {
+            console.error("Signature verification error:", verifyErr);
+            setError("Failed to verify payment with server. Please do not close or refresh this page.");
+          } finally {
+            setLoadingSubmit(false);
+          }
+        },
+        prefill: {
+          name: orderData.user.name,
+          email: orderData.user.email,
+          contact: mobile || orderData.user.mobile,
+        },
+        theme: {
+          color: "#0F172A",
+        },
+        modal: {
+          ondismiss: function () {
+            setLoadingSubmit(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
     } catch (err) {
-      console.error("Order submission error:", err);
-      setError("Something went wrong while confirming your payment.");
-    } finally {
+      console.error("Razorpay submission error:", err);
+      setError(err.message || "Something went wrong while connecting with Razorpay.");
       setLoadingSubmit(false);
     }
   };
@@ -501,6 +585,7 @@ function CheckoutFormContent() {
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-charcoal-ink/30" /> Complete Delivery Address
+                <span className="ml-2 text-rose-500 font-bold normal-case tracking-normal">Active in Delhi & Haryana only</span>
               </label>
               <textarea
                 required

@@ -83,6 +83,16 @@ export async function PUT(request) {
       );
     }
 
+    if (pincode) {
+      if (!/^\d{6}$/.test(pincode)) {
+        return NextResponse.json({ error: "Please enter a valid 6-digit pincode." }, { status: 400 });
+      }
+      const pinPrefix = pincode.substring(0, 2);
+      if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13") {
+        return NextResponse.json({ error: "ClosetRush is currently active only in Delhi and Haryana." }, { status: 400 });
+      }
+    }
+
     await dbConnect();
 
     // Check if email is already taken by another user

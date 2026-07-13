@@ -106,6 +106,12 @@ function OnboardingForm() {
       return;
     }
 
+    const pinPrefix = pincode.substring(0, 2);
+    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13") {
+      setError("ClosetRush is currently active only in Delhi and Haryana. Please enter a pincode starting with 11, 12, or 13.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/user/complete-profile", {
@@ -364,6 +370,7 @@ function OnboardingForm() {
           <div>
             <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
               Pincode
+              <span className="ml-2 text-rose-500 font-bold normal-case tracking-normal">Serving Delhi & Haryana only</span>
             </label>
             <input
               type="text"

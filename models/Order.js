@@ -113,6 +113,14 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    razorpayPaymentId: {
+      type: String,
+      trim: true,
+    },
+    razorpayOrderId: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

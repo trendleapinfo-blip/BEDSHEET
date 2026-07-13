@@ -236,6 +236,18 @@ export default function Dashboard() {
       return;
     }
 
+    if (profileForm.pincode) {
+      if (!/^\d{6}$/.test(profileForm.pincode)) {
+        setProfileError("Please enter a valid 6-digit pincode.");
+        return;
+      }
+      const pinPrefix = profileForm.pincode.substring(0, 2);
+      if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13") {
+        setProfileError("ClosetRush is currently active only in Delhi and Haryana. Pincode must start with 11, 12, or 13.");
+        return;
+      }
+    }
+
     setProfileSaving(true);
 
     try {
