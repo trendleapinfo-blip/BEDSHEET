@@ -1,4 +1,4 @@
-const resp = await fetch("http://localhost:3000/api/admin/seed", {
+const resp = await fetch("https://www.closetrush.in/api/admin/seed", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",

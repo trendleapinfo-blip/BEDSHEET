@@ -6,6 +6,7 @@ import User from "@/models/User";
 import Order from "@/models/Order";
 import Coupon from "@/models/Coupon";
 import BrandSettings from "@/models/BrandSettings";
+import { sendOrderConfirmationEmail } from "@/lib/mailer";
 
 export async function POST(request) {
   try {
@@ -217,7 +218,7 @@ export async function POST(request) {
     }
 
     // Create a new Order in Database
-    await Order.create({
+    const newOrder = await Order.create({
       bundleOrderId,
       userId: updatedUser._id.toString(),
       userName: updatedUser.name,
@@ -244,6 +245,27 @@ export async function POST(request) {
 
     if (coupon) {
       await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });
+    }
+
+    // Send beautiful email confirmation to the user
+    try {
+      await sendOrderConfirmationEmail(updatedUser.email, {
+        userName: updatedUser.name,
+        bundleOrderId: newOrder.bundleOrderId,
+        bundleName: newOrder.bundleName,
+        orderType: newOrder.orderType,
+        subscriptionType: newOrder.frequency === "WEEKLY_SWAP" ? "weekly" : "monthly",
+        price: newOrder.calculatedRent,
+        securityDeposit: newOrder.depositCharged,
+        gst: computedGst,
+        discount: newOrder.discount,
+        totalPrice: newOrder.finalPrice,
+        deliveryAddress: newOrder.deliveryAddress,
+        startDate: newOrder.startDate,
+        duration: newOrder.duration,
+      });
+    } catch (emailErr) {
+      console.error("Order Confirmation Email failed to send:", emailErr);
     }
 
     return NextResponse.json({

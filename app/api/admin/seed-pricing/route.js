@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Plan from "@/models/Plan";
 import DurationDiscount from "@/models/DurationDiscount";

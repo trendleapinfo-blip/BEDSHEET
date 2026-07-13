@@ -10,6 +10,7 @@ import BrandSettings from "@/models/BrandSettings";
 import Plan from "@/models/Plan";
 import Coupon from "@/models/Coupon";
 import Bundle from "@/models/Bundle";
+import DurationDiscount from "@/models/DurationDiscount";
 import bcrypt from "bcryptjs";
 import { verifyAdmin } from "@/lib/adminAuth";
 
@@ -38,6 +39,7 @@ export async function POST(request) {
     await Plan.deleteMany({});
     await Coupon.deleteMany({});
     await Bundle.deleteMany({});
+    await DurationDiscount.deleteMany({});
 
 
 
@@ -66,25 +68,19 @@ export async function POST(request) {
 
     // 3. Seed B2C Plans
     await Plan.create([
-      { bedType: "Bedsheet + Pillow (Single)", size: "6x3 ft", name: "Single Bed Plan", duration: "1 Month", price: 300, securityDeposit: 500, features: ["1 Clean Bedsheet", "1 Pillow Cover", "Free Doorstep Delivery"], cta: "Choose Plan" },
-      { bedType: "Bedsheet + Pillow (Single)", size: "6x3 ft", name: "Single Bed Plan", duration: "3 Months", price: 855, securityDeposit: 500, discount: "5% off", features: ["3 Swaps (1 per month)", "1 Pillow Cover", "Free Doorstep swaps"], cta: "Choose Plan" },
-      { bedType: "Bedsheet + Pillow (Single)", size: "6x3 ft", name: "Single Bed Plan", duration: "12 Months", price: 3240, securityDeposit: 500, discount: "10% off", popular: true, badge: "Best Value", features: ["12 Swaps (1 per month)", "1 Pillow Cover", "Premium Sateen Cotton", "Priority logistics"], cta: "Choose Plan" },
-      
-      { bedType: "Bedsheet + Pillow (Double)", size: "6x5 ft", name: "Double Bed Plan", duration: "1 Month", price: 800, securityDeposit: 800, features: ["2 Clean Bedsheets", "2 Pillow Covers", "Free Doorstep Delivery"], cta: "Choose Plan" },
-      { bedType: "Bedsheet + Pillow (Double)", size: "6x5 ft", name: "Double Bed Plan", duration: "3 Months", price: 2280, securityDeposit: 800, discount: "5% off", features: ["3 Swaps (1 per month)", "2 Pillow Covers", "Free Doorstep Swaps"], cta: "Choose Plan" },
-      { bedType: "Bedsheet + Pillow (Double)", size: "6x5 ft", name: "Double Bed Plan", duration: "12 Months", price: 8640, securityDeposit: 800, discount: "10% off", popular: true, badge: "Best Value", features: ["12 Swaps (1 per month)", "2 Pillow Covers", "Premium Sateen Cotton", "Priority logistics"], cta: "Choose Plan" },
+      { tier: "Normal", bedType: "single", monthlyRate: 300, depositAmount: 500 },
+      { tier: "Normal", bedType: "double", monthlyRate: 800, depositAmount: 800 },
+      { tier: "Premium", bedType: "single", monthlyRate: 750, depositAmount: 0 },
+      { tier: "Premium", bedType: "double", monthlyRate: 950, depositAmount: 0 },
+    ]);
 
-      { bedType: "Curtains", size: "Standard", name: "Linen Curtains Plan", duration: "1 Month", price: 400, securityDeposit: 600, features: ["2 Premium Curtains", "Sanitization wash", "Free Doorstep swaps"], cta: "Choose Plan" },
-      { bedType: "Curtains", size: "Standard", name: "Linen Curtains Plan", duration: "3 Months", price: 1140, securityDeposit: 600, discount: "5% off", features: ["6 Swaps (2 per month)", "Thermal disinfection", "Free Doorstep swaps"], cta: "Choose Plan" },
-      { bedType: "Curtains", size: "Standard", name: "Linen Curtains Plan", duration: "12 Months", price: 4320, securityDeposit: 600, discount: "10% off", popular: true, badge: "Popular", features: ["24 Swaps (2 per month)", "Dust barrier seal", "Priority logistics"], cta: "Choose Plan" },
-
-      { bedType: "Quilts", size: "6x5 ft", name: "Warm Quilt Plan", duration: "1 Month", price: 600, securityDeposit: 1000, features: ["1 Hypoallergenic Quilt", "High-loft microfibers", "Free Doorstep swaps"], cta: "Choose Plan" },
-      { bedType: "Quilts", size: "6x5 ft", name: "Warm Quilt Plan", duration: "3 Months", price: 1710, securityDeposit: 1000, discount: "5% off", features: ["3 Swaps (1 per month)", "Thermal sterilization", "Free Doorstep swaps"], cta: "Choose Plan" },
-      { bedType: "Quilts", size: "6x5 ft", name: "Warm Quilt Plan", duration: "12 Months", price: 6480, securityDeposit: 1000, discount: "10% off", popular: true, badge: "Best Value", features: ["12 Swaps (1 per month)", "Airtight vacuum seal pack", "Priority logistics"], cta: "Choose Plan" },
-
-      { bedType: "Blankets", size: "6x5 ft", name: "Premium Blanket Plan", duration: "1 Month", price: 500, securityDeposit: 1000, features: ["1 Thermoregulatory Blanket", "UV-C sanitized finish", "Free Doorstep swaps"], cta: "Choose Plan" },
-      { bedType: "Blankets", size: "6x5 ft", name: "Premium Blanket Plan", duration: "3 Months", price: 1425, securityDeposit: 1000, discount: "5% off", features: ["3 Swaps (1 per month)", "Thermal sterilization", "Free Doorstep swaps"], cta: "Choose Plan" },
-      { bedType: "Blankets", size: "6x5 ft", name: "Premium Blanket Plan", duration: "12 Months", price: 5400, securityDeposit: 1000, discount: "10% off", popular: true, badge: "Best Value", features: ["12 Swaps (1 per month)", "Airtight vacuum seal pack", "Priority logistics"], cta: "Choose Plan" },
+    // Seed Duration Discounts
+    await DurationDiscount.create([
+      { durationMonths: 1, discountPercent: 0 },
+      { durationMonths: 3, discountPercent: 5 },
+      { durationMonths: 6, discountPercent: 10 },
+      { durationMonths: 9, discountPercent: 10 },
+      { durationMonths: 12, discountPercent: 20 },
     ]);
 
     // 4. Seed Promo Coupon
