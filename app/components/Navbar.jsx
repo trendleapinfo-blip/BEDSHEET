@@ -124,15 +124,11 @@ export default function Navbar({ forceSolid = false }) {
 
   return (
     <nav
-      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-700 ease-in-out ${
-        scrolled
-          ? "top-4 w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] md:w-[calc(100%-6rem)] max-w-[1200px] bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.06)] py-3 sm:py-3.5 rounded-full"
-          : "top-0 w-full max-w-none bg-transparent border-b border-transparent py-6 sm:py-8 rounded-none"
+      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out top-4 w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] md:w-[calc(100%-6rem)] max-w-[1200px] bg-white/95 backdrop-blur-xl border border-charcoal-ink/10 shadow-[0_12px_40px_rgba(13,17,23,0.08)] rounded-full ${
+        scrolled ? "py-3 sm:py-3.5" : "py-4 sm:py-4.5"
       }`}
     >
-      <div className={`transition-all duration-700 ${
-        scrolled ? "w-full px-6 sm:px-8" : "max-w-[1380px] mx-auto w-full px-6 sm:px-10 lg:px-12"
-      }`}>
+      <div className="w-full px-6 sm:px-8">
         <div className="flex items-center justify-between h-10">
           {/* Logo / Brand */}
           <div className="flex-shrink-0 flex items-center whitespace-nowrap">
