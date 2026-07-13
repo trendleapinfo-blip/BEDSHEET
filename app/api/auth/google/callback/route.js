@@ -94,9 +94,15 @@ export async function GET(request) {
       { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
 
-    // Set Cookie
-    const cookieStore = await cookies();
-    cookieStore.set("token", token, {
+    // Redirect to onboarding if new or missing mobile, else to dashboard
+    const redirectUrl = new URL(
+      isNewUser || !user.mobile ? "/onboarding" : "/dashboard",
+      request.url
+    );
+    const response = NextResponse.redirect(redirectUrl);
+
+    // Set Cookie directly on the response to ensure it persists across Next.js redirects
+    response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -104,13 +110,7 @@ export async function GET(request) {
       path: "/",
     });
 
-    // New users or users missing mobile → complete profile first
-    if (isNewUser || !user.mobile) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
-    }
-
-    // Existing complete users → go to dashboard
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return response;
   } catch (err) {
     console.error("Google OAuth Callback Error:", err);
     return NextResponse.redirect(new URL("/login?error=callback_internal_error", request.url));
