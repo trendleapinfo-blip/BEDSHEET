@@ -826,6 +826,7 @@ export default function Dashboard() {
                             <th className="py-3.5 px-4">Start Date</th>
                             <th className="py-3.5 px-4">Status</th>
                             <th className="py-3.5 px-4 text-right">Price</th>
+                            <th className="py-3.5 px-4 text-center">Invoice</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-medium">
@@ -857,6 +858,14 @@ export default function Dashboard() {
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-right font-bold text-charcoal-ink">₹{order.finalPrice}</td>
+                              <td className="py-3.5 px-4 text-center">
+                                <a
+                                  href={`/api/user/quote/pdf?orderId=${order.bundleOrderId}`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-3xs font-extrabold uppercase bg-charcoal-ink hover:bg-linen-gold text-white hover:text-charcoal-ink tracking-wider transition-colors duration-200"
+                                >
+                                  <FileText className="w-3 h-3" /> PDF
+                                </a>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
