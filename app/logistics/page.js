@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   Calendar,
   Search,
-  ExternalLink
+  ExternalLink,
+  Package
 } from "lucide-react";
 
 export default function LogisticsDashboard() {
@@ -26,7 +27,7 @@ export default function LogisticsDashboard() {
   const [activeTab, setActiveTab] = useState("Run Sheet");
 
   // Data lists
-  const [ordersList, setOrdersList] = useState([]);
+  const [shipmentsList, setShipmentsList] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Filters
@@ -52,17 +53,17 @@ export default function LogisticsDashboard() {
     }
   };
 
-  // Fetch Delivery Orders Data
+  // Fetch Delivery Shipments Data (bundles with order info)
   const fetchData = async () => {
     setIsRefreshing(true);
     try {
-      const ordersRes = await fetch("/api/admin/orders");
-      if (ordersRes.ok) {
-        const ordersData = await ordersRes.json();
-        setOrdersList(ordersData.orders || []);
+      const res = await fetch("/api/logistics/runs");
+      if (res.ok) {
+        const data = await res.json();
+        setShipmentsList(data.shipments || []);
       }
     } catch (err) {
-      console.error("Error fetching logistics orders:", err);
+      console.error("Error fetching logistics shipments:", err);
     } finally {
       setIsRefreshing(false);
     }
@@ -79,25 +80,20 @@ export default function LogisticsDashboard() {
   }, [sessionUser]);
 
   // Delivery Status Action
-  const updateDeliveryStatus = async (orderId, newStatus) => {
-    const confirmation = window.confirm(`Are you sure you want to mark this shipment as ${newStatus}?`);
+  const updateDeliveryStatus = async (bundleId, newStatus) => {
+    const confirmation = window.confirm(`Are you sure you want to mark shipment ${bundleId} as ${newStatus}?`);
     if (!confirmation) return;
 
     try {
-      const res = await fetch("/api/admin/orders", {
+      const res = await fetch("/api/logistics/runs", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus })
+        body: JSON.stringify({ bundleId, action: newStatus })
       });
 
       if (res.ok) {
-        if (newStatus === "DELIVERED") {
-          alert("Shipment Delivered! WMS Bundle updated successfully.");
-        } else if (newStatus === "CANCELLED") {
-          alert("Shipment Cancelled. Bundle routed to Thermodynamic Laundry for safety.");
-        } else {
-          alert(`Shipment status updated to ${newStatus} successfully!`);
-        }
+        const data = await res.json();
+        alert(data.message || `Shipment ${newStatus} successfully!`);
         fetchData();
       } else {
         const data = await res.json();
@@ -161,26 +157,38 @@ export default function LogisticsDashboard() {
     );
   }
 
-  // Statistics counters
-  const totalShipments = ordersList.length;
-  const pendingDeliveries = ordersList.filter(o => o.status === "ACTIVE" || o.status === "PENDING").length;
-  const completedDeliveries = ordersList.filter(o => o.status === "DELIVERED").length;
-  const cancelledDeliveries = ordersList.filter(o => o.status === "CANCELLED").length;
+  // Statistics counters (based on bundle status)
+  const totalShipments = shipmentsList.length;
+  const pendingDeliveries = shipmentsList.filter(s => ["CREATED", "READY_TO_DISPATCH"].includes(s.bundleStatus)).length;
+  const activeDeliveries = shipmentsList.filter(s => s.bundleStatus === "DISPATCHED").length;
+  const completedDeliveries = shipmentsList.filter(s => s.bundleStatus === "DELIVERED" || s.bundleStatus === "COMPLETED").length;
+  const cancelledDeliveries = shipmentsList.filter(s => ["SENT_TO_LAUNDRY", "IN_LAUNDRY"].includes(s.bundleStatus)).length;
+
+  // Map bundleStatus to filter-friendly categories
+  const getFilterCategory = (bundleStatus) => {
+    if (["CREATED", "READY_TO_DISPATCH"].includes(bundleStatus)) return "PENDING";
+    if (bundleStatus === "DISPATCHED") return "ACTIVE";
+    if (bundleStatus === "DELIVERED" || bundleStatus === "COMPLETED") return "DELIVERED";
+    if (["SENT_TO_LAUNDRY", "IN_LAUNDRY", "COLLECTED"].includes(bundleStatus)) return "RETURNED";
+    return "OTHER";
+  };
 
   // Filter & Search Logic
-  const filteredOrders = ordersList.filter(order => {
+  const filteredShipments = shipmentsList.filter(shipment => {
     // Status Filter
-    if (statusFilter !== "ALL" && order.status !== statusFilter) {
-      return false;
+    if (statusFilter !== "ALL") {
+      const category = getFilterCategory(shipment.bundleStatus);
+      if (category !== statusFilter) return false;
     }
     // Search Query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const orderIdMatch = order.bundleOrderId?.toLowerCase().includes(query);
-      const nameMatch = order.userName?.toLowerCase().includes(query);
-      const phoneMatch = order.phone?.toLowerCase().includes(query);
-      const addressMatch = order.deliveryAddress?.toLowerCase().includes(query);
-      return orderIdMatch || nameMatch || phoneMatch || addressMatch;
+      const bundleIdMatch = shipment.bundleId?.toLowerCase().includes(query);
+      const orderIdMatch = shipment.bundleOrderId?.toLowerCase().includes(query);
+      const nameMatch = shipment.customerName?.toLowerCase().includes(query);
+      const phoneMatch = shipment.phone?.toLowerCase().includes(query);
+      const addressMatch = shipment.deliveryAddress?.toLowerCase().includes(query);
+      return bundleIdMatch || orderIdMatch || nameMatch || phoneMatch || addressMatch;
     }
     return true;
   });
@@ -313,10 +321,19 @@ export default function LogisticsDashboard() {
 
                 {/* Pending Shipments */}
                 <div className="bg-white border border-charcoal-ink/10 rounded-none p-5 shadow-sm">
-                  <span className="text-charcoal-ink/45 text-3xs font-bold uppercase tracking-widest block mb-1">Pending Dispatches</span>
+                  <span className="text-charcoal-ink/45 text-3xs font-bold uppercase tracking-widest block mb-1">Pending Dispatch</span>
                   <div className="flex items-baseline justify-between mt-2">
                     <span className="text-2xl font-serif font-bold text-amber-600">{pendingDeliveries}</span>
                     <Clock className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+
+                {/* Active In Transit */}
+                <div className="bg-white border border-charcoal-ink/10 rounded-none p-5 shadow-sm">
+                  <span className="text-charcoal-ink/45 text-3xs font-bold uppercase tracking-widest block mb-1">In Transit</span>
+                  <div className="flex items-baseline justify-between mt-2">
+                    <span className="text-2xl font-serif font-bold text-blue-600">{activeDeliveries}</span>
+                    <Truck className="h-5 w-5 text-blue-600" />
                   </div>
                 </div>
 
@@ -359,7 +376,7 @@ export default function LogisticsDashboard() {
 
                 {/* Status Tabs */}
                 <div className="flex bg-alabaster-linen p-1 rounded-none border border-charcoal-ink/10 w-full md:w-auto overflow-x-auto">
-                  {["ALL", "PENDING", "ACTIVE", "DELIVERED", "CANCELLED"].map((status) => (
+                  {["ALL", "PENDING", "ACTIVE", "DELIVERED", "RETURNED"].map((status) => (
                     <button
                       key={status}
                       onClick={() => setStatusFilter(status)}
@@ -369,7 +386,7 @@ export default function LogisticsDashboard() {
                           : "text-charcoal-ink/50 hover:bg-charcoal-ink/05 hover:text-charcoal-ink"
                       }`}
                     >
-                      {status === "ALL" ? "All Runs" : status}
+                      {status === "ALL" ? "All Runs" : status === "ACTIVE" ? "IN TRANSIT" : status}
                     </button>
                   ))}
                 </div>
@@ -378,44 +395,53 @@ export default function LogisticsDashboard() {
 
               {/* Run Sheet Table / List */}
               <div className="space-y-4">
-                {filteredOrders.map((order) => {
-                  const isPending = order.status === "PENDING";
-                  const isActive = order.status === "ACTIVE";
-                  const isDelivered = order.status === "DELIVERED";
-                  const isCancelled = order.status === "CANCELLED";
+                {filteredShipments.map((shipment) => {
+                  const isPending = ["CREATED", "READY_TO_DISPATCH"].includes(shipment.bundleStatus);
+                  const isActive = shipment.bundleStatus === "DISPATCHED";
+                  const isDelivered = shipment.bundleStatus === "DELIVERED" || shipment.bundleStatus === "COMPLETED";
+                  const isReturned = ["SENT_TO_LAUNDRY", "IN_LAUNDRY", "COLLECTED"].includes(shipment.bundleStatus);
+
+                  // Status badge styling
+                  const statusBadge = isDelivered
+                    ? "bg-linen-gold/15 text-linen-gold border-linen-gold/20"
+                    : isReturned
+                    ? "bg-rose-500/15 text-rose-600 border-rose-500/20"
+                    : isPending
+                    ? "bg-amber-500/15 text-amber-600 border-amber-500/20"
+                    : "bg-blue-500/15 text-blue-600 border-blue-500/20";
+
+                  const statusLabel = isDelivered ? "DELIVERED" : isReturned ? "RETURNED TO LAUNDRY" : isPending ? "PENDING DISPATCH" : "IN TRANSIT";
 
                   return (
-                    <div key={order._id} className="bg-white border border-charcoal-ink/10 rounded-none p-6 hover:border-linen-gold transition-all space-y-4 shadow-sm">
+                    <div key={shipment._id} className="bg-white border border-charcoal-ink/10 rounded-none p-6 hover:border-linen-gold transition-all space-y-4 shadow-sm">
                       
                       {/* Top Row: Info Pills */}
                       <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-wrap items-center gap-2">
+                          {/* Bundle ID pill */}
+                          <span className="inline-flex items-center gap-1 text-2xs font-bold text-charcoal-ink bg-charcoal-ink/05 px-2.5 py-0.5 rounded-none border border-charcoal-ink/15 tracking-wider uppercase font-mono">
+                            <Package className="w-3 h-3 text-linen-gold" />
+                            {shipment.bundleId}
+                          </span>
+                          {/* Order ID pill */}
                           <span className="text-2xs font-bold text-linen-gold bg-linen-gold/15 px-2.5 py-0.5 rounded-none border border-linen-gold/25 tracking-wider uppercase">
-                            {order.bundleOrderId}
+                            {shipment.bundleOrderId}
                           </span>
                           <span className={`px-2 py-0.5 rounded-none text-3xs font-extrabold tracking-wider uppercase border ${
-                            order.orderType === "BUY"
+                            shipment.orderType === "BUY"
                               ? "bg-purple-50 text-purple-650 border-purple-200"
                               : "bg-blue-50 text-blue-650 border-blue-200"
                           }`}>
-                            {order.orderType || "RENT"}
+                            {shipment.orderType || "RENT"}
                           </span>
-                          <span className={`inline-flex items-center gap-1 py-0.5 px-2 rounded-none text-[10px] font-bold uppercase tracking-wider border ${
-                            isDelivered
-                              ? "bg-linen-gold/15 text-linen-gold border-linen-gold/20"
-                              : isCancelled
-                              ? "bg-rose-500/15 text-rose-600 border-rose-500/20"
-                              : isPending
-                              ? "bg-amber-500/15 text-amber-600 border border-amber-500/20"
-                              : "bg-blue-500/15 text-blue-600 border border-blue-500/20"
-                          }`}>
-                            {order.status === "ACTIVE" ? "DISPATCHED / IN TRANSIT" : order.status}
+                          <span className={`inline-flex items-center gap-1 py-0.5 px-2 rounded-none text-[10px] font-bold uppercase tracking-wider border ${statusBadge}`}>
+                            {statusLabel}
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-1.5 text-3xs text-charcoal-ink/40 font-bold uppercase tracking-widest">
                           <Calendar className="h-3.5 w-3.5 text-charcoal-ink/30" />
-                          <span>Start: {order.startDate ? new Date(order.startDate).toLocaleDateString() : "—"}</span>
+                          <span>Start: {shipment.startDate ? new Date(shipment.startDate).toLocaleDateString() : "—"}</span>
                         </div>
                       </div>
 
@@ -424,24 +450,25 @@ export default function LogisticsDashboard() {
                         
                         {/* Delivery Specs */}
                         <div className="md:col-span-8 space-y-2">
-                          <h3 className="text-sm font-serif font-bold text-charcoal-ink">{order.bundleName}</h3>
+                          <h3 className="text-sm font-serif font-bold text-charcoal-ink">{shipment.bundleName}</h3>
                           <div className="text-xs text-charcoal-ink/60 space-y-1 font-semibold">
                             <p className="text-[10px] text-linen-gold font-extrabold uppercase tracking-wider flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-linen-gold"></span>
-                              Task: {order.orderType === "BUY" ? "Direct Sale Handover (Verify & Collect Sign)" : (order.subscriptionType === "weekly" ? "Weekly Sheet Change service" : "Monthly Kit swap")}
+                              Task: {shipment.orderType === "BUY" ? "Direct Sale Handover (Verify & Collect Sign)" : "Monthly Kit Swap — Deliver fresh sheets"}
                             </p>
                             <p className="flex items-center gap-1.5">
                               <span>Customer:</span>
-                              <strong className="text-charcoal-ink">{order.userName || "—"}</strong>
+                              <strong className="text-charcoal-ink">{shipment.customerName}</strong>
                             </p>
+                            <p className="text-[10px] text-charcoal-ink/40">Color: {shipment.color} • Bed Type: {shipment.bedType}</p>
                             
                             {/* Address navigation Helper */}
                             <p className="flex items-start gap-1.5 leading-relaxed pt-0.5">
                               <MapPin className="h-4 w-4 text-charcoal-ink/30 shrink-0 mt-0.5" />
-                              <span>{order.deliveryAddress || "—"}</span>
-                              {order.deliveryAddress && order.deliveryAddress !== "—" && (
+                              <span>{shipment.deliveryAddress}</span>
+                              {shipment.deliveryAddress && shipment.deliveryAddress !== "—" && (
                                 <a
-                                  href={getMapsUrl(order.deliveryAddress)}
+                                  href={getMapsUrl(shipment.deliveryAddress)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-linen-gold hover:text-charcoal-ink inline-flex items-center gap-0.5 text-3xs font-extrabold uppercase tracking-widest shrink-0 pt-0.5 transition-colors"
@@ -457,28 +484,28 @@ export default function LogisticsDashboard() {
                         <div className="md:col-span-4 flex flex-col md:items-end gap-2.5">
                           <div className="md:text-right">
                             <span className="text-3xs text-charcoal-ink/40 font-bold uppercase tracking-widest leading-none">Final price</span>
-                            <h4 className="text-base font-bold text-charcoal-ink mt-1">₹{order.finalPrice}</h4>
+                            <h4 className="text-base font-bold text-charcoal-ink mt-1">₹{shipment.finalPrice}</h4>
                           </div>
 
                           {/* Quick dial button if phone is set */}
-                          {order.phone && order.phone !== "—" && (
+                          {shipment.phone && shipment.phone !== "—" && (
                             <a
-                              href={`tel:${order.phone}`}
+                              href={`tel:${shipment.phone}`}
                               className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-none bg-alabaster-linen hover:bg-white border border-charcoal-ink/10 text-charcoal-ink/80 hover:text-charcoal-ink text-2xs font-extrabold tracking-wider uppercase transition-colors"
                             >
                               <Phone className="h-3.5 w-3.5 text-linen-gold" />
-                              Call: {order.phone}
+                              Call: {shipment.phone}
                             </a>
                           )}
                         </div>
 
                       </div>
 
-                      {/* Bottom Row Actions (Only visible for Active/Pending runs) */}
+                      {/* Bottom Row Actions (Only for Pending/Active bundles that can be delivered) */}
                       {(isPending || isActive) && (
                         <div className="border-t border-charcoal-ink/08 pt-4 flex flex-wrap gap-3">
                           <button
-                            onClick={() => updateDeliveryStatus(order._id, "DELIVERED")}
+                            onClick={() => updateDeliveryStatus(shipment.bundleId, "DELIVERED")}
                             className="py-2.5 px-4 rounded-none bg-charcoal-ink hover:bg-linen-gold text-white text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
                           >
                             <CheckCircle className="h-4 w-4" />
@@ -486,7 +513,7 @@ export default function LogisticsDashboard() {
                           </button>
                           
                           <button
-                            onClick={() => updateDeliveryStatus(order._id, "CANCELLED")}
+                            onClick={() => updateDeliveryStatus(shipment.bundleId, "CANCELLED")}
                             className="py-2.5 px-4 rounded-none bg-transparent hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <XCircle className="h-4 w-4" />
@@ -499,7 +526,7 @@ export default function LogisticsDashboard() {
                   );
                 })}
 
-                {filteredOrders.length === 0 && (
+                {filteredShipments.length === 0 && (
                   <div className="text-center py-12 bg-white border border-charcoal-ink/10 rounded-none text-charcoal-ink/40 text-xs font-bold uppercase tracking-widest shadow-sm">
                     No shipments matched the current search filters.
                   </div>
@@ -517,7 +544,7 @@ export default function LogisticsDashboard() {
                 <p className="text-xs text-charcoal-ink/50 font-semibold mt-0.5">Analysis of shipment runs and success ratios</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 pt-4">
                 
                 {/* Delivery Success Ratio */}
                 <div className="bg-alabaster-linen border border-charcoal-ink/10 rounded-none p-6 space-y-2">
@@ -525,23 +552,28 @@ export default function LogisticsDashboard() {
                   <h3 className="text-3xl font-serif font-bold text-linen-gold">
                     {totalShipments > 0 ? Math.round((completedDeliveries / totalShipments) * 100) : 0}%
                   </h3>
-                  <p className="text-[10px] text-charcoal-ink/50 leading-relaxed font-semibold">Percentage of completed delivery runs relative to all leases logged</p>
+                  <p className="text-[10px] text-charcoal-ink/50 leading-relaxed font-semibold">Completed deliveries vs total bundles generated</p>
+                </div>
+
+                {/* Pending */}
+                <div className="bg-alabaster-linen border border-charcoal-ink/10 rounded-none p-6 space-y-2">
+                  <span className="text-charcoal-ink/40 text-3xs font-bold uppercase tracking-widest">Pending Dispatch</span>
+                  <h3 className="text-3xl font-serif font-bold text-amber-600">{pendingDeliveries}</h3>
+                  <p className="text-[10px] text-charcoal-ink/50 leading-relaxed font-semibold">Bundles packed but not yet dispatched from warehouse</p>
                 </div>
 
                 {/* Active Transit */}
                 <div className="bg-alabaster-linen border border-charcoal-ink/10 rounded-none p-6 space-y-2">
                   <span className="text-charcoal-ink/40 text-3xs font-bold uppercase tracking-widest">Active In Transit</span>
-                  <h3 className="text-3xl font-serif font-bold text-amber-600">{pendingDeliveries}</h3>
-                  <p className="text-[10px] text-charcoal-ink/50 leading-relaxed font-semibold">Runs pending handover or currently in delivery courier transit</p>
+                  <h3 className="text-3xl font-serif font-bold text-blue-600">{activeDeliveries}</h3>
+                  <p className="text-[10px] text-charcoal-ink/50 leading-relaxed font-semibold">Bundles currently out for delivery with courier</p>
                 </div>
 
-                {/* Cancelled/Returned */}
+                {/* Returned */}
                 <div className="bg-alabaster-linen border border-charcoal-ink/10 rounded-none p-6 space-y-2">
-                  <span className="text-charcoal-ink/40 text-3xs font-bold uppercase tracking-widest">Cancellation Ratio</span>
-                  <h3 className="text-3xl font-serif font-bold text-rose-600">
-                    {totalShipments > 0 ? Math.round((cancelledDeliveries / totalShipments) * 100) : 0}%
-                  </h3>
-                  <p className="text-[10px] text-charcoal-ink/50 leading-relaxed font-semibold">Returned bundles due to customer cancellations or unavailable destinations</p>
+                  <span className="text-charcoal-ink/40 text-3xs font-bold uppercase tracking-widest">Returned to Laundry</span>
+                  <h3 className="text-3xl font-serif font-bold text-rose-600">{cancelledDeliveries}</h3>
+                  <p className="text-[10px] text-charcoal-ink/50 leading-relaxed font-semibold">Bundles returned or cancelled, routed to sanitation</p>
                 </div>
 
               </div>

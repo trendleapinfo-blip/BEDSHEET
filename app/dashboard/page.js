@@ -28,7 +28,8 @@ import {
   ShieldAlert,
   ChevronRight,
   TrendingUp,
-  Package
+  Package,
+  Truck
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -54,9 +55,10 @@ export default function Dashboard() {
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
 
-  // Orders and Quotes States
+  // Orders, Quotes, and Bundles States
   const [orders, setOrders] = useState([]);
   const [quotes, setQuotes] = useState([]);
+  const [bundles, setBundles] = useState([]);
   
   // Support tickets state
   const [tickets, setTickets] = useState([]);
@@ -129,6 +131,7 @@ export default function Dashboard() {
         setUser(fetchedUser);
         setOrders(fetchedOrders);
         setQuotes(data.quotes || []);
+        setBundles(data.bundles || []);
         
         // Pre-fill profile form
         setProfileForm({
@@ -744,66 +747,93 @@ export default function Dashboard() {
                 </div>
  
                 {/* Delivery Timeline / Steps Tracker */}
-                {user?.selectedPlan?.planName && (
+                {user?.selectedPlan?.planName && (() => {
+                  const activeOrder = orders.find(o => o.status === "ACTIVE" || o.status === "DELIVERED");
+                  const activeBundle = activeOrder ? bundles.find(b => b.orderId === activeOrder._id?.toString() || b.orderId === activeOrder._id) : null;
+                  const bundleStatus = activeBundle?.status || null;
+                  
+                  // Determine step completion based on real bundle status
+                  const step1Done = true; // order is placed
+                  const step2Done = bundleStatus && ["READY_TO_DISPATCH", "DISPATCHED", "DELIVERED", "COLLECTED", "SENT_TO_LAUNDRY", "IN_LAUNDRY", "COMPLETED"].includes(bundleStatus);
+                  const step3Done = bundleStatus && ["DISPATCHED", "DELIVERED", "COLLECTED", "SENT_TO_LAUNDRY", "IN_LAUNDRY", "COMPLETED"].includes(bundleStatus);
+                  const step4Done = bundleStatus && ["DELIVERED", "COLLECTED", "SENT_TO_LAUNDRY", "IN_LAUNDRY", "COMPLETED"].includes(bundleStatus);
+
+                  return (
                   <div className="bg-alabaster-linen rounded-none p-6 border border-charcoal-ink/10">
-                    <h4 className="font-extrabold text-charcoal-ink text-sm mb-4">
-                      {user.selectedPlan.orderType === "BUY" ? "Your Purchase Progress" : "Your Swap Progress"}
-                    </h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-extrabold text-charcoal-ink text-sm">
+                        {user.selectedPlan.orderType === "BUY" ? "Your Purchase Progress" : "Your Delivery Progress"}
+                      </h4>
+                      {activeBundle && (
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-charcoal-ink text-white px-2.5 py-1 flex items-center gap-1.5">
+                          <Package className="w-3 h-3" />
+                          {activeBundle.bundleId}
+                        </span>
+                      )}
+                    </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-                      {/* Step 1 */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+                      {/* Step 1: Order Confirmed */}
                       <div className="flex gap-3 items-start relative z-10">
-                        <div className="w-7 h-7 rounded-none bg-linen-gold text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                          <Check className="w-4 h-4" />
+                        <div className={`w-7 h-7 rounded-none flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${step1Done ? "bg-linen-gold text-white" : "bg-charcoal-ink/08 text-charcoal-ink/40"}`}>
+                          {step1Done ? <Check className="w-4 h-4" /> : "01"}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-charcoal-ink">
-                            {user.selectedPlan.orderType === "BUY" ? "01. Purchase Confirmed" : "01. Subscription Created"}
+                          <p className={`text-xs font-bold ${step1Done ? "text-charcoal-ink" : "text-charcoal-ink/40"}`}>
+                            {user.selectedPlan.orderType === "BUY" ? "Order Confirmed" : "Subscription Created"}
                           </p>
                           <p className="text-charcoal-ink/40 text-3xs font-semibold mt-0.5">Activated on {new Date(user.selectedPlan.startDate).toLocaleDateString()}</p>
                         </div>
                       </div>
  
-                      {/* Step 2 */}
+                      {/* Step 2: Bundle Packed */}
                       <div className="flex gap-3 items-start relative z-10">
-                        <div className="w-7 h-7 rounded-none bg-linen-gold/10 text-linen-gold border border-linen-gold/20 flex items-center justify-center font-bold text-xs shrink-0">
-                          02
+                        <div className={`w-7 h-7 rounded-none flex items-center justify-center font-bold text-xs shrink-0 ${step2Done ? "bg-linen-gold text-white shadow-xs" : "bg-linen-gold/10 text-linen-gold border border-linen-gold/20"}`}>
+                          {step2Done ? <Check className="w-4 h-4" /> : "02"}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-charcoal-ink">
-                            {user.selectedPlan.orderType === "BUY" ? "02. Packing & Dispatch" : "02. Scheduled Swap"}
+                          <p className={`text-xs font-bold ${step2Done ? "text-charcoal-ink" : "text-charcoal-ink/60"}`}>
+                            Bundle Packed
                           </p>
                           <p className="text-charcoal-ink/40 text-3xs font-semibold mt-0.5">
-                            {user.selectedPlan.orderType === "BUY"
-                              ? "Vacuum sealed bundle prepared for shipping"
-                              : (user.selectedPlan.subscriptionType === "weekly"
-                                ? "Weekly sheet change & pick-up in progress"
-                                : "Linen kit drop-off in progress")}
+                            {step2Done ? "Vacuum sealed & ready" : "Awaiting warehouse packing"}
                           </p>
                         </div>
                       </div>
   
-                      {/* Step 3 */}
+                      {/* Step 3: Dispatched */}
                       <div className="flex gap-3 items-start relative z-10">
-                        <div className="w-7 h-7 rounded-none bg-charcoal-ink/08 text-charcoal-ink/40 flex items-center justify-center font-bold text-xs shrink-0">
-                          03
+                        <div className={`w-7 h-7 rounded-none flex items-center justify-center font-bold text-xs shrink-0 ${step3Done ? "bg-linen-gold text-white shadow-xs" : "bg-charcoal-ink/08 text-charcoal-ink/40"}`}>
+                          {step3Done ? <Check className="w-4 h-4" /> : "03"}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-charcoal-ink/40">
-                            {user.selectedPlan.orderType === "BUY" ? "03. Delivery Complete" : "03. Swap Complete"}
+                          <p className={`text-xs font-bold ${step3Done ? "text-charcoal-ink" : "text-charcoal-ink/40"}`}>
+                            Dispatched
                           </p>
-                          <p className="text-charcoal-ink/30 text-3xs font-semibold mt-0.5">
-                            {user.selectedPlan.orderType === "BUY"
-                              ? "Direct retail sale delivery"
-                              : (user.selectedPlan.subscriptionType === "weekly"
-                                ? "Recurring weekly swaps"
-                                : "Recurring monthly swaps")}
+                          <p className={`text-3xs font-semibold mt-0.5 ${step3Done ? "text-charcoal-ink/40" : "text-charcoal-ink/30"}`}>
+                            {step3Done ? "Out for delivery" : "Pending dispatch from warehouse"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Step 4: Delivered */}
+                      <div className="flex gap-3 items-start relative z-10">
+                        <div className={`w-7 h-7 rounded-none flex items-center justify-center font-bold text-xs shrink-0 ${step4Done ? "bg-emerald-500 text-white shadow-xs" : "bg-charcoal-ink/08 text-charcoal-ink/40"}`}>
+                          {step4Done ? <Check className="w-4 h-4" /> : "04"}
+                        </div>
+                        <div>
+                          <p className={`text-xs font-bold ${step4Done ? "text-emerald-600" : "text-charcoal-ink/40"}`}>
+                            Delivered
+                          </p>
+                          <p className={`text-3xs font-semibold mt-0.5 ${step4Done ? "text-emerald-500/70" : "text-charcoal-ink/30"}`}>
+                            {step4Done ? "Successfully delivered to you" : "Awaiting delivery"}
                           </p>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                  );
+                })()}
 
                 {/* Recent Orders List */}
                 <div className="space-y-4">
@@ -817,23 +847,44 @@ export default function Dashboard() {
 
                   {orders.length > 0 ? (
                     <div className="border border-charcoal-ink/10 rounded-none overflow-hidden overflow-x-auto shadow-sm">
-                      <table className="w-full text-left text-xs min-w-[600px]">
+                      <table className="w-full text-left text-xs min-w-[750px]">
                         <thead className="bg-alabaster-linen text-charcoal-ink/60 font-bold uppercase tracking-widest text-3xs border-b border-charcoal-ink/10">
                           <tr>
                             <th className="py-3.5 px-4">Order ID</th>
                             <th className="py-3.5 px-4">Bundle Item</th>
+                            <th className="py-3.5 px-4">Bundle ID</th>
                             <th className="py-3.5 px-4">Type</th>
-                            <th className="py-3.5 px-4">Start Date</th>
+                            <th className="py-3.5 px-4">Logistics</th>
                             <th className="py-3.5 px-4">Status</th>
                             <th className="py-3.5 px-4 text-right">Price</th>
                             <th className="py-3.5 px-4 text-center">Invoice</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-medium">
-                          {orders.map((order) => (
+                          {orders.map((order) => {
+                            const matchedBundle = bundles.find(b => b.orderId === order._id?.toString() || b.orderId === order._id);
+                            const logisticsLabel = matchedBundle ? matchedBundle.status.replace(/_/g, " ") : null;
+                            const logisticsColor = matchedBundle ? (
+                              matchedBundle.status === "DELIVERED" || matchedBundle.status === "COMPLETED" ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
+                              matchedBundle.status === "DISPATCHED" ? "bg-teal-50 text-teal-700 border-teal-200" :
+                              matchedBundle.status === "READY_TO_DISPATCH" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                              matchedBundle.status === "SENT_TO_LAUNDRY" || matchedBundle.status === "IN_LAUNDRY" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                              "bg-slate-50 text-slate-600 border-slate-200"
+                            ) : null;
+                            return (
                             <tr key={order._id} className="hover:bg-slate-50/50">
                               <td className="py-3.5 px-4 font-bold text-charcoal-ink">{order.bundleOrderId}</td>
                               <td className="py-3.5 px-4 text-charcoal-ink/70">{order.bundleName}</td>
+                              <td className="py-3.5 px-4">
+                                {matchedBundle ? (
+                                  <span className="font-mono font-bold text-charcoal-ink text-[10px] bg-charcoal-ink/05 border border-charcoal-ink/10 px-2 py-0.5 inline-flex items-center gap-1">
+                                    <Package className="w-3 h-3 text-linen-gold" />
+                                    {matchedBundle.bundleId}
+                                  </span>
+                                ) : (
+                                  <span className="text-charcoal-ink/30 text-[10px] italic font-semibold">Pending</span>
+                                )}
+                              </td>
                               <td className="py-3.5 px-4">
                                 <span className={`px-2 py-0.5 rounded-none text-3xs font-extrabold tracking-wider uppercase border ${
                                   order.orderType === "BUY"
@@ -843,7 +894,16 @@ export default function Dashboard() {
                                   {order.orderType || "RENT"}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-4 text-charcoal-ink/60">{new Date(order.startDate).toLocaleDateString()}</td>
+                              <td className="py-3.5 px-4">
+                                {matchedBundle ? (
+                                  <span className={`px-2 py-0.5 rounded-none text-3xs font-extrabold tracking-wider uppercase border inline-flex items-center gap-1 ${logisticsColor}`}>
+                                    <Truck className="w-3 h-3" />
+                                    {logisticsLabel}
+                                  </span>
+                                ) : (
+                                  <span className="text-charcoal-ink/30 text-[10px] italic font-semibold">—</span>
+                                )}
+                              </td>
                               <td className="py-3.5 px-4">
                                 <span className={`px-2 py-0.5 rounded-none text-3xs font-bold tracking-wider uppercase inline-block border ${
                                   order.status === "ACTIVE" 
@@ -867,7 +927,8 @@ export default function Dashboard() {
                                 </a>
                               </td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

@@ -173,7 +173,7 @@ export default function WarehouseDashboard() {
     }
   };
 
-  // WMS: Barcode/QR scanning simulation
+  // WMS: Barcode/QR scan action
   const handleScanSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!scanInput.trim()) return;
@@ -755,7 +755,7 @@ export default function WarehouseDashboard() {
                               ))}
                             </div>
 
-                            <div className="flex gap-2 pt-2 justify-end">
+                            <div className="flex flex-wrap gap-2 pt-2 justify-end">
                               {activeBundleIdForSkus === matchingBundle.bundleId ? (
                                 <>
                                   <button
@@ -768,9 +768,9 @@ export default function WarehouseDashboard() {
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateSkus(matchingBundle.bundleId, editingSkus)}
-                                    className="px-3 py-1.5 bg-teal-650 hover:bg-teal-700 text-white text-3xs font-extrabold uppercase rounded-lg transition-colors cursor-pointer"
+                                    className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-3xs font-extrabold uppercase rounded-lg transition-colors cursor-pointer shadow-sm"
                                   >
-                                    Save SKUs & Pack
+                                    Save SKUs &amp; Pack
                                   </button>
                                 </>
                               ) : (
@@ -845,7 +845,7 @@ export default function WarehouseDashboard() {
                   <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">Logistics Barcode Terminal</h3>
                 </div>
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                  Simulate a barcode/QR gun scanning physically printed bundle labels at warehouse docks.
+                  Scan barcode/QR labels on physical bundle packages at warehouse docks.
                 </p>
                 
                 <form onSubmit={handleScanSubmit} className="space-y-6">
@@ -896,7 +896,7 @@ export default function WarehouseDashboard() {
                         : "bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50"
                     }`}
                   >
-                    {scannerAction === "scan_dispatch" ? "Simulate Dispatch Scan" : "Simulate Return Scan"}
+                    {scannerAction === "scan_dispatch" ? "Dispatch Scan" : "Return Scan"}
                   </button>
                 </form>
               </div>
