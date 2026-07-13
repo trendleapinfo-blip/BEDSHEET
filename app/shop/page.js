@@ -340,9 +340,7 @@ export default function ShopPage() {
     const durationNumMatch = matchedPlan.duration.match(/\d+/);
     const multiplier = durationNumMatch ? parseInt(durationNumMatch[0], 10) : 1;
 
-    const firstColor = activeColorsToRender[0]?.colorName || "Classic White";
-    const colorCost = color === firstColor ? 0 : 100 * multiplier;
-    const subtotal = matchedPlan.price + colorCost;
+    const subtotal = matchedPlan.price;
 
     let couponDiscount = 0;
     if (appliedCoupon) {
