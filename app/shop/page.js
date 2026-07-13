@@ -143,6 +143,12 @@ export default function ShopPage() {
         setCustomerType("B2B");
       }
     }
+    // Load Razorpay checkout script
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
   }, []);
 
   // Sync selectedBedType when plans load
@@ -567,61 +573,100 @@ export default function ShopPage() {
     setCheckoutError("");
     setCheckoutLoading(true);
 
-    if (paymentStatus === "Failed") {
-      setCheckoutError("Payment process failed. Please retry with a valid payment authorization.");
-      setCheckoutLoading(false);
-      return;
-    }
-
     try {
+      // 1. Create Razorpay order on backend
+      const orderRes = await fetch("/api/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ totalPrice: b2cPricing.total })
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || "Failed to initialize payment gateway.");
+      }
+
       const sizeLabel = selectedBedType.charAt(0).toUpperCase() + selectedBedType.slice(1);
       const activePaymentStyles = settings?.paymentStyles && settings.paymentStyles.length > 0
         ? settings.paymentStyles
         : [
-          { id: "Monthly", name: "Standard Monthly", description: "Requires refundable security deposit of ₹{deposit}", depositMultiplier: 1 },
-          { id: "Advance", name: "Advance Plan", description: "Pay full subscription upfront. Zero security deposit required.", depositMultiplier: 0 }
+          { id: "Monthly", name: "Standard Monthly", depositMultiplier: 1 },
+          { id: "Advance", name: "Advance Plan", depositMultiplier: 0 }
         ];
       const activeStyle = activePaymentStyles.find(s => s.id === planType) || activePaymentStyles[0];
       const itemTier = (activeStyle && activeStyle.depositMultiplier === 0) ? "PREMIUM" : "BASIC";
 
-      const payload = {
-        bedType: selectedBedType,
-        planName: `${sizeLabel} Bed sheets (${selectedDuration} swap cycle)`,
-        price: b2cPricing.subtotal,
-        duration: selectedDuration,
-        subscriptionType: "monthly",
-        securityDeposit: b2cPricing.deposit,
-        gst: b2cPricing.gst,
-        totalPrice: b2cPricing.total,
-        address: `${profileAddress}, ${profileCity} - ${profilePincode}`,
-        mobile: profilePhone,
-        color,
-        isCustom: color !== "Classic White",
-        couponCode: appliedCoupon ? appliedCoupon.couponCode : null,
-        discount: b2cPricing.couponDiscount,
-        orderType: "RENT",
-        itemTier,
-        paymentStyleId: planType,
-        status: paymentStatus === "Paid" ? "ACTIVE" : "PENDING"
+      // 2. Open Razorpay Checkout Modal
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "ClosetRush",
+        description: `${sizeLabel} Sheets (${selectedDuration})`,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            setCheckoutLoading(true);
+            // 3. Verify payment on backend
+            const verifyPayload = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderDetails: {
+                bedType: selectedBedType,
+                planName: `${sizeLabel} Bed sheets (${selectedDuration} swap cycle)`,
+                price: b2cPricing.subtotal,
+                duration: selectedDuration,
+                subscriptionType: "monthly",
+                securityDeposit: b2cPricing.deposit,
+                gst: b2cPricing.gst,
+                totalPrice: b2cPricing.total,
+                address: `${profileAddress}, ${profileCity} - ${profilePincode}`,
+                mobile: profilePhone,
+                color,
+                isCustom: color !== "Classic White",
+                couponCode: appliedCoupon ? appliedCoupon.couponCode : null,
+                discount: b2cPricing.couponDiscount,
+                orderType: "RENT",
+                itemTier,
+              }
+            };
+            const verifyRes = await fetch("/api/payment/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(verifyPayload)
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.success) {
+              setOrderId(response.razorpay_payment_id);
+              setActiveStep(5);
+            } else {
+              setCheckoutError(verifyData.error || "Payment verification failed.");
+            }
+          } catch (verifyErr) {
+            setCheckoutError("Failed to verify payment. Please contact support.");
+          } finally {
+            setCheckoutLoading(false);
+          }
+        },
+        prefill: {
+          name: orderData.user.name,
+          email: orderData.user.email,
+          contact: profilePhone || orderData.user.mobile,
+        },
+        theme: { color: "#0F172A" },
+        modal: {
+          ondismiss: function () {
+            setCheckoutLoading(false);
+          }
+        }
       };
 
-      const res = await fetch("/api/user/select-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        // Generate random Order ID for demonstration and confirmation screen
-        const generatedId = `SINBUN-MO-${Math.floor(10000 + Math.random() * 90000)}`;
-        setOrderId(generatedId);
-        setActiveStep(5); // Order Confirmation
-      } else {
-        setCheckoutError(data.error || "Failed to confirm order.");
-      }
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
     } catch (err) {
-      setCheckoutError("Network error placing order.");
-    } finally {
+      console.error("Razorpay error:", err);
+      setCheckoutError(err.message || "Something went wrong connecting to Razorpay.");
       setCheckoutLoading(false);
     }
   };
@@ -1430,11 +1475,17 @@ export default function ShopPage() {
                     onChange={(e) => setProfileCity(e.target.value)}
                     className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
                   >
-                    <option value="Delhi NCR">Delhi NCR</option>
+                    <option value="Delhi">Delhi</option>
                     <option value="Gurugram">Gurugram</option>
+                    <option value="Faridabad">Faridabad</option>
                     <option value="Noida">Noida</option>
-                    <option value="Mumbai">Mumbai</option>
-                    <option value="Bangalore">Bangalore</option>
+                    <option value="Ghaziabad">Ghaziabad</option>
+                    <option value="Rohtak">Rohtak</option>
+                    <option value="Panipat">Panipat</option>
+                    <option value="Sonipat">Sonipat</option>
+                    <option value="Karnal">Karnal</option>
+                    <option value="Panchkula">Panchkula</option>
+                    <option value="Ambala">Ambala</option>
                   </select>
                 </div>
               </div>
@@ -1606,24 +1657,13 @@ export default function ShopPage() {
                       {couponSuccess && <p className="text-[11px] text-emerald-600 font-bold mt-1">{couponSuccess}</p>}
                     </div>
 
-                    {/* Payment Simulator Select */}
+                    {/* Razorpay Secure Payment Notice */}
                     <div className="space-y-2 bg-charcoal-ink/02 border border-charcoal-ink/05 p-6">
-                      <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider block">Simulate Payment Outcome</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {["Paid", "Pending", "Failed"].map((st) => (
-                          <button
-                            key={st}
-                            type="button"
-                            onClick={() => setPaymentStatus(st)}
-                            className={`py-2 text-[10px] font-black uppercase tracking-wider border text-center transition-all cursor-pointer ${paymentStatus === st
-                                ? (st === "Paid" ? "bg-emerald-600 border-emerald-600 text-white" : (st === "Failed" ? "bg-rose-600 border-rose-600 text-white" : "bg-amber-600 border-amber-600 text-white"))
-                                : "bg-white text-charcoal-ink/50 border-charcoal-ink/10"
-                              }`}
-                          >
-                            {st}
-                          </button>
-                        ))}
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider block">Secured by Razorpay Payment Gateway</label>
                       </div>
+                      <p className="text-[10px] text-charcoal-ink/40 font-semibold">Your payment will be processed securely through Razorpay. You will be redirected to complete payment after clicking Confirm & Pay.</p>
                     </div>
                   </div>
                 ) : (
