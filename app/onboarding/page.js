@@ -358,14 +358,25 @@ function OnboardingForm() {
             <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
               City
             </label>
-            <input
-              type="text"
+            <select
               required
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="City"
-              className="w-full px-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs"
-            />
+              className="w-full px-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink focus:outline-none focus:border-linen-gold transition-colors text-xs font-semibold"
+            >
+              <option value="">Select City</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Gurugram">Gurugram</option>
+              <option value="Faridabad">Faridabad</option>
+              <option value="Noida">Noida</option>
+              <option value="Ghaziabad">Ghaziabad</option>
+              <option value="Rohtak">Rohtak</option>
+              <option value="Panipat">Panipat</option>
+              <option value="Sonipat">Sonipat</option>
+              <option value="Karnal">Karnal</option>
+              <option value="Panchkula">Panchkula</option>
+              <option value="Ambala">Ambala</option>
+            </select>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
