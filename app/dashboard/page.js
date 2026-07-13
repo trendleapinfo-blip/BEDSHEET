@@ -100,6 +100,13 @@ export default function Dashboard() {
         const data = await res.json();
         
         let fetchedUser = data.user;
+        
+        // If mobile is missing, redirect to onboarding (mandatory phone number)
+        if (!fetchedUser.mobile) {
+          router.replace("/onboarding");
+          return;
+        }
+
         const fetchedOrders = data.orders || [];
         
         // Handle B2B confirmed quotes where plan is empty but order is active
@@ -218,6 +225,17 @@ export default function Dashboard() {
     e.preventDefault();
     setProfileError("");
     setProfileSuccess("");
+
+    if (!profileForm.name.trim() || !profileForm.email.trim() || !profileForm.mobile.trim()) {
+      setProfileError("Name, Email, and Mobile number are required fields.");
+      return;
+    }
+
+    if (!/^\d{10}$/.test(profileForm.mobile)) {
+      setProfileError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+
     setProfileSaving(true);
 
     try {
@@ -1360,11 +1378,12 @@ export default function Dashboard() {
                         </span>
                         <input
                           type="tel"
+                          required
                           pattern="[0-9]{10}"
                           maxLength="10"
                           value={profileForm.mobile}
                           onChange={(e) => setProfileForm({...profileForm, mobile: e.target.value.replace(/\D/g, "")})}
-                          placeholder="10-digit mobile number"
+                          placeholder="10-digit mobile number (Required)"
                           className="w-full pl-11 pr-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold"
                         />
                       </div>

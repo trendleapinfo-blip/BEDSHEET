@@ -82,8 +82,8 @@ function SignupFormContent() {
     setError("");
     setSuccess("");
 
-    if (!name || !email || !password) {
-      setError("Please fill in all required fields (Name, Email, Password).");
+    if (!name || !email || !password || !mobile) {
+      setError("Please fill in all required fields (Name, Email, Password, Mobile).");
       return;
     }
 
@@ -92,7 +92,7 @@ function SignupFormContent() {
       return;
     }
 
-    if (mobile && mobile.length !== 10) {
+    if (!/^\d{10}$/.test(mobile)) {
       setError("Please enter a valid 10-digit mobile number.");
       return;
     }
@@ -293,12 +293,13 @@ function SignupFormContent() {
           </span>
           <input
             type="tel"
+            required
             pattern="[0-9]{10}"
             maxLength="10"
             value={mobile}
             disabled={verificationRequired || loading}
             onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-            placeholder="Enter 10-digit mobile number"
+            placeholder="Enter 10-digit mobile number (Required)"
             className="w-full pl-12 pr-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs disabled:bg-alabaster-linen disabled:text-charcoal-ink/40"
           />
         </div>
@@ -409,7 +410,7 @@ function SignupFormContent() {
       </div>
 
       {/* Google Sign In */}
-      <Link
+      <a
         href="/api/auth/google"
         className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-none bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs uppercase tracking-wider hover:bg-alabaster-linen transition-colors shadow-sm cursor-pointer"
       >
@@ -432,7 +433,7 @@ function SignupFormContent() {
           />
         </svg>
         Sign up with Google
-      </Link>
+      </a>
 
       {/* Footer Links */}
       <div className="mt-8 space-y-4 text-center">

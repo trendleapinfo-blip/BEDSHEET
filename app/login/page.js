@@ -547,7 +547,7 @@ function LoginFormContent() {
       </div>
 
       {/* Google Sign-In */}
-      <Link
+      <a
         href="/api/auth/google"
         className="w-full flex items-center justify-center gap-3 py-3.5 px-6 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs uppercase tracking-wider hover:bg-alabaster-linen transition-colors shadow-sm cursor-pointer"
       >
@@ -558,7 +558,7 @@ function LoginFormContent() {
           <path fill="#FBBC05" d="M5.266 14.236a6.89 6.89 0 0 1-.355-2.236c0-.782.127-1.536.355-2.236L1.5 6.71A11.97 11.97 0 0 0 .5 12c0 1.9.445 3.7 1.236 5.29l3.53-3.054z" />
         </svg>
         Continue with Google
-      </Link>
+      </a>
 
       {/* Footer */}
       <div className="mt-8 space-y-4 text-center">

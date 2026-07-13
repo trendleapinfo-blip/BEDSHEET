@@ -10,10 +10,36 @@ function OnboardingForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
+  const [accountType, setAccountType] = useState("Individual User");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const accountTypes = [
+    {
+      name: "Individual User",
+      description: "For personal use",
+      icon: (
+        <svg className="w-4 h-4 text-linen-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
+    {
+      name: "Commercial Partner",
+      description: "For hotels, Airbnbs, and businesses",
+      icon: (
+        <svg className="w-4 h-4 text-linen-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
+    },
+  ];
 
   // Fetch current user session to pre-fill Google data
   useEffect(() => {
@@ -26,6 +52,10 @@ function OnboardingForm() {
             setName(data.user.name || "");
             setEmail(data.user.email || "");
             setMobile(data.user.mobile || "");
+            setAccountType(data.user.accountType || "Individual User");
+            setAddress(data.user.address || "");
+            setCity(data.user.city || "");
+            setPincode(data.user.pincode || "");
             // If user already has a mobile, they're complete — skip onboarding
             if (data.user.mobile) {
               router.replace("/dashboard");
@@ -63,13 +93,32 @@ function OnboardingForm() {
       setError("Please enter a valid 10-digit mobile number.");
       return;
     }
+    if (!address.trim()) {
+      setError("Delivery address is required.");
+      return;
+    }
+    if (!city.trim()) {
+      setError("City is required.");
+      return;
+    }
+    if (!/^\d{6}$/.test(pincode)) {
+      setError("Please enter a valid 6-digit pincode.");
+      return;
+    }
 
     setSubmitting(true);
     try {
       const res = await fetch("/api/user/complete-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), mobile }),
+        body: JSON.stringify({ 
+          name: name.trim(), 
+          mobile, 
+          accountType, 
+          address: address.trim(), 
+          city: city.trim(), 
+          pincode: pincode.trim() 
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -145,6 +194,59 @@ function OnboardingForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
+        {/* Account Type Selector */}
+        <div>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
+            Select Account Type
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="w-full flex items-center justify-between p-3.5 bg-white border border-charcoal-ink/15 rounded-none hover:border-linen-gold transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-none bg-linen-gold/10 text-linen-gold shrink-0">
+                  {accountTypes.find((t) => t.name === accountType)?.icon}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-charcoal-ink uppercase tracking-wider leading-none">{accountType}</p>
+                  <p className="text-[9px] text-charcoal-ink/65 font-bold uppercase tracking-wider mt-1">
+                    {accountTypes.find((t) => t.name === accountType)?.description}
+                  </p>
+                </div>
+              </div>
+              <svg className={`w-3.5 h-3.5 text-charcoal-ink/40 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {dropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-charcoal-ink/15 rounded-none shadow-md z-30 overflow-hidden py-1">
+                {accountTypes.map((type) => (
+                  <button
+                    key={type.name}
+                    type="button"
+                    onClick={() => {
+                      setAccountType(type.name);
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 p-3 hover:bg-alabaster-linen text-left transition-colors cursor-pointer"
+                  >
+                    <div className="p-1.5 rounded-none bg-linen-gold/10 text-linen-gold shrink-0">
+                      {type.icon}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-charcoal-ink uppercase tracking-wider leading-none">{type.name}</p>
+                      <p className="text-[9px] text-charcoal-ink/65 font-bold uppercase tracking-wider mt-0.5">{type.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Full Name */}
         <div>
           <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
@@ -217,6 +319,61 @@ function OnboardingForm() {
               onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
               placeholder="10-digit mobile number"
               className="w-full pl-24 pr-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Delivery Address */}
+        <div>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
+            Delivery Address
+          </label>
+          <div className="relative">
+            <span className="absolute top-4 left-4 text-charcoal-ink/35">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </span>
+            <textarea
+              required
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Your complete address (e.g. House No, Building, Area)"
+              rows="2.5"
+              className="w-full pl-12 pr-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs resize-none"
+            />
+          </div>
+        </div>
+
+        {/* City and Pincode Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
+              City
+            </label>
+            <input
+              type="text"
+              required
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City"
+              className="w-full px-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-charcoal-ink/60 mb-2">
+              Pincode
+            </label>
+            <input
+              type="text"
+              required
+              pattern="[0-9]{6}"
+              maxLength="6"
+              value={pincode}
+              onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
+              placeholder="6-digit Pincode"
+              className="w-full px-4 py-3.5 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink placeholder-charcoal-ink/30 focus:outline-none focus:border-linen-gold transition-colors text-xs"
             />
           </div>
         </div>

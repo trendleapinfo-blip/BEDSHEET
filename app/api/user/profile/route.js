@@ -69,9 +69,16 @@ export async function PUT(request) {
 
     const { name, email, mobile, address, city, pincode, accountType } = await request.json();
 
-    if (!name || !email) {
+    if (!name || !email || !mobile) {
       return NextResponse.json(
-        { error: "Name and email are required fields." },
+        { error: "Name, email, and mobile number are required fields." },
+        { status: 400 }
+      );
+    }
+
+    if (!/^\d{10}$/.test(mobile)) {
+      return NextResponse.json(
+        { error: "Please enter a valid 10-digit mobile number." },
         { status: 400 }
       );
     }
@@ -85,11 +92,9 @@ export async function PUT(request) {
     }
 
     // Check if mobile is already taken by another user
-    if (mobile) {
-      const mobileExists = await User.findOne({ mobile, _id: { $ne: decoded.userId } });
-      if (mobileExists) {
-        return NextResponse.json({ error: "Mobile number is already in use by another account." }, { status: 400 });
-      }
+    const mobileExists = await User.findOne({ mobile, _id: { $ne: decoded.userId } });
+    if (mobileExists) {
+      return NextResponse.json({ error: "Mobile number is already in use by another account." }, { status: 400 });
     }
 
     const updatedUser = await User.findByIdAndUpdate(

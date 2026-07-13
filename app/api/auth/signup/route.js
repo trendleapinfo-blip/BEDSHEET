@@ -12,9 +12,16 @@ export async function POST(request) {
     const { name, email, mobile, password, address, accountType, otpCode } = await request.json();
 
     // Basic Validations
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !mobile) {
       return NextResponse.json(
-        { error: "Name, email, and password are required fields." },
+        { error: "Name, email, password, and mobile number are required fields." },
+        { status: 400 }
+      );
+    }
+
+    if (!/^\d{10}$/.test(mobile)) {
+      return NextResponse.json(
+        { error: "Please enter a valid 10-digit mobile number." },
         { status: 400 }
       );
     }
@@ -35,15 +42,13 @@ export async function POST(request) {
       );
     }
 
-    // Check if mobile already exists if provided
-    if (mobile) {
-      const existingMobile = await User.findOne({ mobile });
-      if (existingMobile) {
-        return NextResponse.json(
-          { error: "A user with this mobile number already exists." },
-          { status: 400 }
-        );
-      }
+    // Check if mobile already exists
+    const existingMobile = await User.findOne({ mobile });
+    if (existingMobile) {
+      return NextResponse.json(
+        { error: "A user with this mobile number already exists." },
+        { status: 400 }
+      );
     }
 
     // OTP VERIFICATION STEP

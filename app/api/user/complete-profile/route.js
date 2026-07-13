@@ -21,13 +21,16 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, mobile } = body;
+    const { name, mobile, accountType, address, city, pincode } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Full name is required." }, { status: 400 });
     }
     if (!mobile || !/^\d{10}$/.test(mobile)) {
       return NextResponse.json({ error: "Please enter a valid 10-digit mobile number." }, { status: 400 });
+    }
+    if (accountType && !["Individual User", "Commercial Partner"].includes(accountType)) {
+      return NextResponse.json({ error: "Invalid account type." }, { status: 400 });
     }
 
     await dbConnect();
@@ -40,7 +43,14 @@ export async function POST(request) {
 
     const user = await User.findByIdAndUpdate(
       decoded.userId,
-      { name: name.trim(), mobile },
+      { 
+        name: name.trim(), 
+        mobile,
+        accountType: accountType || "Individual User",
+        address: address || "",
+        city: city || "",
+        pincode: pincode || ""
+      },
       { new: true, select: "-password" }
     );
 

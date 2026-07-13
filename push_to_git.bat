@@ -22,7 +22,7 @@ echo.
 echo [5/6] Adding remote origin...
 :: Safely remove the origin if it already exists before adding
 git remote remove origin >nul 2>&1
-git remote add origin https://github.com/shaswat2031/bedsheet.git
+git remote add origin https://github.com/trendleapinfo-blip/BEDSHEET.git
 
 echo.
 echo [6/6] Pushing to GitHub...
