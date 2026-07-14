@@ -24,6 +24,7 @@ import {
   Plus, 
   RefreshCw, 
   XCircle,
+  X,
   Clock,
   ShieldAlert,
   ChevronRight,
@@ -59,6 +60,13 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [quotes, setQuotes] = useState([]);
   const [bundles, setBundles] = useState([]);
+  const [refunds, setRefunds] = useState([]);
+  
+  // Pause/Vacation Mode States
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [pauseDuration, setPauseDuration] = useState("1 week");
+  const [pauseAction, setPauseAction] = useState("hold");
+  const [pauseSubmitting, setPauseSubmitting] = useState(false);
   
   // Support tickets state
   const [tickets, setTickets] = useState([]);
@@ -132,6 +140,7 @@ export default function Dashboard() {
         setOrders(fetchedOrders);
         setQuotes(data.quotes || []);
         setBundles(data.bundles || []);
+        setRefunds(data.refunds || []);
         
         // Pre-fill profile form
         setProfileForm({
@@ -431,11 +440,12 @@ export default function Dashboard() {
         setUser(data.user);
         setSubscriptionSuccess("Subscription cancelled. Active orders marked as cancelled.");
         
-        // Refresh orders list
+        // Refresh orders and refunds list
         const profileRes = await fetch("/api/user/profile");
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           setOrders(profileData.orders || []);
+          setRefunds(profileData.refunds || []);
         }
 
         setTimeout(() => setSubscriptionSuccess(""), 4000);
@@ -446,6 +456,62 @@ export default function Dashboard() {
       setSubscriptionError("Network error occurred.");
     } finally {
       setCancelSubmitting(false);
+    }
+  };
+
+  // Handle Pause Subscription
+  const handlePauseSubscription = async (e) => {
+    e.preventDefault();
+    setSubscriptionError("");
+    setSubscriptionSuccess("");
+    setPauseSubmitting(true);
+
+    try {
+      const res = await fetch("/api/user/pause-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ duration: pauseDuration, action: pauseAction })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+        setShowPauseModal(false);
+        setSubscriptionSuccess("Vacation Mode activated. Your subscription is now paused.");
+        setTimeout(() => setSubscriptionSuccess(""), 4000);
+      } else {
+        setSubscriptionError(data.error || "Failed to pause subscription.");
+      }
+    } catch (err) {
+      setSubscriptionError("Network error occurred.");
+    } finally {
+      setPauseSubmitting(false);
+    }
+  };
+
+  // Handle Resume Subscription
+  const handleResumeSubscription = async () => {
+    setSubscriptionError("");
+    setSubscriptionSuccess("");
+    setPauseSubmitting(true);
+
+    try {
+      const res = await fetch("/api/user/resume-plan", {
+        method: "POST"
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+        setSubscriptionSuccess("Subscription plan resumed successfully! Welcome back.");
+        setTimeout(() => setSubscriptionSuccess(""), 4000);
+      } else {
+        setSubscriptionError(data.error || "Failed to resume subscription.");
+      }
+    } catch (err) {
+      setSubscriptionError("Network error occurred.");
+    } finally {
+      setPauseSubmitting(false);
     }
   };
 
@@ -594,6 +660,39 @@ export default function Dashboard() {
                   </p>
                 </div>
 
+                {/* Active Refund Notification */}
+                {refunds.length > 0 && (
+                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-6 rounded-none shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in border-l-4 border-l-[#C5A376]">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-none text-[9px] font-black uppercase tracking-widest ${
+                          refunds[0].status === "PENDING" ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" :
+                          refunds[0].status === "REFUNDED" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" :
+                          "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                        }`}>
+                          Refund {refunds[0].status}
+                        </span>
+                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider">Security Deposit Claim</span>
+                      </div>
+                      <h4 className="font-extrabold text-sm text-charcoal-ink">
+                        {refunds[0].status === "PENDING" && "Linen Return & Deposit Refund is Pending"}
+                        {refunds[0].status === "REFUNDED" && "Security Deposit Refund Completed"}
+                        {refunds[0].status === "REJECTED" && "Refund Request Rejected"}
+                      </h4>
+                      <p className="text-3xs text-charcoal-ink/60 font-semibold leading-relaxed max-w-2xl">
+                        {refunds[0].status === "PENDING" && `Your subscription to "${refunds[0].planName}" has been cancelled. Our logistics team will collect the sheets soon. Once inspected, your deposit of ₹${refunds[0].depositAmount} will be refunded.`}
+                        {refunds[0].status === "REFUNDED" && `Your security deposit of ₹${refunds[0].depositAmount} was successfully refunded on ${new Date(refunds[0].refundedAt).toLocaleDateString()}. Transaction Reference: ${refunds[0].transactionId || "Direct Gateway Transfer"}.`}
+                        {refunds[0].status === "REJECTED" && `Your refund claim for "${refunds[0].planName}" was rejected. Please contact our support desk for further dispute clarification.`}
+                      </p>
+                    </div>
+                    {refunds[0].status === "PENDING" && (
+                      <span className="text-2xs font-mono font-black text-amber-600 animate-pulse bg-amber-50 px-3 py-1.5 border border-amber-200 shrink-0">
+                        PENDING COLLECT
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Sub & Status Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   
@@ -610,10 +709,12 @@ export default function Dashboard() {
                         </span>
                         <span className={`px-2 py-0.5 rounded-none text-3xs font-bold uppercase tracking-wider ${
                           user?.selectedPlan?.planName 
-                            ? "bg-white/10 text-white border border-white/20"
+                            ? (user.selectedPlan.isPaused ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse" : "bg-white/10 text-white border border-white/20")
                             : "bg-white/05 text-white/50 border border-white/10"
                         }`}>
-                          {user?.selectedPlan?.planName ? (user.selectedPlan.orderType === "BUY" ? "OWNED" : "ACTIVE") : "INACTIVE"}
+                          {user?.selectedPlan?.planName 
+                            ? (user.selectedPlan.orderType === "BUY" ? "OWNED" : (user.selectedPlan.isPaused ? "PAUSED" : "ACTIVE")) 
+                            : "INACTIVE"}
                         </span>
                       </div>
                       
@@ -634,6 +735,11 @@ export default function Dashboard() {
                               {user.selectedPlan.orderType === "BUY" ? "One-Time" : `/${user.selectedPlan.duration}`}
                             </span>
                           </div>
+                          {user.selectedPlan.isPaused && (
+                            <p className="text-[10px] text-amber-400 font-bold mt-2 uppercase tracking-wide">
+                              ⏸️ Vacation Pause Active until {new Date(user.selectedPlan.pausedUntil).toLocaleDateString()}
+                            </p>
+                          )}
                           <div className="mt-2.5 text-[10px] text-white/50 space-y-0.5 border-t border-white/10 pt-2 font-semibold">
                             <p>GST (18%): ₹{user.selectedPlan.gst || 0} {user.selectedPlan.orderType !== "BUY" && `• Deposit: ₹${user.selectedPlan.securityDeposit || 0}`}</p>
                             <p className="font-extrabold text-linen-gold">Total Amount Paid: ₹{user.selectedPlan.totalPrice || user.selectedPlan.price}</p>
@@ -974,9 +1080,16 @@ export default function Dashboard() {
                 {user?.selectedPlan?.planName ? (
                   <div className="bg-white rounded-none p-6 border border-charcoal-ink/10 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
-                      <span className="text-linen-gold text-2xs uppercase tracking-widest font-bold bg-linen-gold/10 px-2.5 py-1 border border-linen-gold/20">
-                        Active Plan
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-linen-gold text-2xs uppercase tracking-widest font-bold bg-linen-gold/10 px-2.5 py-1 border border-linen-gold/20">
+                          Active Plan
+                        </span>
+                        {user.selectedPlan.isPaused && (
+                          <span className="text-amber-600 text-2xs uppercase tracking-widest font-bold bg-amber-50 px-2.5 py-1 border border-amber-200">
+                            PAUSED
+                          </span>
+                        )}
+                      </div>
                       <h3 className="text-lg sm:text-xl font-serif font-bold text-charcoal-ink mt-3">
                         {user.selectedPlan.planName} ({user.selectedPlan.bedType === "single" ? "Single Bed" : "Double Bed"})
                       </h3>
@@ -987,16 +1100,42 @@ export default function Dashboard() {
                         GST: ₹{user.selectedPlan.gst || 0} • Deposit: ₹{user.selectedPlan.securityDeposit || 0} • Upfront Paid: <span className="font-extrabold text-charcoal-ink">₹{user.selectedPlan.totalPrice}</span>.
                         {user.selectedPlan.subscriptionType === "weekly" ? " Swaps repeat every 7 days (Weekly)." : " Swaps repeat every 30 days (Monthly)."}
                       </p>
+                      {user.selectedPlan.isPaused && (
+                        <p className="text-3xs text-amber-600 font-bold uppercase mt-2">
+                          Vacation mode resumes automatically on {new Date(user.selectedPlan.pausedUntil).toLocaleDateString()} ({user.selectedPlan.pauseDuration}) • Action: {user.selectedPlan.pauseAction === "pickup" ? "Linen collection requested" : "Keep sheets at home"}.
+                        </p>
+                      )}
                     </div>
 
-                    <button
-                      onClick={handleCancelSubscription}
-                      disabled={cancelSubmitting}
-                      className="px-5 py-3 rounded-none bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      {cancelSubmitting ? "Cancelling..." : "Cancel Subscription"}
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                      {user.selectedPlan.isPaused ? (
+                        <button
+                          onClick={handleResumeSubscription}
+                          disabled={pauseSubmitting}
+                          className="px-5 py-3 rounded-none bg-[#C5A376] hover:bg-charcoal-ink hover:text-white text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <RefreshCw className="w-4 h-4 animate-spin-once" />
+                          {pauseSubmitting ? "Resuming..." : "Resume Subscription"}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setShowPauseModal(true)}
+                          disabled={pauseSubmitting}
+                          className="px-5 py-3 rounded-none bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <Clock className="w-4 h-4" />
+                          Pause Plan (Vacation)
+                        </button>
+                      )}
+                      <button
+                        onClick={handleCancelSubscription}
+                        disabled={cancelSubmitting}
+                        className="px-5 py-3 rounded-none bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {cancelSubmitting ? "Cancelling..." : "Cancel Subscription"}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-amber-50/50 rounded-none p-6 border border-amber-100 flex items-start gap-4 animate-fade-in">
@@ -1524,6 +1663,73 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* MODAL: PAUSE SUBSCRIPTION (VACATION MODE) */}
+      {showPauseModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-[#FCFBF9] border border-charcoal-ink/10 rounded-none w-full max-w-md p-8 shadow-2xl relative text-charcoal-ink">
+            <button
+              onClick={() => setShowPauseModal(false)}
+              className="absolute top-6 right-6 text-charcoal-ink/40 hover:text-charcoal-ink cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-xs font-black text-charcoal-ink mb-2 uppercase tracking-widest">
+              Activate Vacation Pause Mode
+            </h2>
+            <p className="text-3xs text-charcoal-ink/65 mb-6 font-semibold uppercase">Temporarily stop billing cycles and delivery swaps.</p>
+
+            <form onSubmit={handlePauseSubscription} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] text-charcoal-ink/50 font-black uppercase block tracking-wider">Pause Duration</label>
+                <select
+                  value={pauseDuration}
+                  onChange={(e) => setPauseDuration(e.target.value)}
+                  className="w-full bg-white border border-charcoal-ink/15 rounded-none py-3 px-4 text-xs text-charcoal-ink focus:outline-none focus:border-linen-gold cursor-pointer font-bold"
+                >
+                  <option value="1 week">1 Week (7 Days)</option>
+                  <option value="2 weeks">2 Weeks (14 Days)</option>
+                  <option value="1 month">1 Month (30 Days)</option>
+                  <option value="2 months">2 Months (60 Days)</option>
+                  <option value="3 months">3 Months (90 Days)</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] text-charcoal-ink/50 font-black uppercase block tracking-wider">Linen Storage Preference</label>
+                <select
+                  value={pauseAction}
+                  onChange={(e) => setPauseAction(e.target.value)}
+                  className="w-full bg-white border border-charcoal-ink/15 rounded-none py-3 px-4 text-xs text-charcoal-ink focus:outline-none focus:border-linen-gold cursor-pointer font-bold"
+                >
+                  <option value="hold">Keep Sheets (Hold sheets at home for holidays)</option>
+                  <option value="pickup">Return Sheets (Collect sheets now & inspect at warehouse)</option>
+                </select>
+                <p className="text-3xs text-charcoal-ink/55 leading-relaxed mt-1 font-semibold">
+                  Hold sheets: Keep the linens at your home; swaps will resume automatically when you return. Return sheets: Our logistics staff will collect the rented set before you leave.
+                </p>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowPauseModal(false)}
+                  className="flex-1 py-3 px-6 rounded-none bg-white border border-charcoal-ink/15 hover:bg-slate-50 text-charcoal-ink text-xs font-bold transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={pauseSubmitting}
+                  className="flex-1 py-3 px-6 rounded-none bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/10 cursor-pointer text-center"
+                >
+                  {pauseSubmitting ? "Pausing..." : "Activate Pause"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

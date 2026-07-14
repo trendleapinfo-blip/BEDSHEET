@@ -71,6 +71,19 @@ export default function AdminDashboard() {
   const [plansList, setPlansList] = useState([]);
   const [couponsList, setCouponsList] = useState([]);
   const [showCouponModal, setShowCouponModal] = useState(false);
+  
+  // Waitlist data state
+  const [waitlistList, setWaitlistList] = useState([]);
+  const [waitlistSearch, setWaitlistSearch] = useState("");
+  const [waitlistStatusFilter, setWaitlistStatusFilter] = useState("ALL");
+
+  // Refunds data state
+  const [refundsList, setRefundsList] = useState([]);
+  const [refundsSearch, setRefundsSearch] = useState("");
+  const [refundsStatusFilter, setRefundsStatusFilter] = useState("ALL");
+  const [editingRefundId, setEditingRefundId] = useState(null);
+  const [refundTxId, setRefundTxId] = useState("");
+
   const [couponSearch, setCouponSearch] = useState("");
   const [couponForm, setCouponForm] = useState({
     id: "",
@@ -383,6 +396,18 @@ export default function AdminDashboard() {
         setCouponsList(couponsData.coupons || []);
       }
 
+      const waitlistRes = await fetch("/api/admin/waitlist");
+      if (waitlistRes.ok) {
+        const waitlistData = await waitlistRes.json();
+        setWaitlistList(waitlistData.waitlist || []);
+      }
+
+      const refundsRes = await fetch("/api/admin/refunds");
+      if (refundsRes.ok) {
+        const refundsData = await refundsRes.json();
+        setRefundsList(refundsData.refunds || []);
+      }
+
       const colorsRes = await fetch("/api/colors");
       if (colorsRes.ok) {
         const colorsData = await colorsRes.json();
@@ -590,6 +615,79 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       alert("Operation failed: " + err.message);
+    }
+  };
+
+  // Waitlist Actions
+  const updateWaitlistStatus = async (id, nextStatus) => {
+    try {
+      const res = await fetch("/api/admin/waitlist", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: nextStatus })
+      });
+      if (res.ok) {
+        setWaitlistList(waitlistList.map(w => w._id === id ? { ...w, status: nextStatus } : w));
+      } else {
+        const data = await res.json();
+        alert("Failed to update status: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteWaitlistEntry = async (id) => {
+    if (!confirm("Are you sure you want to remove this waitlist entry?")) return;
+    try {
+      const res = await fetch(`/api/admin/waitlist?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setWaitlistList(waitlistList.filter(w => w._id !== id));
+      } else {
+        const data = await res.json();
+        alert("Failed to delete entry: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Refunds Actions
+  const updateRefundStatus = async (id, nextStatus, transactionId = "") => {
+    try {
+      const res = await fetch("/api/admin/refunds", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: nextStatus, transactionId })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRefundsList(refundsList.map(r => r._id === id ? data.refund : r));
+        setEditingRefundId(null);
+        setRefundTxId("");
+        alert("Refund status updated successfully!");
+      } else {
+        const data = await res.json();
+        alert("Failed to update status: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteRefundEntry = async (id) => {
+    if (!confirm("Are you sure you want to delete this refund claim record?")) return;
+    try {
+      const res = await fetch(`/api/admin/refunds?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setRefundsList(refundsList.filter(r => r._id !== id));
+        alert("Refund claim record deleted.");
+      } else {
+        const data = await res.json();
+        alert("Failed to delete refund claim: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -1309,6 +1407,7 @@ export default function AdminDashboard() {
     { name: "Quotes", icon: FileText },
     { name: "Support Tickets", icon: HelpCircle },
     { name: "Refunds", icon: RefreshCcw },
+    { name: "Waitlist", icon: Inbox },
     { name: "Brand Settings", icon: Settings }
   ];
 
@@ -1475,10 +1574,14 @@ export default function AdminDashboard() {
               </div>              {/* Navigation Dashboard Sections Toggle */}
               <div className="bg-white border border-black/10 rounded-none p-6 shadow-sm">
                 <h3 className="text-sm font-serif font-bold text-charcoal-ink mb-4 uppercase tracking-wider">Control Quick Links</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                   <button onClick={() => setActiveTab("Customer Dashboard")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
                     <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Customers</span>
                     <span className="text-xl font-serif font-bold text-linen-gold mt-2">{usersList.length}</span>
+                  </button>
+                  <button onClick={() => setActiveTab("Waitlist")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Waitlist</span>
+                    <span className="text-xl font-serif font-bold text-linen-gold mt-2">{waitlistList.length}</span>
                   </button>
                   <button onClick={() => setActiveTab("Categories")} className="bg-alabaster-linen border border-black/10 hover:border-linen-gold/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
                     <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Bundles / Cats</span>
@@ -1499,6 +1602,10 @@ export default function AdminDashboard() {
                   <button onClick={() => setActiveTab("Inventory")} className="bg-alabaster-linen border border-black/10 hover:border-amber-500/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
                     <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Pending Orders</span>
                     <span className="text-xl font-serif font-bold text-amber-600 mt-2">{ordersList.filter(o => o.status === 'PENDING').length}</span>
+                  </button>
+                  <button onClick={() => setActiveTab("Refunds")} className="bg-alabaster-linen border border-black/10 hover:border-[#C5A376]/40 p-4 rounded-none flex flex-col items-start justify-between transition-all hover:shadow-sm cursor-pointer">
+                    <span className="text-2xs font-bold text-charcoal-ink/50 uppercase tracking-wider">Refunds</span>
+                    <span className="text-xl font-serif font-bold text-amber-600 mt-2">{refundsList.filter(r => r.status === 'PENDING').length}</span>
                   </button>
                 </div>
               </div>
@@ -2930,19 +3037,307 @@ export default function AdminDashboard() {
 
           {/* TAB: REFUNDS */}
           {activeTab === "Refunds" && (
-            <div className="space-y-8 animate-fadeIn">
+            <div className="space-y-8 animate-fadeIn text-slate-800">
               <div>
-                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Refund Requests</h1>
-                <p className="text-xs text-slate-500">Manage cancellation refund claims from customers</p>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Refund Requests & Deposit Returns</h1>
+                <p className="text-xs text-slate-550">Manage and track security deposit returns for cancelled subscription plans</p>
               </div>
 
-              {/* Refunds visual state */}
-              <div className="bg-white border border-slate-200/60 p-8 rounded-3xl text-center max-w-lg mx-auto mt-12 shadow-sm">
-                <Inbox className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="font-extrabold text-slate-800 text-base mb-1">No Active Refund Claims</h3>
-                <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                  There are no pending subscription refunds or billing disputes currently logged in the ClosetRush database.
-                </p>
+              {/* Stats overview cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Claims</span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">{refundsList.length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Pending Returns</span>
+                  <h3 className="text-xl font-black text-amber-600 mt-1">{refundsList.filter(r => r.status === 'PENDING').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Refunded Amount</span>
+                  <h3 className="text-xl font-black text-teal-650 mt-1">
+                    ₹{refundsList.filter(r => r.status === 'REFUNDED').reduce((sum, r) => sum + r.depositAmount, 0).toLocaleString()}
+                  </h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Refunded Claims</span>
+                  <h3 className="text-xl font-black text-blue-600 mt-1">{refundsList.filter(r => r.status === 'REFUNDED').length}</h3>
+                </div>
+              </div>
+
+              {/* Search & Filters */}
+              <div className="bg-white border border-slate-200/60 p-6 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={refundsSearch}
+                    onChange={(e) => setRefundsSearch(e.target.value)}
+                    placeholder="Search by customer name, email, or phone..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-2.5 text-xs placeholder-slate-400 text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xs text-slate-500 font-bold uppercase">Status:</span>
+                  <select
+                    value={refundsStatusFilter}
+                    onChange={(e) => setRefundsStatusFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs font-bold text-slate-850 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="ALL">All Claims</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="REFUNDED">REFUNDED</option>
+                    <option value="REJECTED">REJECTED</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-550 bg-slate-50/50 font-semibold">
+                        <th className="p-4 font-bold">Customer Info</th>
+                        <th className="p-4 font-bold">Plan Name</th>
+                        <th className="p-4 font-bold">Refund Due</th>
+                        <th className="p-4 font-bold">Status</th>
+                        <th className="p-4 font-bold">Dates & Reference</th>
+                        <th className="p-4 font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {refundsList
+                        .filter(r => {
+                          const query = refundsSearch.toLowerCase();
+                          const matchesQuery =
+                            r.userName.toLowerCase().includes(query) ||
+                            r.userEmail.toLowerCase().includes(query) ||
+                            (r.userPhone || "").includes(query);
+                          const matchesStatus = refundsStatusFilter === "ALL" || r.status === refundsStatusFilter;
+                          return matchesQuery && matchesStatus;
+                        })
+                        .map(r => (
+                          <tr key={r._id} className="hover:bg-slate-50/40 transition-colors">
+                            <td className="p-4 space-y-0.5">
+                              <p className="font-bold text-slate-805">{r.userName}</p>
+                              <p className="text-[10px] text-slate-400">{r.userEmail}</p>
+                              <p className="text-[10px] text-slate-400">{r.userPhone || "—"}</p>
+                            </td>
+                            <td className="p-4 font-bold text-slate-700">{r.planName}</td>
+                            <td className="p-4 font-extrabold text-teal-605">₹{r.depositAmount}</td>
+                            <td className="p-4">
+                              <span className={`text-[9px] font-black uppercase px-2.5 py-0.8 rounded-full border ${
+                                r.status === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                r.status === "REFUNDED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                "bg-rose-50 text-rose-700 border-rose-200"
+                              }`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="p-4 space-y-1 text-[10px] text-slate-500 font-medium">
+                              <p>Cancelled: {new Date(r.cancelledAt).toLocaleDateString()}</p>
+                              {r.refundedAt && <p>Processed: {new Date(r.refundedAt).toLocaleDateString()}</p>}
+                              {r.transactionId && <p className="text-teal-600 font-bold">TxID: {r.transactionId}</p>}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2 items-center">
+                                {r.status === "PENDING" && (
+                                  <>
+                                    {editingRefundId === r._id ? (
+                                      <div className="flex gap-1.5 items-center">
+                                        <input
+                                          type="text"
+                                          placeholder="Transaction ID / Ref"
+                                          value={refundTxId}
+                                          onChange={(e) => setRefundTxId(e.target.value)}
+                                          className="bg-white border border-slate-300 rounded px-2 py-1 text-2xs text-slate-800 focus:outline-none"
+                                        />
+                                        <button
+                                          onClick={() => updateRefundStatus(r._id, "REFUNDED", refundTxId)}
+                                          className="px-2 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded text-3xs font-extrabold uppercase transition-all cursor-pointer"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingRefundId(null)}
+                                          className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-650 rounded text-3xs font-bold uppercase transition-all cursor-pointer"
+                                        >
+                                          X
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setEditingRefundId(r._id);
+                                            setRefundTxId("");
+                                          }}
+                                          className="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 text-[10px] font-bold border border-teal-200 rounded-lg transition-colors cursor-pointer"
+                                        >
+                                          Mark Refunded
+                                        </button>
+                                        <button
+                                          onClick={() => updateRefundStatus(r._id, "REJECTED")}
+                                          className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                                        >
+                                          Reject
+                                        </button>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => deleteRefundEntry(r._id)}
+                                  className="p-1 text-slate-450 hover:text-red-650 transition-colors cursor-pointer"
+                                  title="Delete Record"
+                                >
+                                  <Trash2 className="h-4.5 w-4.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      {refundsList.length === 0 && (
+                        <tr>
+                          <td colSpan="6" className="text-center p-8 text-slate-400">No refund requests found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: WAITLIST */}
+          {activeTab === "Waitlist" && (
+            <div className="space-y-8 animate-fadeIn text-slate-800">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Priority Waitlist</h1>
+                <p className="text-xs text-slate-550">Manage waitlist subscriptions and client leads</p>
+              </div>
+
+              {/* Stats cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total waitlist</span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">{waitlistList.length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Pending</span>
+                  <h3 className="text-xl font-black text-amber-600 mt-1">{waitlistList.filter(w => w.status === 'PENDING').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Contacted</span>
+                  <h3 className="text-xl font-black text-blue-600 mt-1">{waitlistList.filter(w => w.status === 'CONTACTED').length}</h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Converted</span>
+                  <h3 className="text-xl font-black text-teal-650 mt-1">{waitlistList.filter(w => w.status === 'CONVERTED').length}</h3>
+                </div>
+              </div>
+
+              {/* Search and Filters */}
+              <div className="bg-white border border-slate-200/60 p-6 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={waitlistSearch}
+                    onChange={(e) => setWaitlistSearch(e.target.value)}
+                    placeholder="Search by email or phone number..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-2.5 text-xs placeholder-slate-400 text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xs text-slate-500 font-bold uppercase">Status:</span>
+                  <select
+                    value={waitlistStatusFilter}
+                    onChange={(e) => setWaitlistStatusFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-2xl py-2.5 px-4 text-xs font-bold text-slate-850 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="ALL">All Entries</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="CONTACTED">CONTACTED</option>
+                    <option value="CONVERTED">CONVERTED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-550 bg-slate-50/50 font-semibold">
+                        <th className="p-4 font-bold">Email Address</th>
+                        <th className="p-4 font-bold">Phone Number</th>
+                        <th className="p-4 font-bold">Status</th>
+                        <th className="p-4 font-bold">Joined Date</th>
+                        <th className="p-4 font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {waitlistList
+                        .filter(w => {
+                          const query = waitlistSearch.toLowerCase();
+                          const matchesQuery =
+                            w.email.toLowerCase().includes(query) ||
+                            w.phone.includes(query);
+                          const matchesStatus = waitlistStatusFilter === "ALL" || w.status === waitlistStatusFilter;
+                          return matchesQuery && matchesStatus;
+                        })
+                        .map(w => (
+                          <tr key={w._id} className="hover:bg-slate-50/40 transition-colors">
+                            <td className="p-4 font-bold text-slate-805">{w.email}</td>
+                            <td className="p-4 font-bold text-slate-600">{w.phone}</td>
+                            <td className="p-4">
+                              <select
+                                value={w.status}
+                                onChange={(e) => updateWaitlistStatus(w._id, e.target.value)}
+                                className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full border cursor-pointer focus:outline-none ${
+                                  w.status === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-250" :
+                                  w.status === "CONTACTED" ? "bg-blue-50 text-blue-750 border-blue-250" :
+                                  w.status === "CONVERTED" ? "bg-emerald-50 text-emerald-700 border-emerald-250" :
+                                  "bg-rose-50 text-rose-700 border-rose-250"
+                                }`}
+                              >
+                                <option value="PENDING">PENDING</option>
+                                <option value="CONTACTED">CONTACTED</option>
+                                <option value="CONVERTED">CONVERTED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                              </select>
+                            </td>
+                            <td className="p-4 text-slate-400 font-semibold">
+                              {new Date(w.joinedAt || w.createdAt).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
+                            </td>
+                            <td className="p-4">
+                              <button
+                                onClick={() => deleteWaitlistEntry(w._id)}
+                                className="p-1 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-650 font-bold border border-rose-200/50 rounded-lg transition-colors cursor-pointer text-[10px] flex items-center gap-1"
+                                title="Delete Waitlist Entry"
+                              >
+                                <Trash2 className="h-3 w-3" /> Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      {waitlistList.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="text-center p-8 text-slate-400">No waitlist entries registered.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

@@ -51,6 +51,7 @@ export default function ShopPage() {
   // User session state
   const [user, setUser] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [plans, setPlans] = useState([]);
   const [productColors, setProductColors] = useState([]);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
@@ -100,6 +101,8 @@ export default function ShopPage() {
       }
     } catch (err) {
       console.error("Fetch plans error in shop:", err);
+    } finally {
+      setLoadingPlans(false);
     }
   };
 
@@ -896,8 +899,76 @@ export default function ShopPage() {
 
   const mainImage = galleryImages[activeImgIdx] || galleryImages[0];
 
+  if (loadingSession || loadingPlans) {
+    return (
+      <div className="min-h-screen bg-[#FCFBF9] text-charcoal-ink flex flex-col items-center justify-center font-sans antialiased">
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes waveLiquid {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+          }
+          .liquid-wave {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            width: 220%;
+            height: 220%;
+            background: linear-gradient(to bottom, rgba(197, 163, 118, 0.2), rgba(197, 163, 118, 0.35));
+            border-radius: 38%;
+            animation: waveLiquid 8s infinite linear;
+          }
+          .liquid-wave-secondary {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            width: 210%;
+            height: 210%;
+            background: linear-gradient(to bottom, rgba(13, 21, 24, 0.04), rgba(13, 21, 24, 0.08));
+            border-radius: 40%;
+            animation: waveLiquid 12s infinite linear;
+          }
+        `}} />
+
+        <div className="text-center space-y-10 max-w-md px-6">
+          {/* Circular Liquid Washer Container */}
+          <div className="relative w-36 h-36 mx-auto bg-white border border-[#C5A376]/20 shadow-md rounded-full overflow-hidden flex items-center justify-center">
+            {/* Morphing Liquid Waves */}
+            <div className="liquid-wave" />
+            <div className="liquid-wave-secondary" />
+            
+            {/* Modern Floating Bed Icon */}
+            <div className="relative z-10 flex flex-col items-center justify-center space-y-2 animate-pulse">
+              <Bed className="w-12 h-12 text-charcoal-ink" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-charcoal-ink/60">Sanitizing</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <img
+              src="/image.png"
+              alt="ClosetRush Logo"
+              className="h-14 w-auto mx-auto object-contain shrink-0"
+            />
+            <h1 className="font-serif font-bold text-2xl uppercase tracking-widest text-charcoal-ink">
+              CLOSET RUSH
+            </h1>
+            
+            <div className="space-y-1.5">
+              <span className="text-[11px] text-[#C5A376] font-black uppercase tracking-widest block animate-pulse">
+                Thermodynamic Sanitization Active
+              </span>
+              <p className="text-xs text-charcoal-ink/50 font-semibold uppercase tracking-widest leading-relaxed">
+                Swapping & washing fresh organic linens...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-alabaster-linen text-charcoal-ink font-sans antialiased flex flex-col justify-between">
+    <div className="min-h-screen bg-[#FCFBF9] text-charcoal-ink font-sans antialiased flex flex-col justify-between">
       {/* Navigation */}
       <div>
         <Navbar user={user} loading={loadingSession} handleLogout={handleLogout} />
@@ -907,27 +978,27 @@ export default function ShopPage() {
       {/* Main Container */}
       <main className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
         {/* Step Indicator Header */}
-        <div className="mb-10 max-w-4xl mx-auto">
+        <div className="mb-12 max-w-4xl mx-auto px-4">
           <div className="flex items-center justify-between text-center relative">
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-charcoal-ink/10 -translate-y-1/2 z-0" />
+            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-charcoal-ink/10 -translate-y-1/2 z-0" />
 
             {[
               { num: 1, text: "Configure" },
               { num: 2, text: "Register" },
-              { num: 3, text: "Complete Profile" },
+              { num: 3, text: "Profile" },
               { num: 4, text: customerType === "B2C" ? "Checkout" : "RFQ Review" },
               { num: 5, text: "Confirmation" }
             ].map((s) => (
               <div key={s.num} className="relative z-10 flex flex-col items-center">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs uppercase tracking-wider transition-all duration-300 border ${activeStep >= s.num
-                      ? "bg-charcoal-ink text-white border-charcoal-ink"
-                      : "bg-white text-charcoal-ink/40 border-charcoal-ink/10"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-xs uppercase tracking-wider transition-all duration-300 border-2 ${activeStep >= s.num
+                      ? "bg-charcoal-ink text-white border-charcoal-ink shadow-md"
+                      : "bg-[#FCFBF9] text-charcoal-ink/40 border-charcoal-ink/15"
                     }`}
                 >
-                  {activeStep > s.num ? <Check className="w-4.5 h-4.5" /> : s.num}
+                  {activeStep > s.num ? <Check className="w-5 h-5 text-[#C5A376]" /> : s.num}
                 </div>
-                <span className={`text-[10px] uppercase tracking-widest font-black mt-2 hidden sm:block ${activeStep >= s.num ? "text-charcoal-ink" : "text-charcoal-ink/30"
+                <span className={`text-[9px] uppercase tracking-widest font-black mt-2.5 hidden md:block ${activeStep >= s.num ? "text-charcoal-ink font-bold" : "text-charcoal-ink/30"
                   }`}>
                   {s.text}
                 </span>
@@ -940,58 +1011,73 @@ export default function ShopPage() {
         {activeStep === 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             {/* Left Column: Product Image Gallery */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="bg-white border border-charcoal-ink/08 p-6 shadow-sm">
-                <span className="text-[9px] font-black uppercase tracking-widest text-[#B2905F] bg-[#B2905F]/10 px-3 py-1 rounded-full border border-[#B2905F]/20">
-                  {customerType === "B2C" ? "Premium Bedding Rentals" : "Bulk B2B Linen Supply"}
-                </span>
-
-                <div className="space-y-4 mt-6">
-                  <h2 className="font-serif font-bold text-2xl text-charcoal-ink leading-tight">
+            <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
+              <div className="bg-white border border-charcoal-ink/10 p-6 rounded-none shadow-sm space-y-6">
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-[#C5A376] bg-[#C5A376]/10 px-3.5 py-1.5 border border-[#C5A376]/20">
+                    {customerType === "B2C" ? "Premium Bedding Rentals" : "Bulk B2B Linen Supply"}
+                  </span>
+                  <h2 className="font-serif font-bold text-xl sm:text-2xl text-charcoal-ink leading-tight mt-4">
                     {selectedBedType} Linen Set
                   </h2>
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-alabaster-linen border border-black/05 rounded-2xl">
-                    <img
-                      src={mainImage}
-                      alt="Bed Sheets"
-                      className="w-full h-full object-cover transition-all duration-300"
-                    />
-                    {/* Dynamic color tint overlay (only if using fallback white sheets images) */}
-                    {(!currentColorObj || !currentColorObj.images || currentColorObj.images.length === 0) && (
-                      <div
-                        className="absolute inset-0 mix-blend-multiply opacity-25 transition-all duration-500 pointer-events-none"
-                        style={{ backgroundColor: currentColorObj?.hexCode || "#FFFFFF" }}
-                      />
-                    )}
-                  </div>
+                </div>
 
-                  {/* Image Gallery Thumbnails Row */}
-                  {galleryImages.length > 1 && (
-                    <div className="flex gap-2.5 mt-3 justify-center">
-                      {galleryImages.map((img, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setActiveImgIdx(idx)}
-                          className={`w-14 h-11 border-2 overflow-hidden rounded-lg transition-all cursor-pointer ${activeImgIdx === idx ? "border-[#B2905F] scale-105" : "border-black/05 hover:border-black/20"
-                            }`}
-                        >
-                          <img src={img} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#FCFBF9] border border-charcoal-ink/10">
+                  <img
+                    src={mainImage}
+                    alt="Bed Sheets"
+                    className="w-full h-full object-cover transition-all duration-300"
+                  />
+                  {(!currentColorObj || !currentColorObj.images || currentColorObj.images.length === 0) && (
+                    <div
+                      className="absolute inset-0 mix-blend-multiply opacity-20 pointer-events-none"
+                      style={{ backgroundColor: currentColorObj?.hexCode || "#FFFFFF" }}
+                    />
                   )}
                 </div>
 
-                <div className="space-y-3 pt-6 border-t border-charcoal-ink/08 mt-6">
+                {/* Image Gallery Thumbnails Row */}
+                {galleryImages.length > 1 && (
+                  <div className="flex gap-2.5 justify-center">
+                    {galleryImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveImgIdx(idx)}
+                        className={`w-14 h-11 border overflow-hidden transition-all cursor-pointer ${activeImgIdx === idx ? "border-[#C5A376] ring-1 ring-[#C5A376] scale-105" : "border-charcoal-ink/10 hover:border-charcoal-ink/20"
+                          }`}
+                      >
+                        <img src={img} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-3 pt-6 border-t border-charcoal-ink/10">
+                  <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Linen Kit Package Contents</span>
+                  <div className="bg-[#FCFBF9] p-3.5 border border-charcoal-ink/10 text-3xs text-charcoal-ink/80 space-y-2 uppercase tracking-wider font-extrabold mb-4 font-sans">
+                    {selectedBedType.toLowerCase().includes("single") ? (
+                      <>
+                        <p className="flex justify-between"><span>Premium Bed Sheets:</span> <span className="text-charcoal-ink font-black">4 Single Sheets</span></p>
+                        <p className="flex justify-between"><span>Sanitized Pillow Covers:</span> <span className="text-charcoal-ink font-black">4 Pillow Covers</span></p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="flex justify-between"><span>Premium Bed Sheets:</span> <span className="text-charcoal-ink font-black">4 Double Sheets</span></p>
+                        <p className="flex justify-between"><span>Sanitized Pillow Covers:</span> <span className="text-charcoal-ink font-black">8 Pillow Covers</span></p>
+                      </>
+                    )}
+                    <p className="flex justify-between"><span>Thread Count (TC):</span> <span className="text-[#C5A376] font-black">400 TC Organic Cotton</span></p>
+                  </div>
+
                   <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Sanitary and Delivery Inclusions</span>
-                  <ul className="space-y-3.5 text-2xs font-extrabold uppercase tracking-wide text-charcoal-ink/70">
+                  <ul className="space-y-3.5 text-3xs font-extrabold uppercase tracking-widest text-charcoal-ink/70">
                     <li className="flex items-center gap-2">
-                      <ShieldCheck className="w-4.5 h-4.5 text-[#B2905F]" />
+                      <ShieldCheck className="w-4 h-4 text-[#C5A376]" />
                       <span>Thermodynamic UV-C Sterilized</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Truck className="w-4.5 h-4.5 text-[#B2905F]" />
+                      <Truck className="w-4 h-4 text-[#C5A376]" />
                       <span>Free Doorstep Swap Logistics</span>
                     </li>
                   </ul>
@@ -1000,213 +1086,221 @@ export default function ShopPage() {
             </div>
 
             {/* Right Column: Interactive Configurator Panel */}
-            <div className="lg:col-span-7 bg-white border border-charcoal-ink/08 p-8 flex flex-col justify-between shadow-sm">
-              <div className="space-y-6">
-
-                {/* Switcher Customer type: B2C vs B2B */}
-                <div className="space-y-2">
-                  <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Choose Plan Channel</span>
-                  <div className="grid grid-cols-2 bg-alabaster-linen p-1 border border-black/05">
-                    <button
-                      onClick={() => setCustomerType("B2C")}
-                      className={`py-3 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${customerType === "B2C" ? "bg-charcoal-ink text-white" : "text-charcoal-ink/50"
-                        }`}
-                    >
-                      B2C Individual Customer
-                    </button>
-                    <button
-                      onClick={() => setCustomerType("B2B")}
-                      className={`py-3 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${customerType === "B2B" ? "bg-charcoal-ink text-white" : "text-charcoal-ink/50"
-                        }`}
-                    >
-                      B2B Hotels / PGs / Hostels
-                    </button>
-                  </div>
-                </div>
-
-                {/* Configuration Options */}
-                <div className="space-y-6">
-                  {/* Bed Sizes */}
-                  <div className="space-y-2">
-                    <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Type (Select Bed Dimensions)</span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {uniqueBedTypes.map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => setSelectedBedType(type)}
-                          className={`py-3.5 px-2 border text-center transition-all cursor-pointer text-[10px] font-black uppercase tracking-wider ${selectedBedType === type
-                              ? "bg-charcoal-ink text-white border-charcoal-ink"
-                              : "bg-alabaster-linen border-charcoal-ink/10 hover:border-charcoal-ink/30"
-                            }`}
-                        >
-                          {getBedSizeLabel(type)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-
-
-                  {/* B2C specific options: Tenure Slider & planType */}
-                  {customerType === "B2C" ? (
-                    <>
-                      {/* Tenure */}
-                      <div className="space-y-2">
-                        <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Subscription Duration Tenure</span>
-                        <div className="grid grid-cols-3 gap-2">
-                          {availableDurationsForBed.map((dur) => {
-                            const { displayName, discountText } = getTenureDetails(dur);
-                            return (
-                              <button
-                                key={dur}
-                                onClick={() => setSelectedDuration(dur)}
-                                className={`py-3.5 px-2 border text-center transition-all cursor-pointer ${selectedDuration === dur
-                                    ? "bg-charcoal-ink text-white border-charcoal-ink"
-                                    : "bg-alabaster-linen border-charcoal-ink/10"
-                                  }`}
-                              >
-                                <span className="text-[10px] font-black uppercase block tracking-wider">{displayName}</span>
-                                {discountText && (
-                                  <span className="text-[8px] font-bold text-linen-gold block mt-0.5">{discountText}</span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Plan Type */}
-                      <div className="space-y-3">
-                        <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Plan Payment Style</span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {(settings?.paymentStyles && settings.paymentStyles.length > 0
-                            ? settings.paymentStyles
-                            : [
-                              { id: "Monthly", name: "Standard Monthly", description: "Requires refundable security deposit of ₹{deposit}", depositMultiplier: 1 },
-                              { id: "Advance", name: "Advance Plan", description: "Pay full subscription upfront. Zero security deposit required.", depositMultiplier: 0 }
-                            ]
-                          ).map((style) => {
-                            const isSingle = selectedBedType.toLowerCase().includes("single");
-                            const depositAmt = settings
-                              ? (isSingle ? settings.singleBedDeposit : settings.doubleBedDeposit)
-                              : (isSingle ? 500 : 800);
-                            const finalDeposit = Math.round(depositAmt * (style.depositMultiplier !== undefined ? style.depositMultiplier : 1));
-
-                            let desc = style.description || "";
-                            if (desc.includes("₹{deposit}")) {
-                              desc = desc.replace("₹{deposit}", `₹${finalDeposit}`);
-                            } else {
-                              desc = desc.replace("{deposit}", `₹${finalDeposit}`);
-                            }
-
-                            const isSelected = planType === style.id;
-                            const isZeroDeposit = style.depositMultiplier === 0;
-
-                            return (
-                              <button
-                                key={style.id}
-                                type="button"
-                                onClick={() => setPlanType(style.id)}
-                                className={`group p-5 border text-left flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] hover:shadow-md cursor-pointer relative overflow-hidden rounded-2xl ${isSelected
-                                    ? "bg-gradient-to-br from-charcoal-ink/07 to-charcoal-ink/03 border-charcoal-ink ring-1 ring-charcoal-ink shadow-sm"
-                                    : "bg-white border-charcoal-ink/10 hover:border-charcoal-ink/25"
-                                  }`}
-                              >
-                                {isZeroDeposit && (
-                                  <div className="absolute top-0 right-0">
-                                    <span className="bg-emerald-600 text-white text-[7px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-bl-lg">
-                                      Zero Deposit
-                                    </span>
-                                  </div>
-                                )}
-                                {style.id === "Advance" && !isZeroDeposit && (
-                                  <div className="absolute top-0 right-0">
-                                    <span className="bg-linen-gold text-white text-[7px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-bl-lg">
-                                      Popular
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="space-y-1 pr-6">
-                                  <span className="text-[11px] font-black uppercase tracking-wider block text-charcoal-ink group-hover:text-black transition-colors">
-                                    {style.name}
-                                  </span>
-                                  <span className="text-[9px] text-charcoal-ink/60 mt-1 font-semibold leading-relaxed block">
-                                    {desc}
-                                  </span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    // B2B Intro Notice
-                    <div className="p-5 border border-linen-gold/25 bg-linen-gold/05 text-charcoal-ink space-y-2">
-                      <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-[#B2905F]">
-                        <Building className="w-4 h-4" /> B2B Bulk Proposal Route
-                      </div>
-                      <p className="text-[11px] text-charcoal-ink/70 leading-relaxed font-semibold">
-                        For businesses like Hostels, PGs, and Hotels. Instead of standard monthly checkout rates, we process corporate applications via RFQ proposals. Provide property counts in next steps to request a volume-based discount quote.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer configurator: Pricing or RFQ button */}
-                <div className="pt-6 border-t border-charcoal-ink/10 mt-10">
-                  {customerType === "B2C" ? (
-                    plans.length === 0 ? (
-                      <div className="bg-amber-50 border border-amber-100 p-5 rounded-none text-xs mb-6 text-amber-800 font-bold uppercase tracking-wider">
-                        Subscription plans are currently unavailable. Please check back later.
-                      </div>
-                    ) : !b2cPricing.planExists ? (
-                      <div className="bg-amber-50 border border-amber-100 p-5 rounded-none text-xs mb-6 text-amber-800 font-bold uppercase tracking-wider">
-                        The selected combination ({getBedSizeLabel(selectedBedType)} - {selectedDuration}) is currently unavailable.
-                      </div>
-                    ) : (
-                      <div className="bg-alabaster-linen p-5 rounded-none space-y-3 text-xs mb-6 border border-charcoal-ink/05">
-                        <div className="flex justify-between items-baseline font-bold text-charcoal-ink uppercase tracking-wider">
-                          <span>Upfront Plan Cost ({getTenureDetails(selectedDuration).displayName})</span>
-                          <span className="text-sm font-black">₹{b2cPricing.subtotal}</span>
-                        </div>
-                        {b2cPricing.deposit > 0 && (
-                          <div className="flex justify-between text-[10px] text-indigo-950 font-bold uppercase tracking-wider">
-                            <span>Security Deposit (Refundable)</span>
-                            <span>+ ₹{b2cPricing.deposit}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider">
-                          <span>GST flat tax (18%)</span>
-                          <span>+ ₹{b2cPricing.gst}</span>
-                        </div>
-                        <div className="border-t border-charcoal-ink/10 pt-3 flex justify-between items-baseline font-black uppercase text-2xs tracking-widest text-[#B2905F]">
-                          <span>Total Checkout Upfront</span>
-                          <span className="text-lg font-black text-charcoal-ink">₹{b2cPricing.total}</span>
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <div className="bg-charcoal-ink/03 p-5 border border-charcoal-ink/10 text-xs mb-6 flex justify-between items-center font-bold text-charcoal-ink uppercase tracking-wider">
-                      <span>B2B pricing range</span>
-                      <span className="text-linen-gold text-sm font-black">Custom volume quotes</span>
-                    </div>
-                  )}
-
+            <div className="lg:col-span-7 bg-white border border-charcoal-ink/10 p-6 sm:p-8 shadow-sm space-y-8">
+              {/* Switcher Customer type: B2C vs B2B */}
+              <div className="space-y-2">
+                <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Choose Plan Channel</span>
+                <div className="grid grid-cols-2 bg-[#FCFBF9] p-1 border border-charcoal-ink/10">
                   <button
-                    disabled={customerType === "B2C" && (plans.length === 0 || !b2cPricing.planExists)}
-                    onClick={() => {
-                      if (user) {
-                        setActiveStep(3); // Already logged in, go to Complete Profile
-                      } else {
-                        setActiveStep(2); // Go to Login/Register step
-                      }
-                    }}
-                    className="w-full py-4 bg-charcoal-ink hover:bg-linen-gold hover:text-charcoal-ink text-white font-bold text-xs uppercase tracking-widest transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => setCustomerType("B2C")}
+                    className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${customerType === "B2C" ? "bg-charcoal-ink text-white" : "text-charcoal-ink/40 hover:text-charcoal-ink"
+                      }`}
                   >
-                    {customerType === "B2C" ? "Rent bedding set" : "Request quotation proposal"}
+                    B2C Individual Customer
+                  </button>
+                  <button
+                    onClick={() => setCustomerType("B2B")}
+                    className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${customerType === "B2B" ? "bg-charcoal-ink text-white" : "text-charcoal-ink/40 hover:text-charcoal-ink"
+                      }`}
+                  >
+                    B2B Hotels / PGs / Hostels
                   </button>
                 </div>
+              </div>
+
+              {/* Bed Sizes */}
+              <div className="space-y-2">
+                <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Type (Select Bed Dimensions)</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {uniqueBedTypes.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedBedType(type)}
+                      className={`py-3 px-2 border text-center transition-all cursor-pointer text-[10px] font-black uppercase tracking-widest ${selectedBedType === type
+                          ? "bg-charcoal-ink text-white border-charcoal-ink"
+                          : "bg-[#FCFBF9] border-charcoal-ink/10 hover:border-charcoal-ink/30"
+                        }`}
+                    >
+                      {getBedSizeLabel(type)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+
+
+              {/* B2C specific options: Tenure Slider & planType */}
+              {customerType === "B2C" ? (
+                <>
+                  {/* Tenure */}
+                  <div className="space-y-2">
+                    <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Subscription Duration Tenure</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {availableDurationsForBed.map((dur) => {
+                        const { displayName, discountText } = getTenureDetails(dur);
+                        return (
+                          <button
+                            key={dur}
+                            onClick={() => setSelectedDuration(dur)}
+                            className={`py-3 px-2 border text-center transition-all cursor-pointer ${selectedDuration === dur
+                                ? "bg-charcoal-ink text-white border-charcoal-ink"
+                                : "bg-[#FCFBF9] border-charcoal-ink/10 hover:border-charcoal-ink/25"
+                              }`}
+                          >
+                            <span className="text-[10px] font-black uppercase block tracking-widest">{displayName}</span>
+                            {discountText && (
+                              <span className="text-[8px] font-bold text-[#C5A376] block mt-0.5">{discountText}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Plan Type */}
+                  <div className="space-y-3">
+                    <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Plan Payment Style</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {(settings?.paymentStyles && settings.paymentStyles.length > 0
+                        ? settings.paymentStyles
+                        : [
+                          { id: "Monthly", name: "Standard Monthly", description: "Requires refundable security deposit of ₹{deposit}", depositMultiplier: 1 },
+                          { id: "Advance", name: "Advance Plan", description: "Pay full subscription upfront. Zero security deposit required.", depositMultiplier: 0 }
+                        ]
+                      ).map((style) => {
+                        const isSingle = selectedBedType.toLowerCase().includes("single");
+                        const depositAmt = settings
+                          ? (isSingle ? settings.singleBedDeposit : settings.doubleBedDeposit)
+                          : (isSingle ? 500 : 800);
+                        const finalDeposit = Math.round(depositAmt * (style.depositMultiplier !== undefined ? style.depositMultiplier : 1));
+
+                        let desc = style.description || "";
+                        if (desc.includes("₹{deposit}")) {
+                          desc = desc.replace("₹{deposit}", `₹${finalDeposit}`);
+                        } else {
+                          desc = desc.replace("{deposit}", `₹${finalDeposit}`);
+                        }
+
+                        const isSelected = planType === style.id;
+                        const isZeroDeposit = style.depositMultiplier === 0;
+
+                        return (
+                          <button
+                            key={style.id}
+                            type="button"
+                            onClick={() => setPlanType(style.id)}
+                            className={`group p-5 border text-left flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] hover:shadow-xs cursor-pointer relative overflow-hidden rounded-none ${isSelected
+                                ? "bg-charcoal-ink text-white border-charcoal-ink"
+                                : "bg-white border-charcoal-ink/10 hover:border-charcoal-ink/25"
+                              }`}
+                          >
+                            {isZeroDeposit && (
+                              <div className="absolute top-0 right-0">
+                                <span className="bg-emerald-600 text-white text-[7px] px-2 py-0.5 font-bold uppercase tracking-widest">
+                                  Zero Deposit
+                                </span>
+                              </div>
+                            )}
+                            {style.id === "Advance" && !isZeroDeposit && (
+                              <div className="absolute top-0 right-0">
+                                <span className="bg-[#C5A376] text-white text-[7px] px-2 py-0.5 font-bold uppercase tracking-widest">
+                                  Popular
+                                </span>
+                              </div>
+                            )}
+                            <div className="space-y-1">
+                              <span className={`text-[10px] font-black uppercase tracking-widest block ${isSelected ? "text-[#C5A376]" : "text-charcoal-ink"}`}>
+                                {style.name}
+                              </span>
+                              <span className={`text-3xs mt-1 font-semibold leading-relaxed block ${isSelected ? "text-white/60" : "text-charcoal-ink/50"}`}>
+                                {desc}
+                              </span>
+                              <span className={`text-3xs font-extrabold uppercase tracking-widest block mt-2 border-t pt-1.5 ${isSelected ? "text-[#C5A376] border-white/10" : "text-[#C5A376] border-charcoal-ink/10"}`}>
+                                {style.id === "Monthly" || style.name.toLowerCase().includes("monthly")
+                                  ? "➔ All 4 sheets delivered together at once"
+                                  : "➔ Get 1 new fresh sheet swap every week"}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* B2B Intro Notice */
+                <div className="p-5 border border-[#C5A376]/20 bg-[#C5A376]/05 text-charcoal-ink space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-[#C5A376]">
+                    <Building className="w-4 h-4" /> B2B Bulk Proposal Route
+                  </div>
+                  <p className="text-3xs text-charcoal-ink/65 leading-relaxed font-semibold">
+                    For businesses like Hostels, PGs, and Hotels. Instead of standard monthly checkout rates, we process corporate applications via RFQ proposals. Provide property counts in next steps to request a volume-based discount quote.
+                  </p>
+                </div>
+              )}
+
+              {/* Footer configurator: Pricing or RFQ button */}
+              <div className="pt-6 border-t border-charcoal-ink/10">
+                {customerType === "B2C" ? (
+                  plans.length === 0 ? (
+                    <div className="bg-amber-50 border border-amber-100 p-5 rounded-none text-xs mb-6 text-amber-800 font-bold uppercase tracking-wider">
+                      Subscription plans are currently unavailable. Please check back later.
+                    </div>
+                  ) : !b2cPricing.planExists ? (
+                    <div className="bg-amber-50 border border-amber-100 p-5 rounded-none text-xs mb-6 text-amber-800 font-bold uppercase tracking-wider">
+                      The selected combination ({getBedSizeLabel(selectedBedType)} - {selectedDuration}) is currently unavailable.
+                    </div>
+                  ) : (
+                    <div className="bg-[#FCFBF9] p-5 rounded-none space-y-3.5 text-xs mb-6 border border-charcoal-ink/10">
+                      <div className="flex justify-between items-baseline font-bold text-charcoal-ink uppercase tracking-widest text-3xs">
+                        <span>Upfront Plan Cost ({getTenureDetails(selectedDuration).displayName})</span>
+                        <span className="text-xs font-black">₹{b2cPricing.subtotal}</span>
+                      </div>
+                      {b2cPricing.deposit > 0 && (
+                        <div className="flex justify-between text-3xs text-charcoal-ink/75 font-bold uppercase tracking-widest">
+                          <span>Security Deposit (Refundable)</span>
+                          <span>+ ₹{b2cPricing.deposit}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-3xs text-charcoal-ink/40 font-bold uppercase tracking-widest">
+                        <span>GST flat tax (18%)</span>
+                        <span>+ ₹{b2cPricing.gst}</span>
+                      </div>
+                      <div className="border-t border-charcoal-ink/10 pt-3.5 flex justify-between items-baseline font-black uppercase text-2xs tracking-widest text-[#C5A376]">
+                        <span>Total Checkout Upfront</span>
+                        <span className="text-lg font-black text-charcoal-ink font-serif">₹{b2cPricing.total}</span>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div className="bg-[#FCFBF9] p-5 border border-charcoal-ink/10 text-3xs mb-6 flex justify-between items-center font-bold text-charcoal-ink uppercase tracking-widest">
+                    <span>B2B pricing range</span>
+                    <span className="text-[#C5A376] text-xs font-black">Custom volume quotes</span>
+                  </div>
+                )}
+
+                {customerType === "B2C" && !user && (
+                  <div className="mb-4 flex items-center justify-center gap-1.5 text-center text-rose-650 bg-rose-50 border border-rose-100 p-3 rounded-none">
+                    <Lock className="w-3.5 h-3.5 text-rose-600 shrink-0 animate-pulse" />
+                    <span className="text-[9px] font-black uppercase tracking-widest leading-none">
+                      Note: User login is required & mandatory to subscribe
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  disabled={customerType === "B2C" && (plans.length === 0 || !b2cPricing.planExists)}
+                  onClick={() => {
+                    if (user) {
+                      setActiveStep(3); // Already logged in, go to Complete Profile
+                    } else {
+                      setActiveStep(2); // Go to Login/Register step
+                    }
+                  }}
+                  className="w-full py-4 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-[#FCFBF9] hover:text-[#FCFBF9] font-bold text-xs uppercase tracking-widest transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {customerType === "B2C" ? "Rent bedding set" : "Request quotation proposal"}
+                </button>
               </div>
             </div>
           </div>
@@ -1215,57 +1309,44 @@ export default function ShopPage() {
         {/* STEP 2: REGISTRATION / LOGIN */}
         {activeStep === 2 && (
           <div className="max-w-md mx-auto bg-white border border-charcoal-ink/10 p-8 shadow-sm">
-            <div className="text-center mb-6">
+            <div className="mb-6 bg-rose-50 border border-rose-100 p-3.5 flex items-center gap-2 text-rose-650 rounded-none">
+              <Lock className="w-4 h-4 text-rose-600 shrink-0" />
+              <span className="text-[9px] font-black uppercase tracking-widest leading-relaxed">
+                Security Policy: User login is required & mandatory to subscribe to bedding sets.
+              </span>
+            </div>
+
+            <div className="text-center mb-8">
               <h2 className="text-xl font-bold font-serif uppercase tracking-tight text-charcoal-ink">
                 {authMode === "login" ? "Customer Login" : "Create Account"}
               </h2>
               <p className="text-3xs text-charcoal-ink/40 uppercase tracking-widest font-black mt-1">
-                Select your validation credentials to proceed
+                Select your credentials to authenticate and finalize subscription
               </p>
             </div>
 
             {authError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 border border-red-150 text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
+              <div className="mb-4 p-3.5 bg-red-50 text-red-650 border border-red-150 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                 {authError}
               </div>
             )}
 
             {authSuccess && (
-              <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 border border-emerald-150 text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
+              <div className="mb-4 p-3.5 bg-emerald-50 text-emerald-650 border border-emerald-150 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500 shrink-0" />
                 {authSuccess}
               </div>
             )}
 
             {devOtp && (
-              <div className="mb-4 p-3 bg-linen-gold/10 border border-linen-gold/20 text-linen-gold text-3xs font-black flex items-center justify-between">
+              <div className="mb-4 p-3 bg-amber-50/60 border border-amber-250/20 text-[#C5A376] text-3xs font-black flex items-center justify-between">
                 <span>[Dev Mode] Verification Code: <strong className="text-charcoal-ink text-[11px]">{devOtp}</strong></span>
                 <button
                   onClick={() => setOtpCode(devOtp)}
-                  className="px-2 py-0.5 bg-linen-gold text-white text-[9px] uppercase tracking-wider font-extrabold cursor-pointer"
+                  className="px-2 py-0.5 bg-[#C5A376] text-white text-[9px] uppercase tracking-wider font-extrabold cursor-pointer"
                 >
                   Autofill
-                </button>
-              </div>
-            )}
-
-            {/* Switch Tabs: Email vs OTP */}
-            {authMode === "login" && (
-              <div className="flex border-b border-charcoal-ink/08 mb-6">
-                <button
-                  onClick={() => { setAuthMethod("email"); setOtpSent(false); setDevOtp(""); }}
-                  className={`flex-1 pb-3 text-[10px] font-black uppercase tracking-wider text-center border-b-2 cursor-pointer transition-all ${authMethod === "email" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
-                    }`}
-                >
-                  Email Password
-                </button>
-                <button
-                  onClick={() => { setAuthMethod("otp"); setOtpSent(false); setDevOtp(""); }}
-                  className={`flex-1 pb-3 text-[10px] font-black uppercase tracking-wider text-center border-b-2 cursor-pointer transition-all ${authMethod === "otp" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
-                    }`}
-                >
-                  Mobile OTP
                 </button>
               </div>
             )}
@@ -1273,65 +1354,85 @@ export default function ShopPage() {
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {authMode === "signup" && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                  />
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Full Name</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                      <UserIcon className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your full name"
+                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                    />
+                  </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">
-                  {authMethod === "email" ? "Email Address" : "Mobile / Email Address"}
+                <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">
+                  {authMethod === "email" ? "Email Address" : "Mobile Phone"}
                 </label>
-                <input
-                  type={authMethod === "email" ? "email" : "text"}
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={authMethod === "email" ? "email@example.com" : "10-digit phone or email"}
-                  className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                />
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    {authMethod === "email" ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                  </span>
+                  <input
+                    type={authMethod === "email" ? "email" : "tel"}
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={authMethod === "email" ? "email@example.com" : "10-digit phone number"}
+                    className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                  />
+                </div>
               </div>
 
               {authMode === "signup" && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Phone Number</label>
-                  <input
-                    type="tel"
-                    required
-                    maxLength="10"
-                    pattern="[0-9]{10}"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-                    placeholder="10-digit mobile number"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                  />
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Phone Number</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                      <Phone className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      maxLength="10"
+                      pattern="[0-9]{10}"
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
+                      placeholder="10-digit mobile number"
+                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                    />
+                  </div>
                 </div>
               )}
 
               {authMethod === "email" && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                  />
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Password</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                      <Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                    />
+                  </div>
                 </div>
               )}
 
               {authMethod === "otp" && otpSent && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Enter 6-Digit OTP</label>
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Enter 6-Digit OTP</label>
                   <input
                     type="text"
                     required
@@ -1339,7 +1440,7 @@ export default function ShopPage() {
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="Enter verification code"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold text-center tracking-[0.5em]"
+                    className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold text-center tracking-[0.5em]"
                   />
                 </div>
               )}
@@ -1350,7 +1451,7 @@ export default function ShopPage() {
                   type="button"
                   onClick={handleSendOtp}
                   disabled={authLoading}
-                  className="w-full py-3.5 bg-charcoal-ink hover:bg-linen-gold hover:text-charcoal-ink text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {authLoading ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : "Send OTP code"}
                 </button>
@@ -1358,7 +1459,7 @@ export default function ShopPage() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full py-3.5 bg-charcoal-ink hover:bg-linen-gold hover:text-charcoal-ink text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {authLoading ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : (authMode === "login" ? "Login to account" : "Complete Registration")}
                 </button>
@@ -1377,7 +1478,7 @@ export default function ShopPage() {
             {/* Google authentication button */}
             <a
               href="/api/auth/google"
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs uppercase tracking-wider hover:bg-alabaster-linen transition-colors shadow-xs cursor-pointer"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs uppercase tracking-widest hover:bg-[#FCFBF9] transition-colors shadow-xs cursor-pointer"
             >
               <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.354 0 3.373 2.736 1.5 6.71l3.766 3.055z" />
@@ -1398,7 +1499,7 @@ export default function ShopPage() {
                   setOtpSent(false);
                   setDevOtp("");
                 }}
-                className="text-2xs font-extrabold text-linen-gold uppercase tracking-wider hover:underline cursor-pointer"
+                className="text-2xs font-extrabold text-[#C5A376] uppercase tracking-widest hover:underline cursor-pointer"
               >
                 {authMode === "login" ? "Need an account? Sign up here" : "Already have an account? Sign in"}
               </button>
@@ -1409,7 +1510,7 @@ export default function ShopPage() {
         {/* STEP 3: COMPLETE PROFILE */}
         {activeStep === 3 && (
           <div className="max-w-xl mx-auto bg-white border border-charcoal-ink/10 p-8 shadow-sm">
-            <div className="text-center mb-6">
+            <div className="text-center mb-8">
               <h2 className="text-xl font-bold font-serif uppercase tracking-tight text-charcoal-ink">
                 Complete Customer Profile
               </h2>
@@ -1419,7 +1520,7 @@ export default function ShopPage() {
             </div>
 
             {profileError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 border border-red-155 text-xs font-semibold">
+              <div className="mb-4 p-3.5 bg-red-50 text-red-650 border border-red-155 text-xs font-semibold">
                 {profileError}
               </div>
             )}
@@ -1427,157 +1528,145 @@ export default function ShopPage() {
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={profileName}
-                    onChange={(e) => setProfileName(e.target.value)}
-                    placeholder="John Doe"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                  />
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Full Name</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                      <UserIcon className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="John Doe"
+                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    value={profileEmail}
-                    onChange={(e) => setProfileEmail(e.target.value)}
-                    placeholder="email@example.com"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                  />
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Email Address</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                      <Mail className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="email"
+                      required
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Phone Number</label>
-                  <input
-                    type="tel"
-                    required
-                    maxLength="10"
-                    pattern="[0-9]{10}"
-                    value={profilePhone}
-                    onChange={(e) => setProfilePhone(e.target.value)}
-                    placeholder="10-digit number"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                  />
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Mobile Phone</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                      <Phone className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      maxLength="10"
+                      pattern="[0-9]{10}"
+                      value={profilePhone}
+                      onChange={(e) => setProfilePhone(e.target.value.replace(/\D/g, ""))}
+                      placeholder="10-digit mobile number"
+                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">City</label>
-                  <select
-                    value={profileCity}
-                    onChange={(e) => setProfileCity(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
-                  >
-                    <option value="Delhi">Delhi</option>
-                    <option value="Gurugram">Gurugram</option>
-                    <option value="Faridabad">Faridabad</option>
-                    <option value="Noida">Noida</option>
-                    <option value="Ghaziabad">Ghaziabad</option>
-                    <option value="Rohtak">Rohtak</option>
-                    <option value="Panipat">Panipat</option>
-                    <option value="Sonipat">Sonipat</option>
-                    <option value="Karnal">Karnal</option>
-                    <option value="Panchkula">Panchkula</option>
-                    <option value="Ambala">Ambala</option>
-                  </select>
+                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Service Region City</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                      <MapPin className="w-4 h-4" />
+                    </span>
+                    <select
+                      value={profileCity}
+                      onChange={(e) => setProfileCity(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold appearance-none cursor-pointer"
+                    >
+                      <option value="Delhi">Delhi NCR</option>
+                      <option value="Gurugram">Gurugram</option>
+                      <option value="Noida">Noida</option>
+                      <option value="Faridabad">Faridabad</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-ink/40 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
-              {/* B2B Specific Form Fields */}
-              {customerType === "B2B" && (
-                <div className="p-4 border border-linen-gold/15 bg-linen-gold/05 space-y-4">
-                  <span className="text-[10px] font-black text-[#B2905F] uppercase tracking-widest block border-b border-linen-gold/10 pb-2">Business Operations Registry</span>
+              <div>
+                <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Zip Pincode</label>
+                <input
+                  type="text"
+                  required
+                  maxLength="6"
+                  pattern="[0-9]{6}"
+                  value={profilePincode}
+                  onChange={(e) => setProfilePincode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="e.g. 110001 (Must start with 11, 12, or 13)"
+                  className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                />
+              </div>
 
+              <div>
+                <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Linen Delivery Address Details</label>
+                <textarea
+                  required
+                  value={profileAddress}
+                  onChange={(e) => setProfileAddress(e.target.value)}
+                  placeholder="House/Room No, Building Name, Street Address, Landmark..."
+                  rows="3"
+                  className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold resize-none"
+                />
+              </div>
+
+              {/* B2B Commercial Fields */}
+              {customerType === "B2B" && (
+                <div className="pt-4 border-t border-charcoal-ink/10 space-y-4">
+                  <h4 className="text-xs font-serif font-bold text-[#C5A376] uppercase tracking-wider">B2B Commercial Properties Details</h4>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[9px] font-black text-charcoal-ink/50 uppercase tracking-wider mb-1">Owner Name</label>
-                      <input
-                        type="text"
-                        required={customerType === "B2B"}
-                        value={b2bOwnerName}
-                        onChange={(e) => setB2bOwnerName(e.target.value)}
-                        placeholder="Owner name"
-                        className="w-full px-3 py-2 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-black text-charcoal-ink/50 uppercase tracking-wider mb-1">Property Name</label>
+                      <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Commercial Property/Hotel Name</label>
                       <input
                         type="text"
                         required={customerType === "B2B"}
                         value={b2bPropertyName}
                         onChange={(e) => setB2bPropertyName(e.target.value)}
-                        placeholder="e.g. Trend PG Suites"
-                        className="w-full px-3 py-2 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold"
+                        placeholder="e.g. ClosetRush Inn"
+                        className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[9px] font-black text-charcoal-ink/50 uppercase tracking-wider mb-1">Contact Person</label>
-                      <input
-                        type="text"
-                        required={customerType === "B2B"}
-                        value={b2bContactPerson}
-                        onChange={(e) => setB2bContactPerson(e.target.value)}
-                        placeholder="Operational contact"
-                        className="w-full px-3 py-2 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-black text-charcoal-ink/50 uppercase tracking-wider mb-1">GST Number (Optional)</label>
+                      <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Business GSTIN (Optional)</label>
                       <input
                         type="text"
                         value={b2bGSTNumber}
                         onChange={(e) => setB2bGSTNumber(e.target.value)}
                         placeholder="e.g. 07AAAAA1111A1Z1"
-                        className="w-full px-3 py-2 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold uppercase"
+                        className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
                       />
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Property / Delivery Address</label>
-                  <input
-                    type="text"
-                    required
-                    value={profileAddress}
-                    onChange={(e) => setProfileAddress(e.target.value)}
-                    placeholder="Floor, apartment/hotel building, street details"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-wider mb-1.5">Pincode</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength="6"
-                    pattern="[0-9]{6}"
-                    value={profilePincode}
-                    onChange={(e) => setProfilePincode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="110001"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold text-center"
-                  />
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={profileSaving}
-                className="w-full py-4 bg-charcoal-ink hover:bg-linen-gold hover:text-charcoal-ink text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2 mt-4"
+                className="w-full py-3.5 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                {profileSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Save details and proceed"}
+                {profileSaving ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : "Save Profile & Continue"}
               </button>
             </form>
           </div>
@@ -1585,312 +1674,274 @@ export default function ShopPage() {
 
         {/* STEP 4: CHECKOUT / REVIEW RFQ */}
         {activeStep === 4 && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h2 className="text-xl font-bold font-serif text-charcoal-ink uppercase tracking-tight">
-              {customerType === "B2C" ? "Review and Payment Checkout" : "Verify RFQ Quote Details"}
-            </h2>
-
-            {checkoutError && (
-              <div className="p-4 bg-rose-50 text-rose-600 border border-rose-100 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
-                {checkoutError}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Left Side: Review Items */}
-              <div className="lg:col-span-7 space-y-6 bg-white border border-charcoal-ink/08 p-6 sm:p-8">
-
-                {/* B2C Review Card */}
-                {customerType === "B2C" ? (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider mb-3">Item Details</h3>
-                      <div className="bg-alabaster-linen p-4 flex justify-between items-center border border-black/05">
-                        <div>
-                          <p className="text-xs font-bold text-charcoal-ink">{selectedBedType} Sheets (Rental cycle)</p>
-                          <p className="text-[10px] text-charcoal-ink/40 font-bold uppercase mt-1">Color: {color} • Customization: {color === "Classic White" ? "No" : "Yes"}</p>
-                        </div>
-                        <span className="text-xs font-extrabold text-charcoal-ink">{getTenureDetails(selectedDuration).displayName} Plan</span>
-                      </div>
-                    </div>
-
-                    {/* Address Display */}
-                    <div>
-                      <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider mb-2">Delivery Coordinates</h3>
-                      <p className="text-xs font-semibold text-charcoal-ink/70 leading-relaxed">
-                        {profileName} <br />
-                        {profilePhone} <br />
-                        {profileAddress}, {profileCity} - {profilePincode}
-                      </p>
-                    </div>
-
-                    {/* Coupon Input */}
-                    <div className="space-y-2.5 bg-charcoal-ink/02 border border-charcoal-ink/05 p-6">
-                      <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-linen-gold" /> Promo Coupon Discount
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={couponCode}
-                          onChange={(e) => {
-                            setCouponCode(e.target.value);
-                            setCouponError("");
-                            setCouponSuccess("");
-                          }}
-                          placeholder="e.g. FRESHBED10"
-                          className="flex-1 px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold uppercase"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleApplyCoupon}
-                          disabled={validatingCoupon || !couponCode.trim()}
-                          className="px-6 py-3 bg-charcoal-ink hover:bg-linen-gold text-white font-bold text-xs uppercase tracking-widest rounded-none transition-colors disabled:opacity-50 cursor-pointer"
-                        >
-                          {validatingCoupon ? "Validating..." : "Apply"}
-                        </button>
-                      </div>
-                      {couponError && <p className="text-[11px] text-rose-600 font-bold mt-1">{couponError}</p>}
-                      {couponSuccess && <p className="text-[11px] text-emerald-600 font-bold mt-1">{couponSuccess}</p>}
-                    </div>
-
-                    {/* Razorpay Secure Payment Notice */}
-                    <div className="space-y-2 bg-charcoal-ink/02 border border-charcoal-ink/05 p-6">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                        <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider block">Secured by Razorpay Payment Gateway</label>
-                      </div>
-                      <p className="text-[10px] text-charcoal-ink/40 font-semibold">Your payment will be processed securely through Razorpay. You will be redirected to complete payment after clicking Confirm & Pay.</p>
-                    </div>
-                  </div>
-                ) : (
-                  // B2B Review Card
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xs font-black uppercase text-charcoal-ink/80 tracking-wider mb-4 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-linen-gold"></span> B2B Specifications
-                      </h3>
-                      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-charcoal-ink/10 space-y-6 relative overflow-hidden group transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-linen-gold/30">
-                        {/* Decorative background element */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-linen-gold/5 rounded-bl-full -z-0 transition-transform duration-500 group-hover:scale-110"></div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                          <div className="bg-slate-50/50 p-4 rounded-xl border border-charcoal-ink/5">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-charcoal-ink/40 mb-1">Property Name</p>
-                            <p className="text-sm font-bold text-charcoal-ink">{b2bPropertyName}</p>
-                          </div>
-                          <div className="bg-slate-50/50 p-4 rounded-xl border border-charcoal-ink/5">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-charcoal-ink/40 mb-1">GST Number</p>
-                            <p className="text-sm font-bold text-charcoal-ink">{b2bGSTNumber || "Not Provided"}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="h-px bg-gradient-to-r from-transparent via-charcoal-ink/10 to-transparent relative z-10" />
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative z-10">
-                          <div className="space-y-2">
-                            <span className="text-[10px] text-charcoal-ink/50 font-black uppercase tracking-widest flex items-center gap-1.5">
-                              <Building className="w-3.5 h-3.5 text-linen-gold" /> Rooms
-                            </span>
-                            <input
-                              type="number"
-                              min="1"
-                              value={b2bRoomsCount}
-                              onChange={(e) => setB2bRoomsCount(Math.max(1, parseInt(e.target.value) || 1))}
-                              className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-xl text-charcoal-ink font-bold text-sm focus:outline-none focus:border-linen-gold focus:ring-1 focus:ring-linen-gold transition-all shadow-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <span className="text-[10px] text-charcoal-ink/50 font-black uppercase tracking-widest flex items-center gap-1.5">
-                              <Bed className="w-3.5 h-3.5 text-linen-gold" /> Beds
-                            </span>
-                            <input
-                              type="number"
-                              min="1"
-                              value={b2bBedsCount}
-                              onChange={(e) => setB2bBedsCount(Math.max(1, parseInt(e.target.value) || 1))}
-                              className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-xl text-charcoal-ink font-bold text-sm focus:outline-none focus:border-linen-gold focus:ring-1 focus:ring-linen-gold transition-all shadow-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <span className="text-[10px] text-charcoal-ink/50 font-black uppercase tracking-widest flex items-center gap-1.5">
-                              <Maximize className="w-3.5 h-3.5 text-linen-gold" /> Bed Type
-                            </span>
-                            <div className="relative">
-                              <select
-                                value={b2bBedType}
-                                onChange={(e) => setB2bBedType(e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-xl text-charcoal-ink font-bold text-sm focus:outline-none focus:border-linen-gold focus:ring-1 focus:ring-linen-gold appearance-none transition-all shadow-sm cursor-pointer"
-                              >
-                                <option value="Single">Single</option>
-                                <option value="Double">Double</option>
-                                <option value="Queen">Queen</option>
-                                <option value="King">King</option>
-                              </select>
-                              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-ink/40 pointer-events-none" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Bed Requirement Checklist */}
-                        <div className="pt-2 relative z-10">
-                          <span className="text-[10px] text-charcoal-ink/50 font-black uppercase tracking-widest block mb-3 flex items-center gap-1.5">
-                            <ListChecks className="w-3.5 h-3.5 text-linen-gold" /> Configuration Needs
-                          </span>
-                          <div className="flex flex-wrap gap-3">
-                            {["White Bedsheet", "Premium Cotton", "Pillow Covers", "Comforter"].map((req) => {
-                              const isChecked = b2bBedsheetReqs.includes(req);
-                              return (
-                                <button
-                                  key={req}
-                                  type="button"
-                                  onClick={() => {
-                                    if (isChecked) {
-                                      setB2bBedsheetReqs(b2bBedsheetReqs.filter(r => r !== req));
-                                    } else {
-                                      setB2bBedsheetReqs([...b2bBedsheetReqs, req]);
-                                    }
-                                  }}
-                                  className={`px-4 py-2.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest flex items-center gap-2 transition-all duration-300 cursor-pointer shadow-sm ${
-                                    isChecked 
-                                      ? "bg-charcoal-ink text-white border border-charcoal-ink shadow-charcoal-ink/20" 
-                                      : "bg-white text-charcoal-ink/60 border border-charcoal-ink/15 hover:border-charcoal-ink/30 hover:bg-slate-50"
-                                    }`}
-                                >
-                                  {isChecked && <Check className="w-3.5 h-3.5 text-linen-gold" />} {req}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            {/* Left Side: Order Config Preview */}
+            <div className="lg:col-span-7 bg-white border border-charcoal-ink/10 p-6 sm:p-8 shadow-sm space-y-8">
+              <div>
+                <h2 className="text-xl font-bold font-serif uppercase tracking-tight text-charcoal-ink">
+                  {customerType === "B2C" ? "Confirm Subscription Setup" : "Review Request for Quotation"}
+                </h2>
+                <p className="text-3xs text-charcoal-ink/40 uppercase tracking-widest font-black mt-1">
+                  Double check selected parameters before initiating transaction
+                </p>
               </div>
 
-              {/* Right Side: Invoice & Summary */}
-              <div className="lg:col-span-5 space-y-6">
-                {customerType === "B2C" ? (
-                  <div className="bg-charcoal-ink text-white p-6 shadow-md space-y-6">
-                    <div className="flex justify-between items-center border-b border-white/08 pb-4">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-linen-gold">
-                        Payment Invoice
-                      </h4>
-                      <span className="text-3xs text-white/40 uppercase tracking-widest font-bold">Billing summary</span>
-                    </div>
+              {checkoutError && (
+                <div className="p-3.5 bg-red-50 text-red-650 border border-red-150 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                  {checkoutError}
+                </div>
+              )}
 
-                    <div className="space-y-3 text-2xs font-semibold text-white/70">
-                      <div className="flex justify-between">
-                        <span>Base Rental Amount:</span>
-                        <span className="text-white">₹{b2cPricing.subtotal}</span>
+              {customerType === "B2C" ? (
+                /* B2C Preview */
+                <div className="space-y-6">
+                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-5 rounded-none space-y-4">
+                    <h3 className="text-xs font-serif font-bold text-charcoal-ink uppercase tracking-wider border-b border-charcoal-ink/10 pb-2">Subscription Summary</h3>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block">Linen Package</span>
+                        <strong className="text-charcoal-ink font-bold">{selectedBedType}</strong>
                       </div>
 
-                      {b2cPricing.couponDiscount > 0 && (
-                        <div className="flex justify-between font-bold text-linen-gold">
-                          <span>Coupon Code Discount ({appliedCoupon?.couponCode}):</span>
-                          <span>-₹{b2cPricing.couponDiscount}</span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between">
-                        <span>GST flat tax (18%):</span>
-                        <span className="text-white">₹{b2cPricing.gst}</span>
+                      <div>
+                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block">Duration Tenure</span>
+                        <strong className="text-charcoal-ink font-bold">{selectedDuration}</strong>
                       </div>
-
-                      {b2cPricing.deposit > 0 && (
-                        <div className="flex justify-between">
-                          <span>Security Deposit (Refundable):</span>
-                          <span className="text-white">₹{b2cPricing.deposit}</span>
-                        </div>
-                      )}
-
-                      <div className="border-t border-white/08 my-4 pt-4 flex justify-between items-baseline">
-                        <span className="text-xs font-black text-white uppercase tracking-wider">
-                          Total Upfront Payable:
-                        </span>
-                        <div className="text-right">
-                          <span className="text-2xl font-black text-linen-gold font-serif">
-                            ₹{b2cPricing.total}
-                          </span>
-                          <span className="text-white/40 text-3xs font-bold uppercase tracking-widest block mt-0.5">
-                            / {getTenureDetails(selectedDuration).displayName}
-                          </span>
-                        </div>
+                      <div>
+                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block">Payment Model</span>
+                        <strong className="text-[#C5A376] font-bold uppercase">{planType}</strong>
                       </div>
                     </div>
-
-                    <button
-                      onClick={handleB2CCheckout}
-                      disabled={checkoutLoading}
-                      className="w-full py-4 bg-linen-gold hover:bg-linen-gold/90 text-charcoal-ink font-bold text-xs uppercase tracking-widest shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      {checkoutLoading ? (
-                        <RefreshCw className="w-4 h-4 animate-spin text-charcoal-ink" />
-                      ) : (
-                        <Lock className="w-4 h-4 text-charcoal-ink" />
-                      )}
-                      {checkoutLoading ? "Processing transaction..." : "Confirm & Pay Now"}
-                    </button>
                   </div>
-                ) : (
-                  // B2B Pricing Invoice Mock
-                  <div className="bg-[#0f1a1c] text-white p-8 rounded-2xl shadow-2xl space-y-8 relative overflow-hidden border border-charcoal-ink/20">
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-linen-gold/10 rounded-full blur-3xl"></div>
+
+                  {/* Promo Coupons Form */}
+                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-5 rounded-none space-y-4">
+                    <h3 className="text-xs font-serif font-bold text-charcoal-ink uppercase tracking-wider border-b border-charcoal-ink/10 pb-2">Apply Promo Code</h3>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="ENTER COUPON CODE"
+                        className="flex-grow px-4 py-3 bg-white border border-charcoal-ink/15 text-xs text-charcoal-ink focus:outline-none focus:border-linen-gold font-bold uppercase"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={validatingCoupon || !couponCode.trim()}
+                        className="px-6 bg-charcoal-ink hover:bg-[#C5A376] text-white hover:text-white text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {validatingCoupon ? "Checking..." : "Apply"}
+                      </button>
+                    </div>
+                    {couponError && <p className="text-3xs text-rose-600 font-extrabold uppercase mt-1">{couponError}</p>}
+                    {couponSuccess && <p className="text-3xs text-emerald-600 font-extrabold uppercase mt-1">{couponSuccess}</p>}
+                  </div>
+                </div>
+              ) : (
+                /* B2B Preview */
+                <div className="space-y-6">
+                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-5 rounded-none space-y-6">
+                    <h3 className="text-xs font-serif font-bold text-charcoal-ink uppercase tracking-wider border-b border-charcoal-ink/10 pb-2">Properties & Swaps Requirements</h3>
                     
-                    <div className="flex justify-between items-center border-b border-white/10 pb-6 relative z-10">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-linen-gold" /> RFQ Estimate
-                      </h4>
-                      <span className="text-[9px] px-2 py-1 bg-white/5 border border-white/10 rounded-md text-white/50 uppercase tracking-widest font-bold">Standard Rate Card</span>
-                    </div>
-
-                    <div className="space-y-4 text-xs font-semibold text-white/70 relative z-10">
-                      <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
-                        <span className="text-white/60">Commercial rate per bed/mo:</span>
-                        <span className="text-white font-black font-serif">₹250</span>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
-                        <span className="text-white/60">Total properties count:</span>
-                        <span className="text-white font-black font-serif">1</span>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
-                        <span className="text-white/60">Total beds/units selected:</span>
-                        <span className="text-white font-black font-serif">{b2bBedsCount}</span>
-                      </div>
-
-                      <div className="my-6 pt-6 flex flex-col items-center justify-center bg-gradient-to-br from-linen-gold/20 to-transparent border border-linen-gold/20 rounded-xl p-6 relative overflow-hidden shadow-inner">
-                        <div className="absolute inset-0 bg-black/40"></div>
-                        <span className="text-[10px] font-black text-linen-gold uppercase tracking-widest relative z-10 mb-2">
-                          Estimated Monthly Price
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Building className="w-3.5 h-3.5 text-[#C5A376]" /> Rooms
                         </span>
-                        <div className="flex items-end gap-1 relative z-10">
-                          <span className="text-4xl font-black text-white font-serif tracking-tight leading-none">
-                            ₹{b2bBedsCount * 250}
-                          </span>
-                          <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest pb-1">
-                            / month
-                          </span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={b2bRoomsCount}
+                          onChange={(e) => setB2bRoomsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full px-4 py-2.5 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs focus:outline-none focus:border-linen-gold"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Bed className="w-3.5 h-3.5 text-[#C5A376]" /> Beds
+                        </span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={b2bBedsCount}
+                          onChange={(e) => setB2bBedsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full px-4 py-2.5 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs focus:outline-none focus:border-linen-gold"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Maximize className="w-3.5 h-3.5 text-[#C5A376]" /> Bed Type
+                        </span>
+                        <div className="relative">
+                          <select
+                            value={b2bBedType}
+                            onChange={(e) => setB2bBedType(e.target.value)}
+                            className="w-full pl-4 pr-10 py-2.5 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs focus:outline-none focus:border-linen-gold appearance-none cursor-pointer"
+                          >
+                            <option value="Single">Single</option>
+                            <option value="Double">Double</option>
+                            <option value="Queen">Queen</option>
+                            <option value="King">King</option>
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-ink/40 pointer-events-none" />
                         </div>
                       </div>
                     </div>
 
-                    <button
-                      onClick={handleB2BQuoteSubmit}
-                      disabled={checkoutLoading}
-                      className="w-full py-4 bg-linen-gold hover:bg-[#c9a674] text-charcoal-ink font-black text-xs uppercase tracking-widest rounded-xl shadow-[0_4px_15px_rgba(212,175,55,0.2)] hover:shadow-[0_6px_20px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 relative z-10"
-                    >
-                      {checkoutLoading ? (
-                        <RefreshCw className="w-5 h-5 animate-spin text-charcoal-ink" />
-                      ) : (
-                        <ClipboardList className="w-5 h-5 text-charcoal-ink" />
-                      )}
-                      {checkoutLoading ? "Submitting RFQ..." : "Submit RFQ Application"}
-                    </button>
+                    {/* Bed Requirement Checklist */}
+                    <div className="pt-2">
+                      <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block mb-3 flex items-center gap-1.5">
+                        <ListChecks className="w-3.5 h-3.5 text-[#C5A376]" /> Configuration Needs
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {["White Bedsheet", "Premium Cotton", "Pillow Covers", "Comforter"].map((req) => {
+                          const isChecked = b2bBedsheetReqs.includes(req);
+                          return (
+                            <button
+                              key={req}
+                              type="button"
+                              onClick={() => {
+                                if (isChecked) {
+                                  setB2bBedsheetReqs(b2bBedsheetReqs.filter(r => r !== req));
+                                } else {
+                                  setB2bBedsheetReqs([...b2bBedsheetReqs, req]);
+                                }
+                              }}
+                              className={`px-3 py-2 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all duration-300 cursor-pointer border ${isChecked
+                                  ? "bg-charcoal-ink text-white border-charcoal-ink shadow-xs"
+                                  : "bg-[#FCFBF9] text-charcoal-ink/50 border-charcoal-ink/15 hover:border-charcoal-ink/20"
+                                }`}
+                            >
+                              {isChecked && <Check className="w-3 h-3 text-[#C5A376]" />} {req}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Side: Invoice & Summary */}
+            <div className="lg:col-span-5 space-y-6">
+              {customerType === "B2C" ? (
+                <div className="bg-charcoal-ink text-white p-6 shadow-md space-y-6">
+                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-[#C5A376]">
+                      Payment Invoice
+                    </h4>
+                    <span className="text-3xs text-white/40 uppercase tracking-widest font-bold">Billing summary</span>
+                  </div>
+
+                  <div className="space-y-3.5 text-3xs font-bold uppercase tracking-wider text-white/70">
+                    <div className="flex justify-between">
+                      <span>Base Rental Amount:</span>
+                      <span className="text-white">₹{b2cPricing.subtotal}</span>
+                    </div>
+
+                    {b2cPricing.couponDiscount > 0 && (
+                      <div className="flex justify-between text-[#C5A376]">
+                        <span>Coupon Discount ({appliedCoupon?.couponCode}):</span>
+                        <span>-₹{b2cPricing.couponDiscount}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between">
+                      <span>GST flat tax (18%):</span>
+                      <span className="text-white">₹{b2cPricing.gst}</span>
+                    </div>
+
+                    {b2cPricing.deposit > 0 && (
+                      <div className="flex justify-between">
+                        <span>Security Deposit (Refundable):</span>
+                        <span className="text-white">₹{b2cPricing.deposit}</span>
+                      </div>
+                    )}
+
+                    <div className="border-t border-white/10 my-4 pt-4 flex justify-between items-baseline">
+                      <span className="text-2xs font-black text-white uppercase tracking-widest">
+                        Total Upfront Payable:
+                      </span>
+                      <div className="text-right">
+                        <span className="text-2xl font-black text-[#C5A376] font-serif">
+                          ₹{b2cPricing.total}
+                        </span>
+                        <span className="text-white/40 text-3xs font-bold uppercase tracking-widest block mt-0.5">
+                          / {getTenureDetails(selectedDuration).displayName}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleB2CCheckout}
+                    disabled={checkoutLoading}
+                    className="w-full py-4 bg-[#C5A376] hover:bg-[#b89569] text-charcoal-ink hover:text-white font-bold text-xs uppercase tracking-widest shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {checkoutLoading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin text-charcoal-ink" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-charcoal-ink" />
+                    )}
+                    {checkoutLoading ? "Processing transaction..." : "Confirm & Pay Now"}
+                  </button>
+                </div>
+              ) : (
+                /* B2B Pricing Invoice Mock */
+                <div className="bg-charcoal-ink text-white p-6 shadow-md space-y-6 relative overflow-hidden">
+                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-[#C5A376] flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#C5A376]" /> RFQ Estimate
+                    </h4>
+                    <span className="text-[8px] px-2 py-0.5 bg-white/5 border border-white/10 text-white/50 uppercase tracking-widest font-bold">Rate Card</span>
+                  </div>
+
+                  <div className="space-y-4 text-3xs font-bold uppercase tracking-wider text-white/70">
+                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-none border border-white/5">
+                      <span>Rate per bed/mo:</span>
+                      <span className="text-white font-black font-serif">₹250</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-none border border-white/5">
+                      <span>Properties Count:</span>
+                      <span className="text-white font-black font-serif">1</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-none border border-white/5">
+                      <span>Beds/Units Selected:</span>
+                      <span className="text-white font-black font-serif">{b2bBedsCount}</span>
+                    </div>
+
+                    <div className="my-4 pt-6 flex flex-col items-center justify-center bg-white/5 border border-white/10 p-6">
+                      <span className="text-[9px] font-black text-[#C5A376] uppercase tracking-widest mb-2">
+                        Estimated Monthly Price
+                      </span>
+                      <div className="flex items-end gap-1">
+                        <span className="text-3xl font-black text-white font-serif">
+                          ₹{b2bBedsCount * 250}
+                        </span>
+                        <span className="text-white/40 text-[9px] font-bold uppercase tracking-widest pb-1">
+                          / month
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleB2BQuoteSubmit}
+                    disabled={checkoutLoading}
+                    className="w-full py-4 bg-[#C5A376] hover:bg-[#b89569] text-charcoal-ink hover:text-white font-black text-xs uppercase tracking-widest shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {checkoutLoading ? (
+                      <RefreshCw className="w-5 h-5 animate-spin text-charcoal-ink" />
+                    ) : (
+                      <ClipboardList className="w-5 h-5 text-charcoal-ink" />
+                    )}
+                    {checkoutLoading ? "Submitting RFQ..." : "Submit RFQ Application"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1899,46 +1950,46 @@ export default function ShopPage() {
         {activeStep === 5 && (
           <div className="max-w-2xl mx-auto py-10">
             {customerType === "B2C" ? (
-              // B2C ORDER CONFIRMATION
-              <div className="bg-white border border-charcoal-ink/08 p-8 text-center shadow-sm space-y-6">
-                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center mx-auto shadow-sm">
+              /* B2C ORDER CONFIRMATION */
+              <div className="bg-white border border-charcoal-ink/10 p-8 text-center shadow-sm space-y-6">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-250 rounded-full flex items-center justify-center mx-auto shadow-sm">
                   <Check className="w-8 h-8" />
                 </div>
 
                 <div className="space-y-2">
                   <span className="text-emerald-600 text-3xs font-black uppercase tracking-widest">Transaction Successful</span>
                   <h2 className="text-2xl font-bold font-serif text-charcoal-ink">Order Confirmed!</h2>
-                  <p className="text-2xs text-charcoal-ink/40 font-bold uppercase tracking-wider">Order ID: <strong className="text-charcoal-ink">{orderId}</strong></p>
+                  <p className="text-3xs text-charcoal-ink/40 font-bold uppercase tracking-wider">Order ID: <strong className="text-charcoal-ink">{orderId}</strong></p>
                 </div>
 
-                <div className="p-4 bg-slate-50 border border-slate-100 text-2xs leading-relaxed font-semibold text-left text-charcoal-ink/80 space-y-2">
-                  <p className="font-extrabold uppercase text-charcoal-ink text-3xs tracking-widest border-b border-slate-200 pb-1.5 flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> Automated Dispatch Notifications</p>
+                <div className="p-4 bg-[#FCFBF9] border border-charcoal-ink/10 text-3xs leading-relaxed font-semibold text-left text-charcoal-ink/80 space-y-2 uppercase tracking-wider">
+                  <p className="font-extrabold uppercase text-charcoal-ink text-[10px] tracking-widest border-b border-charcoal-ink/10 pb-1.5 flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> Dispatch Notifications</p>
                   <p>✔ <strong>Email confirmation sent to:</strong> {profileEmail}</p>
                   <p>✔ <strong>SMS dispatch scheduled for:</strong> {profilePhone}</p>
-                  <p>✔ <strong>PDF Invoice prepared for billing download</strong></p>
+                  <p>✔ <strong>Invoice PDF prepared for download</strong></p>
                 </div>
 
-                <div className="pt-6 border-t border-charcoal-ink/08 flex flex-col sm:flex-row gap-4">
+                <div className="pt-6 border-t border-charcoal-ink/10 flex flex-col sm:flex-row gap-4">
                   <a
                     href={`/api/user/quote/pdf?orderId=${orderId}`}
                     download
-                    className="flex-1 py-3 px-6 bg-linen-gold hover:bg-[#9a7c5a] text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5"
+                    className="flex-1 py-3 px-6 bg-[#C5A376] hover:bg-charcoal-ink text-charcoal-ink hover:text-white font-bold text-xs uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Download className="w-4 h-4" /> Download PDF Invoice
                   </a>
                   <Link
                     href="/dashboard"
-                    className="flex-1 py-3 px-6 bg-charcoal-ink hover:bg-linen-gold text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest transition-all text-center"
+                    className="flex-1 py-3 px-6 bg-charcoal-ink hover:bg-[#C5A376] text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest transition-all text-center"
                   >
                     Go to User Dashboard
                   </Link>
                 </div>
               </div>
             ) : (
-              // B2B RFQ STATUS TRACKER & SIMULATOR
-              <div className="bg-white border border-charcoal-ink/08 p-8 shadow-sm space-y-6">
+              /* B2B RFQ STATUS TRACKER & SIMULATOR */
+              <div className="bg-white border border-charcoal-ink/10 p-8 shadow-sm space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="w-16 h-16 bg-blue-50 text-blue-600 border border-blue-200 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 border border-blue-250 rounded-full flex items-center justify-center mx-auto shadow-sm">
                     <ClipboardList className="w-8 h-8" />
                   </div>
                   <span className="text-blue-600 text-3xs font-black uppercase tracking-widest">RFQ Submitted</span>
@@ -1949,12 +2000,12 @@ export default function ShopPage() {
                 </div>
 
                 {/* RFQ Status Tracker Visualizer */}
-                <div className="bg-slate-50 border border-slate-100 p-6 space-y-6">
-                  <h4 className="text-3xs uppercase tracking-widest font-black text-charcoal-ink/50 block border-b border-slate-200 pb-2">Active RFQ Tracker (Live status: {b2bQuoteStatus})</h4>
+                <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-6 space-y-6">
+                  <h4 className="text-3xs uppercase tracking-widest font-black text-charcoal-ink/40 block border-b border-charcoal-ink/10 pb-2">Active RFQ Tracker (Live status: {b2bQuoteStatus})</h4>
 
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
                     {[
-                      { st: "PENDING", label: "1. Pending Review" },
+                      { st: "PENDING", label: "1. Review" },
                       { st: "QUOTE SENT", label: "2. Quote Sent" },
                       { st: "ACCEPTED", label: "3. Accepted" },
                       { st: "CONFIRMED", label: "4. Confirmed" }
@@ -1967,14 +2018,14 @@ export default function ShopPage() {
                       return (
                         <div key={step.st} className="flex flex-col items-center">
                           <div
-                            className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] border transition-all ${isDone
-                                ? "bg-charcoal-ink text-white border-charcoal-ink"
-                                : "bg-white text-charcoal-ink/30 border-charcoal-ink/10"
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] border transition-all ${isDone
+                              ? "bg-charcoal-ink text-white border-charcoal-ink"
+                              : "bg-white text-charcoal-ink/30 border-charcoal-ink/10"
                               }`}
                           >
                             {isDone ? "✔" : idx + 1}
                           </div>
-                          <span className={`text-[9px] uppercase tracking-wider font-extrabold mt-1.5 ${isActive ? "text-linen-gold" : (isDone ? "text-charcoal-ink" : "text-charcoal-ink/30")
+                          <span className={`text-[9px] uppercase tracking-widest font-extrabold mt-1.5 ${isActive ? "text-[#C5A376]" : (isDone ? "text-charcoal-ink" : "text-charcoal-ink/30")
                             }`}>
                             {step.label}
                           </span>
@@ -1987,16 +2038,16 @@ export default function ShopPage() {
                   {b2bQuotePrice > 0 && (
                     <div className="p-4 bg-charcoal-ink text-white rounded-none border border-slate-800 text-center space-y-2">
                       <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest">Prepared B2B Pricing Proposal</p>
-                      <h3 className="text-2xl font-serif font-black text-linen-gold">₹{b2bQuotePrice.toLocaleString()}</h3>
-                      <p className="text-[9px] text-white/40 uppercase tracking-wider font-bold">Includes complete sateen sheets setup for {b2bBedsCount} units</p>
+                      <h3 className="text-2xl font-serif font-black text-[#C5A376]">₹{b2bQuotePrice.toLocaleString()}</h3>
+                      <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Includes complete sateen sheets setup for {b2bBedsCount} units</p>
                     </div>
                   )}
 
                   {/* Real Workflow Actions */}
-                  <div className="p-4 bg-linen-gold/05 border border-linen-gold/20 space-y-3">
+                  <div className="p-4 bg-[#C5A376]/05 border border-[#C5A376]/20 space-y-3">
                     {b2bQuoteStatus === "PENDING" && (
                       <div className="text-center p-3 border border-dashed border-charcoal-ink/20 rounded bg-white/50">
-                        <p className="text-[10px] font-bold text-charcoal-ink/60 uppercase tracking-widest">
+                        <p className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-widest">
                           ⏳ Waiting for Admin to prepare your quotation...
                         </p>
                       </div>
@@ -2005,7 +2056,7 @@ export default function ShopPage() {
                     {b2bQuoteStatus === "QUOTE SENT" && (
                       <button
                         onClick={() => setShowESignModal(true)}
-                        className="w-full py-3 bg-charcoal-ink text-linen-gold hover:bg-black font-extrabold text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 rounded-xl"
+                        className="w-full py-3 bg-charcoal-ink text-[#C5A376] hover:bg-black font-extrabold text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
                       >
                         <FileText className="w-4 h-4" /> View & E-Sign Quotation Contract
                       </button>
@@ -2014,16 +2065,16 @@ export default function ShopPage() {
                     {b2bQuoteStatus === "ACCEPTED" && (
                       <button
                         onClick={handleB2BPayQuote}
-                        className="w-full py-3 bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer shadow-md rounded-xl flex items-center justify-center gap-2 animate-pulse"
+                        className="w-full py-3 bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 animate-pulse"
                       >
                         <Lock className="w-4 h-4" /> Proceed to Secure Payment
                       </button>
                     )}
 
                     {b2bQuoteStatus === "CONFIRMED" && (
-                      <div className="text-center p-4 bg-emerald-50 text-emerald-700 text-xs font-bold flex flex-col items-center justify-center gap-2 rounded-xl border border-emerald-200">
-                        <Check className="w-6 h-6 bg-emerald-600 text-white p-1 rounded-full" /> 
-                        <span className="uppercase tracking-widest text-[10px]">B2B Order Successfully Confirmed and Dispatched!</span>
+                      <div className="text-center p-4 bg-emerald-50 text-emerald-700 text-xs font-bold flex flex-col items-center justify-center gap-2 border border-emerald-250">
+                        <Check className="w-6 h-6 bg-emerald-600 text-white p-1 rounded-full" />
+                        <span className="uppercase tracking-widest text-[10px]">B2B Order Confirmed and Dispatched!</span>
                       </div>
                     )}
                   </div>
@@ -2034,14 +2085,14 @@ export default function ShopPage() {
                     <a
                       href={`/api/user/quote/pdf?quoteId=${b2bQuoteId}`}
                       download
-                      className="flex-1 py-3 px-6 bg-linen-gold hover:bg-[#9a7c5a] text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5"
+                      className="flex-1 py-3 px-6 bg-[#C5A376] hover:bg-charcoal-ink text-charcoal-ink hover:text-white font-bold text-xs uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Download className="w-4 h-4" /> Download signed PDF Contract
                     </a>
                   )}
                   <Link
                     href="/dashboard"
-                    className="flex-1 py-3 px-6 bg-charcoal-ink hover:bg-linen-gold text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest text-center"
+                    className="flex-1 py-3 px-6 bg-charcoal-ink hover:bg-[#C5A376] text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest text-center"
                   >
                     Go to B2B Dashboard Hub
                   </Link>
@@ -2054,11 +2105,11 @@ export default function ShopPage() {
 
       {/* E-SIGN MODAL */}
       {showESignModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-none border border-black/10 shadow-2xl w-full max-w-lg overflow-hidden text-charcoal-ink">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/08 bg-charcoal-ink text-white">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-[#FCFBF9] border border-charcoal-ink/10 shadow-2xl w-full max-w-lg overflow-hidden text-charcoal-ink">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-ink/15 bg-charcoal-ink text-white">
               <div className="flex items-center gap-2.5">
-                <FileText className="h-5 w-5 text-linen-gold" />
+                <FileText className="h-5 w-5 text-[#C5A376]" />
                 <div>
                   <h3 className="text-xs font-extrabold uppercase tracking-widest">E-Sign quotation proposal</h3>
                   <p className="text-[10px] text-white/50 font-semibold">Review terms and sign below</p>
@@ -2066,28 +2117,28 @@ export default function ShopPage() {
               </div>
               <button
                 onClick={() => setShowESignModal(false)}
-                className="p-1.5 rounded-none hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div className="p-6 space-y-6">
-              <div className="bg-alabaster-linen border border-black/06 p-4 text-xs font-semibold leading-relaxed space-y-2">
-                <p className="font-extrabold uppercase text-[10px] text-[#B2905F] tracking-wider">Corporate Contract Summary</p>
+              <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-4 text-3xs font-semibold leading-relaxed space-y-2 uppercase tracking-wider">
+                <p className="font-extrabold uppercase text-[10px] text-[#C5A376] tracking-widest border-b border-charcoal-ink/10 pb-1.5">Corporate Contract Summary</p>
                 <p><strong>Property Name:</strong> {b2bPropertyName}</p>
                 <p><strong>Items:</strong> {b2bBedType} Bed Setup for {b2bBedsCount} Beds</p>
                 <p><strong>Proposed Monthly Rate:</strong> Rs.{b2bQuotePrice.toLocaleString()}</p>
-                <p className="text-[10px] text-charcoal-ink/50 italic">By signing this contract, you authorize ClosetRush to deploy sanitized bedding swaps at the designated address under commercial rental terms.</p>
+                <p className="text-[9px] text-charcoal-ink/50 italic leading-relaxed normal-case">By signing this contract, you authorize ClosetRush to deploy sanitized bedding swaps under commercial rental terms.</p>
               </div>
 
               <div className="space-y-4">
                 {/* Switch Sign Type */}
-                <div className="flex border-b border-charcoal-ink/08">
+                <div className="flex border-b border-charcoal-ink/10">
                   <button
                     type="button"
                     onClick={() => setSignatureType("draw")}
-                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-wider text-center border-b-2 cursor-pointer transition-all ${signatureType === "draw" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
+                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-widest text-center border-b-2 cursor-pointer transition-all ${signatureType === "draw" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
                       }`}
                   >
                     Draw Signature
@@ -2095,7 +2146,7 @@ export default function ShopPage() {
                   <button
                     type="button"
                     onClick={() => setSignatureType("type")}
-                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-wider text-center border-b-2 cursor-pointer transition-all ${signatureType === "type" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
+                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-widest text-center border-b-2 cursor-pointer transition-all ${signatureType === "type" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
                       }`}
                   >
                     Type Signature
@@ -2104,12 +2155,12 @@ export default function ShopPage() {
 
                 {signatureType === "draw" ? (
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-wider">Draw Signature in Canvas</label>
+                    <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest">Draw Signature in Canvas</label>
                     <canvas
                       id="sig-canvas"
                       width="450"
                       height="120"
-                      className="border border-dashed border-charcoal-ink/20 w-full h-[120px] bg-slate-50 cursor-crosshair touch-none"
+                      className="border border-dashed border-charcoal-ink/15 w-full h-[120px] bg-white cursor-crosshair touch-none"
                     />
                     <button
                       type="button"
@@ -2121,25 +2172,25 @@ export default function ShopPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-wider">Type Your Full Name</label>
+                    <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest">Type Your Full Name</label>
                     <input
                       type="text"
                       value={signatureName}
                       onChange={(e) => setSignatureName(e.target.value)}
                       placeholder="e.g. Johnathan Doe"
-                      className="w-full px-4 py-3 bg-slate-50 border border-charcoal-ink/15 rounded-none text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold font-serif italic"
+                      className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold font-serif italic"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-wider mb-1.5">Authorized Signatory Name</label>
+                  <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest mb-1.5">Authorized Signatory Name</label>
                   <input
                     type="text"
                     value={signatureName}
                     onChange={(e) => setSignatureName(e.target.value)}
                     placeholder="Enter full legal name"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold"
+                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold"
                   />
                 </div>
               </div>
@@ -2149,14 +2200,14 @@ export default function ShopPage() {
               <button
                 type="button"
                 onClick={() => setShowESignModal(false)}
-                className="flex-1 py-3 px-4 bg-transparent border border-charcoal-ink/20 text-charcoal-ink text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer rounded-none"
+                className="flex-1 py-3 px-4 bg-transparent border border-charcoal-ink/20 text-charcoal-ink text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleB2BEsignSubmit}
-                className="flex-1 py-3 px-4 bg-charcoal-ink hover:bg-linen-gold hover:text-charcoal-ink text-white text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer rounded-none"
+                className="flex-1 py-3 px-4 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer"
               >
                 Approve & Sign
               </button>
@@ -2166,10 +2217,13 @@ export default function ShopPage() {
       )}
 
       {/* Footer layout */}
-      <footer className="bg-charcoal-ink text-white/50 text-[10px] font-bold uppercase tracking-widest py-8 border-t border-white/05 text-center mt-16">
+      <footer className="bg-charcoal-ink text-white/40 text-[9px] font-bold uppercase tracking-widest py-8 border-t border-white/05 text-center">
         <div className="max-w-[1380px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>© 2026 ClosetRush Inc. secure checkout routing.</span>
-          <span className="flex items-center gap-1.5 text-linen-gold"><ShieldCheck className="w-4 h-4" /> Thermodynamic sanitization standard compliant</span>
+          <span className="flex items-center gap-3">
+            <img src="/image.png" alt="ClosetRush Logo" className="h-10 w-auto object-contain bg-white p-1 rounded-sm shrink-0" />
+            © 2026 ClosetRush Inc. secure checkout routing.
+          </span>
+          <span className="flex items-center gap-1.5 text-[#C5A376]"><ShieldCheck className="w-4 h-4" /> Thermodynamic sanitization standard compliant</span>
         </div>
       </footer>
     </div>

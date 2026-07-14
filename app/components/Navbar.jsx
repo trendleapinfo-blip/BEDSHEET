@@ -129,17 +129,22 @@ export default function Navbar({ forceSolid = false }) {
       }`}
     >
       <div className="w-full px-6 sm:px-8">
-        <div className="flex items-center justify-between h-10">
+        <div className="flex items-center justify-between h-12">
           {/* Logo / Brand */}
           <div className="flex-shrink-0 flex items-center whitespace-nowrap">
             <a
               href="#home"
               onClick={(e) => handleScrollTo(e, "#home")}
-              className={`flex items-center space-x-2 font-serif text-xl sm:text-2xl font-black tracking-[0.15em] uppercase transition-all duration-500 hover:opacity-80 ${
+              className={`flex items-center gap-2.5 font-serif text-xl sm:text-2xl font-black tracking-[0.15em] transition-all duration-500 hover:opacity-80 ${
                 scrolled ? "text-charcoal-ink" : "text-charcoal-ink"
               }`}
             >
-              <span>ClosetRush</span>
+              <img
+                src="/image.png"
+                alt="ClosetRush Logo"
+                className="h-10 w-auto object-contain shrink-0"
+              />
+              <span className="text-charcoal-ink font-serif text-lg sm:text-xl font-bold tracking-[0.05em] capitalize">ClosetRush</span>
             </a>
           </div>
 

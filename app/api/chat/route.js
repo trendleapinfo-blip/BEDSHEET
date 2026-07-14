@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Plan from "@/models/Plan";
+import DurationDiscount from "@/models/DurationDiscount";
 
 export async function POST(request) {
   try {
@@ -24,8 +25,38 @@ export async function POST(request) {
 
     await dbConnect();
     const dbPlans = await Plan.find({}).lean();
+    const rawDiscounts = await DurationDiscount.find({}).sort({ durationMonths: 1 }).lean();
 
-    const uniquePlanCategories = Array.from(new Set(dbPlans.map(p => p.bedType))).filter(Boolean);
+    const legacyMappedPlans = [];
+    dbPlans.forEach(plan => {
+      rawDiscounts.forEach(discountObj => {
+        const dMonths = discountObj.durationMonths;
+        const dPercent = discountObj.discountPercent;
+        
+        let planName = plan.tier === "Premium" ? `${plan.bedType === "single" ? "Single" : "Double"} Bed Premium` : `${plan.bedType === "single" ? "Single" : "Double"} Bed Basic`;
+        let bedTypeLabel = plan.bedType === "single" ? "Single Bed" : "Double Bed";
+        
+        let calculatedPrice = plan.monthlyRate * dMonths;
+        let originalPrice = null;
+        let discountBadge = null;
+
+        if (dPercent > 0) {
+          originalPrice = calculatedPrice;
+          calculatedPrice = Math.round(originalPrice * (1 - (dPercent / 100)));
+          discountBadge = `${dPercent}% off`;
+        }
+
+        legacyMappedPlans.push({
+          bedType: bedTypeLabel,
+          name: planName,
+          duration: dMonths === 1 ? "1 Month" : `${dMonths} Months`,
+          price: calculatedPrice,
+          discount: discountBadge,
+        });
+      });
+    });
+
+    const uniquePlanCategories = Array.from(new Set(legacyMappedPlans.map(p => p.bedType))).filter(Boolean);
     let plansPromptStr = "";
 
     if (uniquePlanCategories.length === 0) {
@@ -33,7 +64,7 @@ export async function POST(request) {
     } else {
       uniquePlanCategories.forEach(catName => {
         plansPromptStr += `   - ${catName} Plans:\n`;
-        const filtered = dbPlans.filter(p => p.bedType === catName);
+        const filtered = legacyMappedPlans.filter(p => p.bedType === catName);
         filtered.forEach(p => {
           plansPromptStr += `      * ${p.name}: ₹${p.price} for ${p.duration} (${p.discount ? p.discount + ' savings applied' : 'no discount'})\n`;
         });

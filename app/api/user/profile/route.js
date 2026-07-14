@@ -6,6 +6,7 @@ import User from "@/models/User";
 import Order from "@/models/Order";
 import Quote from "@/models/Quote";
 import Bundle from "@/models/Bundle";
+import Refund from "@/models/Refund";
 
 export async function GET() {
   try {
@@ -41,12 +42,18 @@ export async function GET() {
     const orderIds = orders.map(o => o._id.toString());
     const bundles = await Bundle.find({ orderId: { $in: orderIds } });
 
+    // Fetch user refunds
+    const refunds = await Refund.find({
+      $or: [{ userEmail: user.email }, { userId: user._id.toString() }]
+    }).sort({ createdAt: -1 });
+
     return NextResponse.json({
       success: true,
       user,
       orders,
       quotes,
       bundles,
+      refunds,
     });
   } catch (error) {
     console.error("Get Profile API Error:", error);
