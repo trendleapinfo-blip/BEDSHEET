@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Footer from "../components/Footer";
 
 export const metadata = {
   title: "Cancellation & Refund Policy | ClosetRush",
@@ -80,11 +81,7 @@ export default function CancellationPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#032026] py-8 border-t border-white/05 text-center">
-        <p className="text-3xs text-white/30 font-semibold uppercase tracking-wider">
-          © {new Date().getFullYear()} ClosetRush. All rights reserved.
-        </p>
-      </footer>
+      <Footer showWaitlist={false} />
     </div>
   );
 }

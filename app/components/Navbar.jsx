@@ -59,15 +59,13 @@ export default function Navbar({ forceSolid = false }) {
     { name: "Home", href: "/" },
     { name: "About", href: "/about" },
     { name: "Plans & Subscribe", href: "/shop" },
-    { name: "Location", href: "/location" },
     { name: "For PG/Hostel", href: "/shop?type=B2B" },
   ];
 
   return (
     <nav
-      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out top-2.5 sm:top-4 w-[calc(100%-1.25rem)] sm:w-[calc(100%-4rem)] md:w-[calc(100%-6rem)] max-w-[1200px] bg-white/95 backdrop-blur-xl border border-charcoal-ink/10 shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-full ${
-        scrolled ? "py-2 sm:py-3.5" : "py-2.5 sm:py-4.5"
-      }`}
+      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out top-2.5 sm:top-4 w-[calc(100%-1.25rem)] sm:w-[calc(100%-4rem)] md:w-[calc(100%-6rem)] max-w-[1200px] bg-white/95 backdrop-blur-xl border border-charcoal-ink/10 shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-full ${scrolled ? "py-2 sm:py-3.5" : "py-2.5 sm:py-4.5"
+        }`}
     >
       <div className="w-full px-4 sm:px-8">
         <div className="flex items-center justify-between h-9 sm:h-12">
@@ -75,15 +73,14 @@ export default function Navbar({ forceSolid = false }) {
           <div className="flex-shrink-0 flex items-center whitespace-nowrap">
             <Link
               href="/"
-              className={`flex items-center gap-2 sm:gap-2.5 font-serif text-lg sm:text-2xl font-black tracking-[0.15em] transition-all duration-500 hover:opacity-80 ${
-                scrolled ? "text-charcoal-ink" : "text-charcoal-ink"
-              }`}
+              className={`flex items-center gap-2 sm:gap-2.5 font-serif text-lg sm:text-2xl font-black tracking-[0.15em] transition-all duration-500 hover:opacity-80 ${scrolled ? "text-charcoal-ink" : "text-charcoal-ink"
+                }`}
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-[#032026]/10 shadow-sm bg-white">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-[#032026]/20 shadow-md bg-[#032026] p-0.5">
                 <img
-                  src="/image.png"
+                  src="/logo.png"
                   alt="ClosetRush Logo"
-                  className="h-full w-full object-cover scale-110"
+                  className="h-full w-full object-cover rounded-full transform hover:scale-105 transition-transform"
                 />
               </div>
               <span className="text-charcoal-ink font-serif text-base sm:text-xl font-bold tracking-[0.05em] capitalize">ClosetRush</span>
@@ -91,16 +88,14 @@ export default function Navbar({ forceSolid = false }) {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className={`hidden md:flex items-center transition-all duration-500 ${
-            scrolled ? "space-x-6 lg:space-x-8" : "space-x-8 lg:space-x-10"
-          }`}>
+          <div className={`hidden md:flex items-center transition-all duration-500 ${scrolled ? "space-x-6 lg:space-x-8" : "space-x-8 lg:space-x-10"
+            }`}>
             {navItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`font-extrabold tracking-widest uppercase transition-colors duration-300 hover:text-linen-gold whitespace-nowrap text-[10px] sm:text-[11px] ${
-                  scrolled ? "text-charcoal-ink/80" : "text-charcoal-ink/70"
-                }`}
+                className={`font-extrabold tracking-widest uppercase transition-colors duration-300 hover:text-linen-gold whitespace-nowrap text-[10px] sm:text-[11px] ${scrolled ? "text-charcoal-ink/80" : "text-charcoal-ink/70"
+                  }`}
               >
                 {item.name}
               </Link>
@@ -108,17 +103,15 @@ export default function Navbar({ forceSolid = false }) {
           </div>
 
           {/* Desktop CTA Button */}
-          <div className={`hidden md:flex items-center transition-all duration-500 ${
-            scrolled ? "space-x-3" : "space-x-4"
-          }`}>
+          <div className={`hidden md:flex items-center transition-all duration-500 ${scrolled ? "space-x-3" : "space-x-4"
+            }`}>
             {!loading && user ? (
-              <div className={`flex items-center transition-all duration-500 ${
-                scrolled ? "space-x-3" : "space-x-4"
-              }`}>
+              <div className={`flex items-center transition-all duration-500 ${scrolled ? "space-x-3" : "space-x-4"
+                }`}>
                 <span className="text-charcoal-ink/60 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap pr-2">
                   Hi, {user.name.split(" ")[0]}
                 </span>
-                
+
                 {user.role === "admin" && (
                   <Link
                     href="/admin"
@@ -150,7 +143,7 @@ export default function Navbar({ forceSolid = false }) {
                     Dashboard
                   </Link>
                 )}
-                
+
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center justify-center w-9 h-9 border border-charcoal-ink/10 text-charcoal-ink/50 hover:text-charcoal-ink hover:border-charcoal-ink/30 hover:bg-charcoal-ink/05 rounded-full transition-all duration-300 focus:outline-none"
@@ -195,9 +188,8 @@ export default function Navbar({ forceSolid = false }) {
 
       {/* Mobile Menu Drawer */}
       <div
-        className={`md:hidden absolute top-[calc(100%+0.5rem)] inset-x-0 bg-alabaster-linen/95 backdrop-blur-md border border-charcoal-ink/08 rounded-3xl shadow-xl transition-all duration-300 ease-in-out ${
-          isOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
-        }`}
+        className={`md:hidden absolute top-[calc(100%+0.5rem)] inset-x-0 bg-alabaster-linen/95 backdrop-blur-md border border-charcoal-ink/08 rounded-3xl shadow-xl transition-all duration-300 ease-in-out ${isOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
+          }`}
         id="mobile-menu"
       >
         <div className="px-4 pt-4 pb-6 space-y-3 bg-alabaster-linen">

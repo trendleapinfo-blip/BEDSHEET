@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/close";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://trendleapinfo_db_user:trendleapinfo_db_user@cluster0.pythvbw.mongodb.net/close?retryWrites=true&w=majority";
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },

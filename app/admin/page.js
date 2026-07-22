@@ -535,6 +535,9 @@ export default function AdminDashboard() {
   // User Actions
   const toggleUserStatus = async (userId, currentStatus) => {
     const nextStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    if (nextStatus === "INACTIVE") {
+      if (!confirm("Are you sure you want to DEACTIVATE this customer account? Deactivating will block portal login access for this user.")) return;
+    }
     try {
       const res = await fetch("/api/admin/users", {
         method: "PUT",
@@ -2332,8 +2335,9 @@ export default function AdminDashboard() {
                       className="bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-2xs font-bold text-slate-800 focus:outline-none focus:border-teal-500 cursor-pointer"
                     >
                       <option value="ALL">All Plans</option>
-                      <option value="HAS_PLAN">Active Plan</option>
-                      <option value="NO_PLAN">No Active Plan</option>
+                      <option value="ACTIVE_PLAN">Active Non-Expired Plan</option>
+                      <option value="EXPIRED_PLAN">Expired Plan</option>
+                      <option value="NO_PLAN">No Plan Selected</option>
                     </select>
                   </div>
                 </div>
@@ -2348,8 +2352,8 @@ export default function AdminDashboard() {
                         <th className="p-4 font-bold">Customer Details</th>
                         <th className="p-4 font-bold">Contact & Address</th>
                         <th className="p-4 font-bold">Account Type</th>
-                        <th className="p-4 font-bold">Active Subscription Plan</th>
-                        <th className="p-4 font-bold">Status</th>
+                        <th className="p-4 font-bold">Subscription Plan</th>
+                        <th className="p-4 font-bold">Account Access</th>
                         <th className="p-4 font-bold">Registered</th>
                         <th className="p-4 font-bold">Actions</th>
                       </tr>
@@ -2367,11 +2371,37 @@ export default function AdminDashboard() {
                           const matchesType = userTypeFilter === "ALL" || u.accountType === userTypeFilter;
                           const matchesStatus = userStatusFilter === "ALL" || (u.status || "ACTIVE") === userStatusFilter;
                           
+                          const hasPlan = !!(u.selectedPlan && u.selectedPlan.planName);
+                          let startDate = null;
+                          let expiryDate = null;
+                          let isExpired = false;
+
+                          if (hasPlan && u.selectedPlan.startDate) {
+                            startDate = new Date(u.selectedPlan.startDate);
+                            if (!isNaN(startDate.getTime())) {
+                              expiryDate = new Date(startDate);
+                              const dur = (u.selectedPlan.duration || "").toLowerCase();
+                              if (dur.includes("3 month") || dur.includes("quarterly")) {
+                                expiryDate.setMonth(expiryDate.getMonth() + 3);
+                              } else if (dur.includes("6 month") || dur.includes("half")) {
+                                expiryDate.setMonth(expiryDate.getMonth() + 6);
+                              } else if (dur.includes("12 month") || dur.includes("year") || dur.includes("annual")) {
+                                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                              } else {
+                                // Default 1 Month
+                                expiryDate.setMonth(expiryDate.getMonth() + 1);
+                              }
+                              isExpired = new Date() > expiryDate;
+                            }
+                          }
+
                           let matchesPlan = true;
-                          if (userPlanFilter === "HAS_PLAN") {
-                            matchesPlan = !!(u.selectedPlan && u.selectedPlan.planName);
+                          if (userPlanFilter === "HAS_PLAN" || userPlanFilter === "ACTIVE_PLAN") {
+                            matchesPlan = hasPlan && !isExpired;
+                          } else if (userPlanFilter === "EXPIRED_PLAN") {
+                            matchesPlan = hasPlan && isExpired;
                           } else if (userPlanFilter === "NO_PLAN") {
-                            matchesPlan = !(u.selectedPlan && u.selectedPlan.planName);
+                            matchesPlan = !hasPlan;
                           }
 
                           return matchesQuery && matchesType && matchesStatus && matchesPlan;
@@ -2379,6 +2409,29 @@ export default function AdminDashboard() {
                         .map(u => {
                           const b2bQuotesCount = quotesList.filter(q => q.email.toLowerCase() === u.email.toLowerCase()).length;
                           const userOrdersCount = ordersList.filter(o => o.email.toLowerCase() === u.email.toLowerCase()).length;
+
+                          const hasPlan = !!(u.selectedPlan && u.selectedPlan.planName);
+                          let startDate = null;
+                          let expiryDate = null;
+                          let isExpired = false;
+
+                          if (hasPlan && u.selectedPlan.startDate) {
+                            startDate = new Date(u.selectedPlan.startDate);
+                            if (!isNaN(startDate.getTime())) {
+                              expiryDate = new Date(startDate);
+                              const dur = (u.selectedPlan.duration || "").toLowerCase();
+                              if (dur.includes("3 month") || dur.includes("quarterly")) {
+                                expiryDate.setMonth(expiryDate.getMonth() + 3);
+                              } else if (dur.includes("6 month") || dur.includes("half")) {
+                                expiryDate.setMonth(expiryDate.getMonth() + 6);
+                              } else if (dur.includes("12 month") || dur.includes("year") || dur.includes("annual")) {
+                                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                              } else {
+                                expiryDate.setMonth(expiryDate.getMonth() + 1);
+                              }
+                              isExpired = new Date() > expiryDate;
+                            }
+                          }
 
                           return (
                             <tr key={u._id} className="hover:bg-slate-50/40 transition-colors">
@@ -2432,28 +2485,45 @@ export default function AdminDashboard() {
                                 )}
                               </td>
                               <td className="p-4">
-                                {u.selectedPlan && u.selectedPlan.planName ? (
-                                  <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-xl text-[10px] space-y-0.5 max-w-[180px]">
-                                    <p className="font-extrabold text-emerald-800 truncate">{u.selectedPlan.planName}</p>
-                                    <p className="text-slate-500 font-bold">
-                                      Bed: <span className="text-slate-800">{u.selectedPlan.bedType || "—"}</span>
+                                {hasPlan ? (
+                                  <div className={`border p-2.5 rounded-xl text-[10px] space-y-1 max-w-[200px] ${isExpired ? "bg-rose-50/70 border-rose-200" : "bg-emerald-50/70 border-emerald-200"}`}>
+                                    <div className="flex items-center justify-between gap-1">
+                                      <p className={`font-extrabold truncate ${isExpired ? "text-rose-900" : "text-emerald-900"}`}>{u.selectedPlan.planName}</p>
+                                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border shrink-0 ${isExpired ? "bg-rose-100 text-rose-700 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"}`}>
+                                        {isExpired ? "EXPIRED" : "ACTIVE"}
+                                      </span>
+                                    </div>
+                                    <p className="text-slate-600 font-semibold">
+                                      Bed: <span className="text-slate-800 font-bold">{u.selectedPlan.bedType || "—"}</span>
                                     </p>
-                                    <p className="text-slate-500 font-bold">
-                                      Price: <span className="text-teal-600 font-extrabold">₹{u.selectedPlan.price}</span> ({u.selectedPlan.duration || "Monthly"})
+                                    <p className="text-slate-600 font-semibold">
+                                      Price: <span className="text-teal-700 font-extrabold">₹{u.selectedPlan.price}</span> ({u.selectedPlan.duration || "1 Month"})
                                     </p>
-                                    {u.selectedPlan.startDate && (
-                                      <p className="text-[9px] text-slate-400">Since {new Date(u.selectedPlan.startDate).toLocaleDateString()}</p>
+                                    {startDate && (
+                                      <p className="text-[9px] text-slate-500 font-medium">Since {startDate.toLocaleDateString()}</p>
+                                    )}
+                                    {expiryDate && (
+                                      <p className={`text-[9px] font-extrabold pt-0.5 border-t border-slate-200/60 ${isExpired ? "text-rose-600" : "text-emerald-700"}`}>
+                                        {isExpired ? `Expired on: ${expiryDate.toLocaleDateString()}` : `Expires: ${expiryDate.toLocaleDateString()}`}
+                                      </p>
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-[10px] text-slate-405 italic">No Active Plan</span>
+                                  <span className="text-[10px] text-slate-400 italic font-semibold">No Active Plan</span>
                                 )}
                               </td>
-                              <td className="p-4">
-                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${u.status === "ACTIVE" ? "bg-teal-50 text-teal-650 border-teal-200" : "bg-slate-100 text-slate-500 border-slate-200"
+                              <td className="p-4 space-y-1">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border block w-fit ${u.status === "ACTIVE" ? "bg-teal-50 text-teal-700 border-teal-200" : "bg-slate-200 text-slate-600 border-slate-300"
                                   }`}>
-                                  {u.status || "ACTIVE"}
+                                  {u.status === "ACTIVE" ? "ACCOUNT ACTIVE" : "DEACTIVATED"}
                                 </span>
+                                {hasPlan ? (
+                                  <span className={`text-[8px] font-extrabold uppercase block ${isExpired ? "text-rose-600" : "text-emerald-600"}`}>
+                                    {isExpired ? "• Plan Expired" : "• Plan Active"}
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] text-slate-400 block">• No Plan</span>
+                                )}
                               </td>
                               <td className="p-4 text-slate-450">{new Date(u.createdAt).toLocaleDateString()}</td>
                               <td className="p-4">
@@ -2487,9 +2557,13 @@ export default function AdminDashboard() {
                                   </button>
                                   <button
                                     onClick={() => toggleUserStatus(u._id, u.status || "ACTIVE")}
-                                    className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-650 text-[10px] font-bold border border-slate-200 rounded-lg transition-all cursor-pointer"
+                                    className={`px-2.5 py-1 text-[10px] font-bold border rounded-lg transition-all cursor-pointer ${
+                                      (u.status || "ACTIVE") === "ACTIVE"
+                                        ? "bg-slate-50 hover:bg-rose-50 text-slate-650 hover:text-rose-700 border-slate-200 hover:border-rose-200"
+                                        : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300"
+                                    }`}
                                   >
-                                    {(u.status || "ACTIVE") === "ACTIVE" ? "Deactivate" : "Activate"}
+                                    {(u.status || "ACTIVE") === "ACTIVE" ? "Deactivate" : "Activate Account"}
                                   </button>
                                   {u.role !== "admin" && (
                                     <button

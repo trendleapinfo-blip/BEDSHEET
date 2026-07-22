@@ -1,9 +1,10 @@
 import React from "react";
 import Link from "next/link";
+import Footer from "../components/Footer";
 
 export const metadata = {
-  title: "Shipping & Swap Delivery Policy | ClosetRush",
-  description: "Understand the delivery schedule, monthly sheet swaps logistics, and shipping policies of ClosetRush.",
+  title: "Shipping & Delivery Policy | CLOSETRUSH PRIVATE LIMITED",
+  description: "Official Shipping & Delivery Policy of CLOSETRUSH PRIVATE LIMITED detailing delivery timelines, replacement swaps, missed dispatches, and packaging guidelines.",
 };
 
 export default function ShippingPage() {
@@ -20,73 +21,210 @@ export default function ShippingPage() {
       </header>
 
       {/* Content Container */}
-      <main className="max-w-4xl mx-auto px-6 sm:px-12 py-20 space-y-12">
+      <main className="max-w-4xl mx-auto px-6 sm:px-12 py-16 sm:py-20 space-y-12">
         <div className="space-y-4">
-          <span className="text-[10px] font-mono font-black uppercase tracking-widest text-[#05D4B5] bg-white/05 px-3 py-1 border border-white/10 rounded-full w-fit block">
-            Logistics & Operations
+          <span className="text-[10px] font-mono font-black uppercase tracking-widest text-[#05D4B5] bg-white/05 px-3.5 py-1 border border-white/10 rounded-full w-fit block">
+            CLOSETRUSH PRIVATE LIMITED • Logistics & Shipping
           </span>
-          <h1 className="text-4xl sm:text-5xl font-serif font-bold text-white leading-tight">Shipping & Swap Delivery Policy</h1>
-          <p className="text-xs text-[#FCFBF9]/50 font-medium">Last updated: July 14, 2026</p>
+          <h1 className="text-3xl sm:text-5xl font-serif font-bold text-white leading-tight">Shipping & Delivery Policy</h1>
+          <p className="text-xs text-[#FCFBF9]/50 font-medium">Last Updated: July 2026</p>
         </div>
 
         <div className="prose prose-invert max-w-none text-xs sm:text-sm text-[#FCFBF9]/80 leading-relaxed space-y-8">
-          <p>
-            ClosetRush operates a dedicated local logistics network to ensure seamless deliveries, pickup swaps, and hygienic transit. Below are the operational policies governing shipping and subscription swap deliveries.
-          </p>
+          <div className="p-4 bg-white/05 border border-white/10 rounded-2xl text-xs leading-relaxed text-gray-300">
+            At <strong>CLOSETRUSH PRIVATE LIMITED</strong> (&quot;Closetrush&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;), we are committed to delivering hygienic, professionally cleaned bedding in a timely and reliable manner. This Shipping & Delivery Policy explains how deliveries, replacements, and pickups are managed.
+          </div>
 
-          <div className="space-y-4">
-            <h2 className="text-lg font-serif font-semibold text-white border-b border-white/10 pb-2">1. Delivery Zones & Availability</h2>
+          {/* Section 1 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>1.</span> Serviceable Areas
+            </h2>
             <p>
-              ClosetRush currently operates in select metropolitan areas and student residential hubs (including Bangalore). Delivery eligibility is validated during the address setup step in your checkout flow. We do not support deliveries to areas outside our designated active service coverage zones.
+              Closetrush currently operates in selected serviceable locations. Orders are accepted only for areas where our delivery and pickup services are available. If your location falls outside our service network, we reserve the right to decline or cancel the order.
             </p>
           </div>
 
-          <div className="space-y-4">
-            <h2 className="text-lg font-serif font-semibold text-white border-b border-white/10 pb-2">2. Initial Delivery Dispatch</h2>
-            <p>
-              Once your subscription plan purchase is verified and confirmed:
-            </p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Your first fresh set of sanitized linens will be dispatched within <strong>24 to 48 hours</strong>.</li>
-              <li>Delivery slots can be selected during checkout or rescheduled via your customer dashboard.</li>
-              <li>All initial shipments arrive sealed in dust-proof, eco-friendly protection packs.</li>
+          {/* Section 2 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>2.</span> Order Processing
+            </h2>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-gray-300">
+              <li>Orders are processed after successful payment and order confirmation.</li>
+              <li>Customers may receive confirmation through WhatsApp, SMS, email, or phone call.</li>
+              <li>Orders placed on public holidays or non-working days may be processed on the next working day.</li>
             </ul>
           </div>
 
-          <div className="space-y-4">
-            <h2 className="text-lg font-serif font-semibold text-white border-b border-white/10 pb-2">3. Monthly Swap Coordination</h2>
+          {/* Section 3 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>3.</span> Delivery Timeline
+            </h2>
             <p>
-              Subsequent swaps occur on a regular monthly schedule (or according to your subscription tier rate):
+              Our standard delivery timeline is: <strong>2–3 working days</strong> from the date of order confirmation. While we strive to deliver within the estimated timeline, delays may occur due to:
             </p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>We will notify you via WhatsApp/SMS 24 hours prior to the scheduled delivery agent arrival.</li>
-              <li>During the swap, you must return the dirty/used linens in the reusable laundry bag provided during the initial delivery.</li>
-              <li>The delivery agent will hand over the fresh, sealed set and collect the used set in a single, 2-minute transaction.</li>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-gray-300">
+              <li>Severe weather conditions</li>
+              <li>Public holidays</li>
+              <li>High order volumes</li>
+              <li>Traffic or transportation disruptions</li>
+              <li>Operational or technical issues</li>
+              <li>Other circumstances beyond our reasonable control</li>
             </ul>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-lg font-serif font-semibold text-white border-b border-white/10 pb-2">4. Missed Swap Deliveries</h2>
-            <p>
-              If you are unavailable during the scheduled swap, you may request a reschedule from your customer panel. We offer up to 2 free retry attempts per cycle. If swaps are consistently missed over a 15-day period, a logistics dispatch fee of ₹100 may apply for additional attempts, or the subscription may be paused.
+            <p className="text-xs text-gray-400">
+              In such cases, we will make reasonable efforts to keep customers informed.
             </p>
           </div>
 
-          <div className="space-y-4">
-            <h2 className="text-lg font-serif font-semibold text-white border-b border-white/10 pb-2">5. Shipping Rates</h2>
+          {/* Section 4 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>4.</span> Delivery Charges
+            </h2>
             <p>
-              All standard delivery swaps, pickups, and dispatches are <strong>100% Free</strong>. There are no shipping charges, delivery surcharges, or hidden handling fees added to your active monthly subscription rate.
+              Any applicable delivery charges, if any, will be displayed at the time of checkout before the order is confirmed. Closetrush reserves the right to revise delivery charges based on location, special delivery requests, or operational requirements.
             </p>
+          </div>
+
+          {/* Section 5 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>5.</span> Delivery Process
+            </h2>
+            <p>At the time of delivery, customers are requested to:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-gray-300">
+              <li>Be available at the provided delivery address.</li>
+              <li>Verify the delivered package upon receipt.</li>
+              <li>Report any visible damage to the package immediately.</li>
+            </ul>
+            <p className="text-xs text-[#05D4B5] font-semibold">
+              ✓ All deliveries are made in hygienically packed reusable Closetrush packaging bags.
+            </p>
+          </div>
+
+          {/* Section 6 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>6.</span> Weekly Replacement Service
+            </h2>
+            <p>
+              Customers enrolled in the Weekly Replacement Plan will receive scheduled weekly visits from our team. During each visit:
+            </p>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-gray-300">
+              <li>The previously used bedsheet set will be collected.</li>
+              <li>A freshly washed, sanitized, and quality-checked bedsheet set will be delivered.</li>
+            </ul>
+            <p className="pt-2 font-semibold text-white">To ensure smooth service, customers are requested to:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-gray-300">
+              <li>Keep the used bedsheet set ready before the scheduled visit.</li>
+              <li>Be available or arrange access at the agreed delivery location.</li>
+            </ul>
+            <p className="text-xs text-gray-400">
+              If a replacement visit cannot be completed because the customer is unavailable, Closetrush will attempt to reschedule based on operational availability.
+            </p>
+          </div>
+
+          {/* Section 7 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>7.</span> Monthly Subscription Deliveries
+            </h2>
+            <p>
+              Customers on monthly rental plans will receive deliveries and pickups according to the subscription schedule selected at the time of purchase. Replacement dates may vary slightly depending on operational planning and public holidays.
+            </p>
+          </div>
+
+          {/* Section 8 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>8.</span> Missed Delivery or Pickup
+            </h2>
+            <p>If our delivery partner or service representative is unable to complete the delivery or pickup because:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-gray-300">
+              <li>The customer is unavailable,</li>
+              <li>The provided address is incorrect,</li>
+              <li>Entry to the location is denied, or</li>
+              <li>The customer cannot be contacted,</li>
+            </ul>
+            <p className="text-xs text-gray-300">
+              Closetrush may reschedule the visit. Repeated failed delivery or pickup attempts may attract additional service charges or result in temporary suspension of the service until a successful visit can be completed.
+            </p>
+          </div>
+
+          {/* Section 9 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>9.</span> Change of Delivery Address
+            </h2>
+            <p>
+              Customers may request a change of delivery address before the order is dispatched or before the scheduled replacement date. Address changes are subject to service availability in the new location. Closetrush may not be able to accommodate last-minute address changes after dispatch.
+            </p>
+          </div>
+
+          {/* Section 10 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>10.</span> Packaging Policy
+            </h2>
+            <p>
+              All products are delivered in reusable Closetrush packaging bags to maintain hygiene and protect the rented items during transportation. The packaging bag remains the property of Closetrush and must be returned during the final pickup or at the time of replacement, as applicable.
+            </p>
+            <p className="text-xs text-gray-400">
+              If the packaging bag is lost, torn, cut, permanently damaged, or not returned, Closetrush reserves the right to deduct the applicable replacement cost from the customer&apos;s refundable security deposit or recover the applicable amount separately where no security deposit exists.
+            </p>
+          </div>
+
+          {/* Section 11 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>11.</span> Inspection at Pickup
+            </h2>
+            <p>During every pickup, our team may inspect the returned items for:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-gray-300">
+              <li>Missing products</li>
+              <li>Permanent stains</li>
+              <li>Tears or cuts</li>
+              <li>Burn marks</li>
+              <li>Excessive damage</li>
+              <li>Packaging condition</li>
+            </ul>
+            <p className="text-xs text-gray-400">
+              Any applicable deductions will be processed in accordance with our Terms & Conditions and Damage Policy.
+            </p>
+          </div>
+
+          {/* Section 12 */}
+          <div className="space-y-3 border-b border-white/05 pb-6">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>12.</span> Delayed Deliveries
+            </h2>
+            <p>
+              Closetrush aims to deliver all orders within the estimated delivery timeline of 2–3 working days. However, delivery delays may occasionally occur due to circumstances beyond our reasonable control, including but not limited to natural disasters, severe weather conditions, government restrictions, public holidays, strikes, transportation disruptions, high order volumes, or other force majeure events.
+            </p>
+            <p className="text-xs text-[#05D4B5] font-semibold">
+              In such situations, the delivery may be delayed by an additional maximum of 2–3 working days. Closetrush will make reasonable efforts to keep customers informed about any significant delays and complete the delivery at the earliest possible opportunity.
+            </p>
+          </div>
+
+          {/* Section 13 */}
+          <div className="space-y-3 pt-2">
+            <h2 className="text-base sm:text-lg font-serif font-bold text-[#05D4B5] flex items-center gap-2">
+              <span>13.</span> Customer Support
+            </h2>
+            <div className="p-4 bg-white/05 border border-white/10 rounded-2xl space-y-2">
+              <p className="font-bold text-white text-sm">CLOSETRUSH PRIVATE LIMITED • Delivery Support</p>
+              <p className="text-xs text-gray-300">
+                For delivery-related queries, rescheduling requests, or shipping assistance, customers may contact Closetrush through our official customer support channels during business hours. We are committed to resolving delivery-related concerns as quickly as possible.
+              </p>
+            </div>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#032026] py-8 border-t border-white/05 text-center">
-        <p className="text-3xs text-white/30 font-semibold uppercase tracking-wider">
-          © {new Date().getFullYear()} ClosetRush. All rights reserved.
-        </p>
-      </footer>
+      <Footer showWaitlist={false} />
     </div>
   );
 }

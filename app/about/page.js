@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 import { 
   ShieldCheck, 
@@ -664,18 +665,7 @@ export default function AboutPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#032026] text-[#FCFBF9] py-12 border-t border-white/05 relative z-20">
-        <div className="max-w-[1380px] mx-auto px-6 sm:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4">
-            <span className="text-xl font-serif font-bold text-[#05D4B5] tracking-[0.1em] uppercase">
-              ClosetRush
-            </span>
-            <p className="text-xs text-white/40 font-medium">
-              © {new Date().getFullYear()} ClosetRush. All rights reserved. • Built for healthier sleeping.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer showWaitlist={true} />
 
       {/* GSAP CDN script tags loaded sequentially */}
       <Script 

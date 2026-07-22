@@ -30,6 +30,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const BED_SIZES = [
   { id: "6x3", name: "6x3 (Single)", label: "Single" },
@@ -2184,15 +2185,7 @@ export default function ShopPage() {
       )}
 
       {/* Footer layout */}
-      <footer className="bg-[#032026] text-white/40 text-[10px] font-bold uppercase tracking-widest py-10 border-t border-white/05 text-center">
-        <div className="max-w-[1380px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="flex items-center gap-3">
-            <img src="/image.png" alt="ClosetRush Logo" className="h-10 w-auto object-contain bg-white p-1 rounded-md shrink-0" />
-            <span className="text-white font-serif text-base font-bold">ClosetRush</span> • © {new Date().getFullYear()} ClosetRush Inc.
-          </span>
-          <span className="flex items-center gap-2 text-[#05D4B5] font-mono"><ShieldCheck className="w-4 h-4" /> Thermodynamic sanitization standard compliant</span>
-        </div>
-      </footer>
+      <Footer showWaitlist={true} />
     </div>
   );
 }

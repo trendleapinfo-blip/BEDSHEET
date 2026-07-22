@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Script from "next/script";
 import Link from "next/link";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import HeroThreeDVisual from "./components/HeroThreeDVisual";
 import InteractiveScience from "./components/InteractiveScience";
 import LifeChangeComparison from "./components/LifeChangeComparison";
@@ -657,117 +658,7 @@ export default function Home() {
       </section>
 
       {/* 13. FOOTER & LEAD MAGNET */}
-      <footer id="footer" className="relative bg-[#032026] text-[#FCFBF9] pt-24 pb-16 mt-16">
-        {/* Animated Bed Sheet Waves Top Divider */}
-        <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-0 transform -translate-y-[99%]">
-          <svg className="relative block w-full h-[80px] sm:h-[120px] md:h-[150px]" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,0 V46.29 C142.14,14.61 284.28,14.61 426.42,46.29 C568.57,77.96 710.71,77.96 852.86,46.29 C995,14.61 1137.14,14.61 1200,0 L1200,120 L0,120 Z" fill="#032026" className="animate-wave-slow">
-              <animate attributeName="d" dur="10s" repeatCount="indefinite"
-                values="
-                  M0,0 V46.29 C142.14,14.61 284.28,14.61 426.42,46.29 C568.57,77.96 710.71,77.96 852.86,46.29 C995,14.61 1137.14,14.61 1200,0 L1200,120 L0,120 Z;
-                  M0,0 V46.29 C142.14,77.96 284.28,77.96 426.42,46.29 C568.57,14.61 710.71,14.61 852.86,46.29 C995,77.96 1137.14,77.96 1200,0 L1200,120 L0,120 Z;
-                  M0,0 V46.29 C142.14,14.61 284.28,14.61 426.42,46.29 C568.57,77.96 710.71,77.96 852.86,46.29 C995,14.61 1137.14,14.61 1200,0 L1200,120 L0,120 Z
-                "
-              />
-            </path>
-            <path d="M0,0 V46.29 C142.14,77.96 284.28,77.96 426.42,46.29 C568.57,14.61 710.71,14.61 852.86,46.29 C995,77.96 1137.14,77.96 1200,0 L1200,120 L0,120 Z" fill="#05D4B5" opacity="0.15" className="animate-wave-fast">
-              <animate attributeName="d" dur="7s" repeatCount="indefinite"
-                values="
-                  M0,0 V46.29 C142.14,77.96 284.28,77.96 426.42,46.29 C568.57,14.61 710.71,14.61 852.86,46.29 C995,77.96 1137.14,77.96 1200,0 L1200,120 L0,120 Z;
-                  M0,0 V46.29 C142.14,14.61 284.28,14.61 426.42,46.29 C568.57,77.96 710.71,77.96 852.86,46.29 C995,14.61 1137.14,14.61 1200,0 L1200,120 L0,120 Z;
-                  M0,0 V46.29 C142.14,77.96 284.28,77.96 426.42,46.29 C568.57,14.61 710.71,14.61 852.86,46.29 C995,77.96 1137.14,77.96 1200,0 L1200,120 L0,120 Z
-                "
-              />
-            </path>
-          </svg>
-        </div>
-        <div className="relative z-10 max-w-[1380px] mx-auto px-6 sm:px-8 space-y-12">
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center pb-10">
-            <div className="space-y-4">
-              <p className="text-micro-label text-[#05D4B5]">Waitlist Status: Active</p>
-              <h2 className="text-3xl font-serif text-white leading-tight">Join the Priority Waitlist.</h2>
-              <p className="text-gray-400 text-xs max-w-sm font-semibold leading-relaxed">
-                We are currently at full subscription capacity to guarantee maximum sanitization quality. Enter your details to secure your spot.
-              </p>
-              <div className="pt-2">
-                <div className="text-[8px] text-[#05D4B5] font-extrabold uppercase tracking-widest flex flex-col gap-1.5">
-                  <span>Available Locations: Gurugram, Noida</span>
-                  <span className="text-white/50">Coming Soon: Delhi NCR, Kota</span>
-                </div>
-              </div>
-            </div>
-
-            <div id="signup" className="space-y-4">
-              {claimedDiscount ? (
-                <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-2xl p-6 text-center space-y-2 animate-fadeInUp">
-                  <p className="text-[#10B981] font-bold text-sm">✓ Waitlist Spot Secured!</p>
-                  <p className="text-xs text-gray-300">Thank you for joining. We have successfully registered you to our priority waitlist.</p>
-                  <p className="text-4xs text-gray-500">We will contact you via email or phone as soon as a subscription slot opens up.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleClaimDiscount} className="flex flex-col gap-3 bg-white/5 p-4 rounded-3xl border border-white/10 focus-within:border-[#05D4B5] transition-all duration-300">
-                  <div className="relative flex items-center bg-white/02 border border-[#9CA3AF]/20 rounded-xl px-4">
-                    <Mail className="w-4 h-4 text-white/30 shrink-0" />
-                    <input
-                      type="email"
-                      required
-                      value={leadEmail}
-                      onChange={(e) => setLeadEmail(e.target.value)}
-                      placeholder="Email address"
-                      className="w-full pl-3 pr-2 py-3 bg-transparent text-white placeholder-white/30 focus:outline-none text-xs font-semibold"
-                    />
-                  </div>
-
-                  <div className="relative flex items-center bg-white/02 border border-[#9CA3AF]/20 rounded-xl px-4">
-                    <Phone className="w-4 h-4 text-white/30 shrink-0" />
-                    <input
-                      type="tel"
-                      required
-                      value={leadPhone}
-                      onChange={(e) => setLeadPhone(e.target.value)}
-                      placeholder="Phone number"
-                      className="w-full pl-3 pr-2 py-3 bg-transparent text-white placeholder-white/30 focus:outline-none text-xs font-semibold"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="py-3.5 px-8 bg-[#05D4B5] hover:bg-white text-[#032026] hover:text-[#032026] font-black text-2xs uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    Join Priority Waitlist
-                  </button>
-                </form>
-              )}
-
-              <div className="flex items-center gap-2 text-3xs text-white/40 font-bold uppercase tracking-wider pl-1">
-                <Lock className="w-3.5 h-3.5 text-[#05D4B5]" />
-                <span>Private • Single Bedding & Double Bedding Tiers • Zero Spam</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4 border-t border-white/05">
-            <div className="flex flex-col items-center sm:items-start gap-2.5">
-              <div className="flex items-center gap-3">
-                <img src="/image.png" alt="ClosetRush Logo" className="h-12 w-auto object-contain bg-white p-1 rounded-sm shrink-0" />
-                <span className="text-2xl font-serif font-bold text-[#05D4B5] tracking-[0.1em] uppercase">
-                  ClosetRush
-                </span>
-              </div>
-              <p className="text-3xs text-white/40 font-semibold">
-                © {new Date().getFullYear()} ClosetRush. All rights reserved. • Built for healthier sleeping.
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] font-bold uppercase tracking-wider text-white/50">
-              <Link href="/terms" className="hover:text-[#05D4B5] transition-colors">Terms & Conditions</Link>
-              <Link href="/privacy" className="hover:text-[#05D4B5] transition-colors">Privacy Policy</Link>
-              <Link href="/shipping" className="hover:text-[#05D4B5] transition-colors">Shipping & Swaps</Link>
-              <Link href="/cancellation" className="hover:text-[#05D4B5] transition-colors">Cancellations & Refunds</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer showWaitlist={true} />
 
       {/* GSAP CDN script tags loaded sequentially to ensure Hero fade-in works */}
       <Script

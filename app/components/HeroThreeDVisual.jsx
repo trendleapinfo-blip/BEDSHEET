@@ -150,16 +150,16 @@ export default function HeroThreeDVisual() {
 
         {/* Bedding Graphic Stack */}
         <div 
-          className="w-full h-full relative rounded-xl sm:rounded-[24px] overflow-hidden border border-white/5 flex items-center justify-center bg-[#FCFBF9] shadow-inner z-10"
+          className="w-full h-full relative rounded-xl sm:rounded-[24px] overflow-hidden border border-white/10 flex items-center justify-center bg-[#032026] shadow-inner z-10"
           style={{ transform: "translateZ(12px)" }}
         >
           <img
             src="/hero_bedding.png"
             alt="Sterile Bedding Bundle Stack"
-            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+            className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
             onError={(e) => {
-              // Fallback to Unsplash image of clean folded bedsheets if hero_bedding.png fails
-              e.target.src = "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1000&q=80";
+              // High quality luxury hotel bedding stack fallback
+              e.target.src = "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80";
             }}
           />
         </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 import { BedIcon, CrownIcon, ArrowRightIcon } from "../../components/Icons";
 import { ShieldCheck, Truck, Layers, LockIcon, MailIcon } from "lucide-react";
 
@@ -546,18 +547,7 @@ export default function ProductDetailPage() {
       </main>
 
       {/* Footer layout */}
-      <footer className="bg-charcoal-ink text-alabaster-linen py-12 border-t border-white/05">
-        <div className="max-w-[1380px] mx-auto px-6 sm:px-8 space-y-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4">
-            <span className="text-xl font-serif font-bold text-linen-gold tracking-[0.1em] uppercase">
-              ClosetRush
-            </span>
-            <p className="text-2xs text-alabaster-linen/40">
-              © {new Date().getFullYear()} ClosetRush. All rights reserved. • Built for healthier sleeping.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer showWaitlist={true} />
     </div>
   );
 }

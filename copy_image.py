@@ -1,11 +1,17 @@
 import shutil
 import os
 
-src = r"C:\Users\prasa\.gemini\antigravity-ide\brain\2067b4ba-f2c9-40dc-af8d-95398ab704d8\hero_bedding_1780921028900.png"
-dst = r"i:\New folder (3)\closerush_new\public\hero_bedding.png"
+src = r"i:\closerush_new\public\logo.jpg"
+if not os.path.exists(src) or os.path.getsize(src) == 0:
+    src = r"i:\closerush_new\public\image.png"
+
+dst1 = r"i:\closerush_new\public\7813cb36-0c7c-4471-a56f-6a494050bd6a.jpg"
 
 try:
-    shutil.copy(src, dst)
-    print("SUCCESS")
+    if os.path.exists(src):
+        shutil.copy(src, dst1)
+        print("LOGO COPY SUCCESS")
+    else:
+        print("Source logo file not found")
 except Exception as e:
     print("ERROR:", e)
