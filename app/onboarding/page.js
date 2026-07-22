@@ -107,8 +107,8 @@ function OnboardingForm() {
     }
 
     const pinPrefix = pincode.substring(0, 2);
-    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13") {
-      setError("ClosetRush is currently active only in Delhi and Haryana. Please enter a pincode starting with 11, 12, or 13.");
+    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13" && pinPrefix !== "20") {
+      setError("ClosetRush is active in Delhi (11xxxx), Gurugram Sectors (12xxxx/13xxxx), and Noida NCR (20xxxx).");
       return;
     }
 
