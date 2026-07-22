@@ -310,8 +310,8 @@ function CheckoutFormContent() {
     }
     const pin = pincodeMatch[0];
     const pinPrefix = pin.substring(0, 2);
-    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13") {
-      setError("ClosetRush is currently active only in Delhi and Haryana. Pincode must start with 11, 12, or 13.");
+    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13" && pinPrefix !== "20") {
+      setError("ClosetRush is active in Delhi (11xxxx), Gurugram Sectors (12xxxx/13xxxx), and Noida/Ghaziabad NCR (20xxxx). Please enter a supported NCR pincode.");
       setLoadingSubmit(false);
       return;
     }
@@ -598,18 +598,27 @@ function CheckoutFormContent() {
 
             {/* Address Field */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-charcoal-ink/30" /> Complete Delivery Address
-                <span className="ml-2 text-rose-500 font-bold normal-case tracking-normal">Active in Delhi & Haryana only</span>
-              </label>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-linen-gold" /> Complete Delivery Address
+                </label>
+                <span className="text-[10px] text-emerald-600 font-extrabold uppercase tracking-wide flex items-center gap-1 bg-emerald-50 px-2.5 py-0.5 border border-emerald-200">
+                  <Check className="w-3 h-3 text-emerald-600" /> Active in Delhi, Gurugram Sectors, & Noida NCR
+                </span>
+              </div>
               <textarea
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Room / flat number, apartment/hotel building, street name, city, state, pin code"
+                placeholder="Flat / PG room number, building/sector name (e.g. Sector 69 Gurgaon, Sector 62 Noida), city, state, and 6-digit pincode"
                 rows="3"
                 className="w-full p-4 bg-white border border-charcoal-ink/15 rounded-none text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-semibold resize-none leading-relaxed"
               ></textarea>
+              <div className="flex flex-wrap gap-2 pt-1 text-[9px] font-bold text-charcoal-ink/60">
+                <span className="bg-charcoal-ink/05 px-2 py-0.5 border border-charcoal-ink/10">🟢 Delhi NCR (11xxxx)</span>
+                <span className="bg-charcoal-ink/05 px-2 py-0.5 border border-charcoal-ink/10">🟢 Gurugram Sectors (12xxxx / 13xxxx)</span>
+                <span className="bg-charcoal-ink/05 px-2 py-0.5 border border-charcoal-ink/10">🟢 Noida & Ghaziabad NCR (20xxxx)</span>
+              </div>
             </div>
           </div>
 

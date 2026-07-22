@@ -37,8 +37,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Please enter a valid 6-digit pincode." }, { status: 400 });
     }
     const pinPrefix = pincode.substring(0, 2);
-    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13") {
-      return NextResponse.json({ error: "ClosetRush is currently active only in Delhi and Haryana." }, { status: 400 });
+    if (pinPrefix !== "11" && pinPrefix !== "12" && pinPrefix !== "13" && pinPrefix !== "20") {
+      return NextResponse.json({ error: "ClosetRush is active in Delhi (11xxxx), Gurugram Sectors (12xxxx/13xxxx), and Noida/Ghaziabad NCR (20xxxx)." }, { status: 400 });
     }
 
     await dbConnect();
