@@ -7,6 +7,7 @@ import User from "@/models/User";
 import Order from "@/models/Order";
 import Coupon from "@/models/Coupon";
 import BrandSettings from "@/models/BrandSettings";
+import Bundle from "@/models/Bundle";
 import { sendOrderConfirmationEmail } from "@/lib/mailer";
 
 export async function POST(request) {
@@ -138,6 +139,24 @@ export async function POST(request) {
     const computedGst = Math.round(discountedBase * 0.18);
     const computedTotalPrice = discountedBase + computedGst + computedDeposit;
 
+    // Calculate End Date
+    let endDate = new Date();
+    if (orderType === "BUY") {
+      endDate = null;
+    } else {
+      if (duration === "1 Month") {
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else if (duration === "3 Months") {
+        endDate.setMonth(endDate.getMonth() + 3);
+      } else if (duration === "6 Months") {
+        endDate.setMonth(endDate.getMonth() + 6);
+      } else if (duration === "12 Months") {
+        endDate.setMonth(endDate.getMonth() + 12);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+      }
+    }
+
     const updateFields = {
       hasPaidDeposit: alreadyPaidDeposit || computedDeposit > 0,
       selectedPlan: {
@@ -150,6 +169,7 @@ export async function POST(request) {
         gst: computedGst,
         totalPrice: computedTotalPrice,
         startDate: new Date(),
+        endDate,
         isCustom: !!isCustom,
         color,
         fabric,
@@ -183,23 +203,6 @@ export async function POST(request) {
       { $set: { status: "CANCELLED", endDate: new Date() } }
     );
 
-    // Calculate End Date
-    let endDate = new Date();
-    if (orderType === "BUY") {
-      endDate = null;
-    } else {
-      if (duration === "1 Month") {
-        endDate.setMonth(endDate.getMonth() + 1);
-      } else if (duration === "3 Months") {
-        endDate.setMonth(endDate.getMonth() + 3);
-      } else if (duration === "6 Months") {
-        endDate.setMonth(endDate.getMonth() + 6);
-      } else if (duration === "12 Months") {
-        endDate.setMonth(endDate.getMonth() + 12);
-      } else {
-        endDate.setMonth(endDate.getMonth() + 1);
-      }
-    }
 
     // Generate bundleOrderId
     const codePrefix = isSingleBed ? "SIN" : "DOU";
@@ -247,8 +250,32 @@ export async function POST(request) {
       endDate,
       deliveryAddress: updatedUser.address || "—",
       razorpayPaymentId: razorpay_payment_id,
-      razorpayOrderId: razorpay_order_id
     });
+
+    // Auto-create matching Bundle for logistics and warehouse tracking
+    try {
+      await Bundle.create({
+        bundleId: newOrder.bundleOrderId,
+        orderId: newOrder._id.toString(),
+        customerName: updatedUser.name,
+        bedType: isSingleBed ? "Single" : "Double",
+        color: color || "Classic White",
+        status: "READY_TO_DISPATCH",
+        items: [
+          { sku: `SHT-${Date.now().toString().slice(-4)}`, itemType: "Bedsheet", laundryStatus: "CLEAN_STOCK" },
+          { sku: `PIL-${Date.now().toString().slice(-4)}`, itemType: "Pillow Cover", laundryStatus: "CLEAN_STOCK" }
+        ],
+        logisticsHistory: [
+          {
+            timestamp: new Date(),
+            action: "Subscription Activated — Package Ready for Logistics Dispatch",
+            operator: "Automated Dispatch System"
+          }
+        ]
+      });
+    } catch (bErr) {
+      console.error("Bundle auto-creation error:", bErr);
+    }
 
     if (coupon) {
       await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });

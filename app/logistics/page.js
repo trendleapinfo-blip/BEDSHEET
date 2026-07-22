@@ -34,6 +34,10 @@ export default function LogisticsDashboard() {
   // Toast notification
   const [toast, setToast] = useState("");
 
+  // Swap Scheduler
+  const [swapRunning, setSwapRunning] = useState(false);
+  const [swapResult, setSwapResult] = useState(null);
+
   // Filters
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,7 +48,7 @@ export default function LogisticsDashboard() {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const data = await res.json();
-        if (data.authenticated && data.user.role === "logistics") {
+        if (data.authenticated && (data.user.role === "logistics" || data.user.role === "admin" || data.user.role === "warehouse")) {
           setSessionUser(data.user);
         } else {
           setSessionUser(null);
@@ -217,6 +221,32 @@ export default function LogisticsDashboard() {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
 
+  // Trigger the swap scheduler manually
+  const triggerSwapScheduler = async () => {
+    setSwapRunning(true);
+    setSwapResult(null);
+    try {
+      const res = await fetch("/api/cron/swap-scheduler");
+      if (res.ok) {
+        const data = await res.json();
+        setSwapResult(data);
+        setToast(`✅ ${data.message}`);
+        setTimeout(() => setToast(""), 5000);
+        // Refresh shipments list to show new bundles
+        fetchData();
+      } else {
+        const data = await res.json();
+        setToast(`❌ ${data.error || "Swap scheduler failed"}`);
+        setTimeout(() => setToast(""), 5000);
+      }
+    } catch (err) {
+      setToast(`❌ Network error: ${err.message}`);
+      setTimeout(() => setToast(""), 5000);
+    } finally {
+      setSwapRunning(false);
+    }
+  };
+
   const sidebarTabs = [
     { name: "Run Sheet", icon: Truck },
     { name: "Statistics", icon: Layers }
@@ -303,6 +333,14 @@ export default function LogisticsDashboard() {
           </div>
  
           <div className="flex items-center gap-4">
+            <button
+              onClick={triggerSwapScheduler}
+              disabled={swapRunning}
+              className="py-1.5 px-3 rounded-none bg-linen-gold hover:bg-charcoal-ink text-white border border-linen-gold text-2xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-55"
+            >
+              <RefreshCw className={`h-3 w-3 ${swapRunning ? "animate-spin" : ""}`} />
+              {swapRunning ? "Running..." : "Run Swap Scheduler"}
+            </button>
             <button
               onClick={fetchData}
               disabled={isRefreshing}

@@ -24,7 +24,13 @@ export async function POST(request) {
       bundle.logisticsHistory.push({ action: "Dispatched by Logistics", operator: "Logistics Scanner" });
       
       // Sync Order
-      await Order.findByIdAndUpdate(bundle.orderId, { status: "ACTIVE" });
+      if (bundle.orderId) {
+        if (bundle.orderId.match(/^[0-9a-fA-F]{24}$/)) {
+          await Order.findByIdAndUpdate(bundle.orderId, { status: "ACTIVE" });
+        } else {
+          await Order.findOneAndUpdate({ bundleOrderId: bundle.orderId }, { status: "ACTIVE" });
+        }
+      }
 
       // Decrease available, increase rented
       const category = await Category.findOne({ name: bundle.bedType });
@@ -38,7 +44,13 @@ export async function POST(request) {
       bundle.logisticsHistory.push({ action: "Delivered to Customer", operator: "Logistics Scanner" });
       
       // Sync Order
-      await Order.findByIdAndUpdate(bundle.orderId, { status: "DELIVERED" });
+      if (bundle.orderId) {
+        if (bundle.orderId.match(/^[0-9a-fA-F]{24}$/)) {
+          await Order.findByIdAndUpdate(bundle.orderId, { status: "DELIVERED" });
+        } else {
+          await Order.findOneAndUpdate({ bundleOrderId: bundle.orderId }, { status: "DELIVERED" });
+        }
+      }
     } else if (action === "COLLECT_RETURN") {
       if (!qrCode) return NextResponse.json({ error: "QR Code is required for returns" }, { status: 400 });
 

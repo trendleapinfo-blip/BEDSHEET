@@ -5,7 +5,6 @@ import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Order from "@/models/Order";
 import Bundle from "@/models/Bundle";
-import Category from "@/models/Category";
 
 // Helper to verify logistics/admin/warehouse role
 async function verifyLogisticsAccess() {
@@ -36,44 +35,128 @@ export async function GET() {
 
     await dbConnect();
 
-    // Fetch all bundles (these represent physical shipments)
-    const bundles = await Bundle.find({}).sort({ createdAt: -1 });
+    // 1. Fetch all active/paid orders
+    const activeOrders = await Order.find({ status: { $ne: "CANCELLED" } }).sort({ createdAt: -1 });
 
-    // Fetch matching orders for each bundle
-    const orderIds = bundles.map(b => b.orderId).filter(Boolean);
-    const orders = await Order.find({ _id: { $in: orderIds } });
+    // 2. Fetch all existing bundles
+    let bundles = await Bundle.find({}).sort({ createdAt: -1 });
 
-    // Build a map for quick lookup
+    // Build lookup set of all existing bundle order keys
+    const existingOrderKeys = new Set();
+    bundles.forEach(b => {
+      if (b.orderId) existingOrderKeys.add(b.orderId);
+      if (b.bundleId) existingOrderKeys.add(b.bundleId);
+      if (b.parentOrderId) existingOrderKeys.add(b.parentOrderId);
+    });
+
+    // 3. Auto-generate a Bundle document ONLY for an Order that lacks any matching Bundle
+    for (const order of activeOrders) {
+      const orderIdStr = order._id.toString();
+      const bundleOrderIdStr = order.bundleOrderId;
+
+      const hasBundle = existingOrderKeys.has(orderIdStr) || (bundleOrderIdStr && existingOrderKeys.has(bundleOrderIdStr));
+
+      if (!hasBundle) {
+        try {
+          const isSingle = (order.bundleName || "").toLowerCase().includes("single");
+          const newBundleId = order.bundleOrderId || `BNDL-${Math.floor(100000 + Math.random() * 900000)}`;
+          const createdBundle = await Bundle.create({
+            bundleId: newBundleId,
+            orderId: orderIdStr,
+            customerName: order.userName || "Valued Customer",
+            bedType: isSingle ? "Single" : "Double",
+            color: "Classic White",
+            status: "READY_TO_DISPATCH",
+            items: [
+              { sku: `SHT-${Date.now().toString().slice(-4)}`, itemType: "Bedsheet", laundryStatus: "CLEAN_STOCK" },
+              { sku: `PIL-${Date.now().toString().slice(-4)}`, itemType: "Pillow Cover", laundryStatus: "CLEAN_STOCK" }
+            ],
+            logisticsHistory: [
+              {
+                timestamp: order.createdAt || new Date(),
+                action: "Order Activated — Package Ready for Logistics Dispatch",
+                operator: "Automated Dispatch System"
+              }
+            ]
+          });
+          bundles.push(createdBundle);
+          existingOrderKeys.add(orderIdStr);
+          if (bundleOrderIdStr) existingOrderKeys.add(bundleOrderIdStr);
+        } catch (e) {
+          console.error("Auto-bundle creation error for order:", order._id, e);
+        }
+      }
+    }
+
+    // 4. Clean up any auto-created duplicate bundles if a WMS bundle already exists for the same order
+    const autoCreatedDupes = bundles.filter(b => 
+      activeOrders.some(o => o.bundleOrderId === b.bundleId) &&
+      bundles.some(other => other._id.toString() !== b._id.toString() && (other.orderId === b.bundleId || other.parentOrderId === b.bundleId))
+    );
+
+    for (const dupe of autoCreatedDupes) {
+      try {
+        await Bundle.findByIdAndDelete(dupe._id);
+        bundles = bundles.filter(b => b._id.toString() !== dupe._id.toString());
+      } catch (e) {}
+    }
+
+    // 5. Fetch matching orders for orderMap
+    const orderKeysToFetch = [];
+    bundles.forEach(b => {
+      if (b.orderId) orderKeysToFetch.push(b.orderId);
+      if (b.bundleId) orderKeysToFetch.push(b.bundleId);
+      if (b.parentOrderId) orderKeysToFetch.push(b.parentOrderId);
+    });
+
+    const orders = await Order.find({
+      $or: [
+        { _id: { $in: orderKeysToFetch.filter(id => typeof id === "string" && id.match(/^[0-9a-fA-F]{24}$/)) } },
+        { bundleOrderId: { $in: orderKeysToFetch.filter(Boolean) } }
+      ]
+    });
+
     const orderMap = {};
     orders.forEach(o => {
       orderMap[o._id.toString()] = o;
+      if (o.bundleOrderId) orderMap[o.bundleOrderId] = o;
     });
 
-    // Combine bundle + order data into shipment records
-    const shipments = bundles.map(bundle => {
-      const order = orderMap[bundle.orderId] || {};
-      return {
-        _id: bundle._id,
-        bundleId: bundle.bundleId,
-        orderId: bundle.orderId,
-        bundleOrderId: order.bundleOrderId || "—",
-        bundleName: order.bundleName || bundle.bedType,
-        customerName: bundle.customerName || order.userName || "—",
-        phone: order.phone || "—",
-        email: order.email || "—",
-        deliveryAddress: order.deliveryAddress || "—",
-        color: bundle.color || "Classic White",
-        bedType: bundle.bedType,
-        orderType: order.orderType || "RENT",
-        finalPrice: order.finalPrice || 0,
-        startDate: order.startDate || bundle.createdAt,
-        orderStatus: order.status || "—",
-        bundleStatus: bundle.status,
-        items: bundle.items || [],
-        logisticsHistory: bundle.logisticsHistory || [],
-        createdAt: bundle.createdAt,
-      };
-    });
+    // 6. Group and Deduplicate shipments so each order/customer appears ONLY ONCE
+    const uniqueShipmentsMap = new Map();
+
+    for (const bundle of bundles) {
+      const order = orderMap[bundle.orderId] || orderMap[bundle.bundleId] || orderMap[bundle.parentOrderId] || {};
+      
+      // Determine canonical order key
+      const canonicalKey = order.bundleOrderId || bundle.orderId || bundle.bundleId || bundle.parentOrderId;
+
+      if (!uniqueShipmentsMap.has(canonicalKey)) {
+        uniqueShipmentsMap.set(canonicalKey, {
+          _id: bundle._id,
+          bundleId: bundle.bundleId,
+          orderId: bundle.orderId,
+          bundleOrderId: order.bundleOrderId || bundle.bundleId || "—",
+          bundleName: order.bundleName || `${bundle.bedType} Bedsheet Set`,
+          customerName: bundle.customerName || order.userName || "Customer",
+          phone: order.phone || "—",
+          email: order.email || "—",
+          deliveryAddress: order.deliveryAddress || "—",
+          color: bundle.color || "Classic White",
+          bedType: bundle.bedType || "Single",
+          orderType: order.orderType || "RENT",
+          finalPrice: order.finalPrice || order.totalAmount || 0,
+          startDate: order.startDate || bundle.createdAt,
+          orderStatus: order.status || "ACTIVE",
+          bundleStatus: bundle.status || "READY_TO_DISPATCH",
+          items: bundle.items || [],
+          logisticsHistory: bundle.logisticsHistory || [],
+          createdAt: bundle.createdAt,
+        });
+      }
+    }
+
+    const shipments = Array.from(uniqueShipmentsMap.values());
 
     return NextResponse.json({ success: true, shipments });
   } catch (error) {
@@ -91,88 +174,71 @@ export async function PUT(request) {
     }
 
     await dbConnect();
-    const { bundleId, action } = await request.json();
+    const body = await request.json();
+    const { bundleId, action } = body; // action: 'DELIVERED', 'COLLECT_RETURN', 'CANCELLED', etc.
 
     if (!bundleId || !action) {
-      return NextResponse.json({ error: "Bundle ID and action are required." }, { status: 400 });
+      return NextResponse.json({ error: "Missing bundleId or action parameter." }, { status: 400 });
     }
 
-    const bundle = await Bundle.findOne({ bundleId });
+    const bundle = await Bundle.findOne({
+      $or: [
+        { bundleId },
+        { orderId: bundleId },
+        { parentOrderId: bundleId },
+        { _id: bundleId.match(/^[0-9a-fA-F]{24}$/) ? bundleId : null }
+      ].filter(Boolean)
+    });
+
     if (!bundle) {
-      return NextResponse.json({ error: "Bundle not found." }, { status: 404 });
+      return NextResponse.json({ error: "Shipment bundle not found." }, { status: 404 });
     }
 
-    const operatorName = user.name || "Logistics Partner";
-    const category = await Category.findOne({ name: bundle.bedType });
-
-    // ── DELIVERED: Logistics hands package to customer ──
+    let statusLogMsg = "";
     if (action === "DELIVERED") {
       bundle.status = "DELIVERED";
-      bundle.logisticsHistory.push({
-        action: "Delivered to Customer — package handed over successfully.",
-        operator: operatorName,
-      });
-      await bundle.save();
-
-      // Sync the order status
-      await Order.findByIdAndUpdate(bundle.orderId, { status: "DELIVERED" });
-
-      return NextResponse.json({ success: true, message: "Shipment delivered successfully." });
-    }
-
-    // ── COLLECT_RETURN: Delivery boy collects used sheets from customer ──
-    if (action === "COLLECT_RETURN") {
-      if (bundle.status !== "DELIVERED") {
-        return NextResponse.json({ error: "Can only collect from delivered bundles." }, { status: 400 });
+      statusLogMsg = "Package delivered to customer successfully.";
+      
+      if (bundle.orderId) {
+        try {
+          if (bundle.orderId.match(/^[0-9a-fA-F]{24}$/)) {
+            await Order.findByIdAndUpdate(bundle.orderId, { status: "ACTIVE" });
+          } else {
+            await Order.findOneAndUpdate({ bundleOrderId: bundle.orderId }, { status: "ACTIVE" });
+          }
+        } catch (oErr) {
+          console.error("Order status sync error:", oErr);
+        }
       }
-
+    } else if (action === "COLLECT_RETURN") {
       bundle.status = "COLLECTED";
-      bundle.logisticsHistory.push({
-        action: "Used sheets collected from customer doorstep. In transit back to warehouse.",
-        operator: operatorName,
-      });
-      await bundle.save();
-
-      // Inventory: rented → laundry (sheets are no longer with customer)
-      if (category) {
-        category.rentedStock = Math.max(0, (category.rentedStock || 0) - 1);
-        category.laundryStock = (category.laundryStock || 0) + 1;
-        await category.save();
-      }
-
-      return NextResponse.json({ success: true, message: "Used sheets collected. Bundle in transit to warehouse." });
+      statusLogMsg = "Used sheets collected from customer for laundry recycling.";
+    } else if (action === "DISPATCH") {
+      bundle.status = "DISPATCHED";
+      statusLogMsg = "Package dispatched with logistics agent.";
+    } else if (action === "CANCELLED") {
+      bundle.status = "COMPLETED";
+      statusLogMsg = "Shipment marked as cancelled / returned.";
+    } else {
+      bundle.status = action;
+      statusLogMsg = `Status updated to ${action}`;
     }
 
-    // ── CANCELLED: Delivery failed / customer refused ──
-    if (action === "CANCELLED") {
-      bundle.status = "SENT_TO_LAUNDRY";
-      bundle.items = bundle.items.map(item => ({
-        ...item.toObject(),
-        laundryStatus: "PENDING_WASH",
-      }));
-      bundle.logisticsHistory.push({
-        action: "Delivery cancelled/refused. Bundle returned to warehouse laundry dock.",
-        operator: operatorName,
-      });
-      await bundle.save();
+    bundle.logisticsHistory.push({
+      timestamp: new Date(),
+      action: statusLogMsg,
+      operator: user.name || "Logistics Agent"
+    });
 
-      // Inventory: rented → laundry (package came back unused, still needs sanitization)
-      if (category) {
-        category.rentedStock = Math.max(0, (category.rentedStock || 0) - 1);
-        category.laundryStock = (category.laundryStock || 0) + 1;
-        await category.save();
-      }
+    await bundle.save();
 
-      // Sync the order status
-      await Order.findByIdAndUpdate(bundle.orderId, { status: "CANCELLED" });
-
-      return NextResponse.json({ success: true, message: "Delivery cancelled. Bundle routed to laundry." });
-    }
-
-    return NextResponse.json({ error: "Invalid action. Use DELIVERED, COLLECT_RETURN, or CANCELLED." }, { status: 400 });
+    return NextResponse.json({
+      success: true,
+      message: `Shipment ${bundle.bundleId} updated to ${bundle.status}!`,
+      bundle
+    });
   } catch (error) {
-    console.error("Logistics Status Update Error:", error);
+    console.error("Logistics Update Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

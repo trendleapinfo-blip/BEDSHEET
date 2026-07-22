@@ -2417,18 +2417,28 @@ export default function AdminDashboard() {
 
                           if (hasPlan && u.selectedPlan.startDate) {
                             startDate = new Date(u.selectedPlan.startDate);
-                            if (!isNaN(startDate.getTime())) {
-                              expiryDate = new Date(startDate);
-                              const dur = (u.selectedPlan.duration || "").toLowerCase();
-                              if (dur.includes("3 month") || dur.includes("quarterly")) {
-                                expiryDate.setMonth(expiryDate.getMonth() + 3);
-                              } else if (dur.includes("6 month") || dur.includes("half")) {
-                                expiryDate.setMonth(expiryDate.getMonth() + 6);
-                              } else if (dur.includes("12 month") || dur.includes("year") || dur.includes("annual")) {
-                                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                              } else {
-                                expiryDate.setMonth(expiryDate.getMonth() + 1);
+                            if (u.selectedPlan.endDate) {
+                              expiryDate = new Date(u.selectedPlan.endDate);
+                            } else {
+                              // Find matching active order for explicit endDate
+                              const activeOrder = ordersList.find(o => o.email.toLowerCase() === u.email.toLowerCase() && (o.status === "ACTIVE" || o.status === "DELIVERED"));
+                              if (activeOrder && activeOrder.endDate) {
+                                expiryDate = new Date(activeOrder.endDate);
+                              } else if (!isNaN(startDate.getTime())) {
+                                expiryDate = new Date(startDate);
+                                const dur = (u.selectedPlan.duration || "").toLowerCase();
+                                if (dur.includes("3 month") || dur.includes("quarterly")) {
+                                  expiryDate.setMonth(expiryDate.getMonth() + 3);
+                                } else if (dur.includes("6 month") || dur.includes("half")) {
+                                  expiryDate.setMonth(expiryDate.getMonth() + 6);
+                                } else if (dur.includes("12 month") || dur.includes("year") || dur.includes("annual")) {
+                                  expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                                } else {
+                                  expiryDate.setMonth(expiryDate.getMonth() + 1);
+                                }
                               }
+                            }
+                            if (expiryDate && !isNaN(expiryDate.getTime())) {
                               isExpired = new Date() > expiryDate;
                             }
                           }
@@ -2507,6 +2517,28 @@ export default function AdminDashboard() {
                                         {isExpired ? `Expired on: ${expiryDate.toLocaleDateString()}` : `Expires: ${expiryDate.toLocaleDateString()}`}
                                       </p>
                                     )}
+                                    <button
+                                       onClick={async () => {
+                                         const newEnd = expiryDate ? new Date(expiryDate) : new Date();
+                                         newEnd.setMonth(newEnd.getMonth() + 1);
+                                         const updatedPlan = {
+                                           ...u.selectedPlan,
+                                           startDate: u.selectedPlan.startDate || new Date(),
+                                           endDate: newEnd,
+                                         };
+                                         await fetch("/api/admin/users", {
+                                           method: "PUT",
+                                           headers: { "Content-Type": "application/json" },
+                                           body: JSON.stringify({ userId: u._id, selectedPlan: updatedPlan, status: "ACTIVE" })
+                                         });
+                                         fetchData();
+                                         if (typeof setToast === "function") setToast(`✅ Renewed subscription for ${u.name} (+1 Month)`);
+                                       }}
+                                       className="mt-1 px-2 py-1 text-[9px] font-extrabold bg-teal-700 hover:bg-teal-800 text-white rounded cursor-pointer transition-all flex items-center gap-1 w-full justify-center shadow-xs"
+                                       title="Extend customer subscription by 1 month in database"
+                                     >
+                                       <RefreshCcw className="w-2.5 h-2.5" /> Extend / Renew (+1 Mo)
+                                     </button>
                                   </div>
                                 ) : (
                                   <span className="text-[10px] text-slate-400 italic font-semibold">No Active Plan</span>

@@ -530,14 +530,15 @@ export default function Dashboard() {
   };
 
   // Helper to calculate days remaining for next swap (weekly: 7 days, monthly: 30 days)
-  const getSwapDaysRemaining = (startDateStr, subscriptionType) => {
-    if (!startDateStr) return 0;
-    const start = new Date(startDateStr);
+  const getSwapDaysRemaining = (startDateStr, subscriptionType, lastSwapDateStr) => {
+    const baseDateStr = lastSwapDateStr || startDateStr;
+    if (!baseDateStr) return 0;
+    const refDate = new Date(baseDateStr);
     const today = new Date();
     
     const cycleDays = subscriptionType === "weekly" ? 7 : 30;
-    const diffTime = Math.abs(today - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffTime = Math.abs(today - refDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     const daysElapsedInCycle = diffDays % cycleDays;
     const daysRemaining = cycleDays - daysElapsedInCycle;
@@ -698,24 +699,47 @@ export default function Dashboard() {
                   
                   {/* Subscription card */}
                   <div className="bg-charcoal-ink text-white rounded-none p-6 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[220px]">
-                    <div className="absolute right-[-20px] bottom-[-20px] text-white/05 scale-150 select-none pointer-events-none">
-                      <Package className="w-32 h-32" />
-                    </div>
                     
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-white/40 text-2xs uppercase tracking-widest font-bold">
                           {user?.selectedPlan?.orderType === "BUY" ? "Purchased Collection" : "Current Service Plan"}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-none text-3xs font-bold uppercase tracking-wider ${
-                          user?.selectedPlan?.planName 
-                            ? (user.selectedPlan.isPaused ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse" : "bg-white/10 text-white border border-white/20")
-                            : "bg-white/05 text-white/50 border border-white/10"
-                        }`}>
-                          {user?.selectedPlan?.planName 
-                            ? (user.selectedPlan.orderType === "BUY" ? "OWNED" : (user.selectedPlan.isPaused ? "PAUSED" : "ACTIVE")) 
-                            : "INACTIVE"}
-                        </span>
+                        {(() => {
+                          const pStart = user?.selectedPlan?.startDate ? new Date(user.selectedPlan.startDate) : null;
+                          let pEnd = user?.selectedPlan?.endDate ? new Date(user.selectedPlan.endDate) : null;
+                          if (!pEnd && pStart) {
+                            pEnd = new Date(pStart);
+                            const dur = (user.selectedPlan.duration || "").toLowerCase();
+                            if (dur.includes("3 month")) pEnd.setMonth(pEnd.getMonth() + 3);
+                            else if (dur.includes("6 month")) pEnd.setMonth(pEnd.getMonth() + 6);
+                            else if (dur.includes("12 month")) pEnd.setFullYear(pEnd.getFullYear() + 1);
+                            else pEnd.setMonth(pEnd.getMonth() + 1);
+                          }
+                          const isExpired = pEnd && new Date() > pEnd;
+
+                          return (
+                            <span className={`px-2 py-0.5 rounded-none text-3xs font-bold uppercase tracking-wider ${
+                              user?.selectedPlan?.planName 
+                                ? (user.selectedPlan.isPaused 
+                                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse" 
+                                    : isExpired 
+                                    ? "bg-rose-500/30 text-rose-200 border border-rose-500/40 font-black"
+                                    : "bg-white/10 text-white border border-white/20")
+                                : "bg-white/05 text-white/50 border border-white/10"
+                            }`}>
+                              {user?.selectedPlan?.planName 
+                                ? (user.selectedPlan.orderType === "BUY" 
+                                    ? "OWNED" 
+                                    : (user.selectedPlan.isPaused 
+                                        ? "PAUSED" 
+                                        : isExpired 
+                                        ? "EXPIRED" 
+                                        : "ACTIVE")) 
+                                : "INACTIVE"}
+                            </span>
+                          );
+                        })()}
                       </div>
                       
                       {user?.selectedPlan?.planName ? (
@@ -740,6 +764,50 @@ export default function Dashboard() {
                               ⏸️ Vacation Pause Active until {new Date(user.selectedPlan.pausedUntil).toLocaleDateString()}
                             </p>
                           )}
+                          {(() => {
+                            const pStart = user.selectedPlan.startDate ? new Date(user.selectedPlan.startDate) : null;
+                            let pEnd = user.selectedPlan.endDate ? new Date(user.selectedPlan.endDate) : null;
+                            if (!pEnd && pStart) {
+                              pEnd = new Date(pStart);
+                              const dur = (user.selectedPlan.duration || "").toLowerCase();
+                              if (dur.includes("3 month")) pEnd.setMonth(pEnd.getMonth() + 3);
+                              else if (dur.includes("6 month")) pEnd.setMonth(pEnd.getMonth() + 6);
+                              else if (dur.includes("12 month")) pEnd.setFullYear(pEnd.getFullYear() + 1);
+                              else pEnd.setMonth(pEnd.getMonth() + 1);
+                            }
+                            const isExpired = pEnd && new Date() > pEnd;
+
+                            return (
+                              <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-white/60 font-semibold">Next Billing Date:</span>
+                                  <span className={`font-extrabold px-2 py-0.5 rounded text-2xs uppercase ${isExpired ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"}`}>
+                                    {isExpired ? `Expired (${pEnd.toLocaleDateString()})` : pEnd ? pEnd.toLocaleDateString() : "—"}
+                                  </span>
+                                </div>
+                                <div className="mt-2 space-y-2">
+                                  <button
+                                    onClick={() => handleSelectPlan(user.selectedPlan.bedType || "single", user.selectedPlan.planName, user.selectedPlan.price, user.selectedPlan.duration || "1 Month")}
+                                    className={`w-full py-2.5 px-4 rounded-none font-extrabold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                      isExpired 
+                                        ? "bg-linen-gold hover:bg-white hover:text-charcoal-ink text-white shadow-lg" 
+                                        : "bg-linen-gold hover:bg-white hover:text-charcoal-ink text-white"
+                                    }`}
+                                  >
+                                    <CreditCard className="w-4 h-4" />
+                                    {isExpired ? `Renew Now — Pay Next Cycle (₹${user.selectedPlan.price})` : `Pay Next Billing Cycle (₹${user.selectedPlan.price})`}
+                                  </button>
+                                  <button
+                                    onClick={handleCancelSubscription}
+                                    className="w-full py-2 px-4 rounded-none bg-rose-500/20 hover:bg-rose-500 text-rose-200 hover:text-white border border-rose-500/30 font-bold text-2xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Cancel Subscription & Claim ₹{user.selectedPlan.securityDeposit || 500} Deposit
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()}
                           <div className="mt-2.5 text-[10px] text-white/50 space-y-0.5 border-t border-white/10 pt-2 font-semibold">
                             <p>GST (18%): ₹{user.selectedPlan.gst || 0} {user.selectedPlan.orderType !== "BUY" && `• Deposit: ₹${user.selectedPlan.securityDeposit || 0}`}</p>
                             <p className="font-extrabold text-linen-gold">Total Amount Paid: ₹{user.selectedPlan.totalPrice || user.selectedPlan.price}</p>
@@ -811,27 +879,58 @@ export default function Dashboard() {
                           <h4 className="font-extrabold text-charcoal-ink text-sm">Sheet Swap Cycle</h4>
                         </div>
  
-                        {user?.selectedPlan?.planName ? (
-                          <div>
-                            <div className="flex justify-between items-baseline mb-2">
-                              <span className="text-charcoal-ink/50 text-xs font-semibold">Next sheets delivery in</span>
-                              <span className="text-lg font-black text-charcoal-ink">{getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType)} Days</span>
+                        {user?.selectedPlan?.planName ? (() => {
+                          const pStart = user?.selectedPlan?.startDate ? new Date(user.selectedPlan.startDate) : null;
+                          let pEnd = user?.selectedPlan?.endDate ? new Date(user.selectedPlan.endDate) : null;
+                          if (!pEnd && pStart) {
+                            pEnd = new Date(pStart);
+                            const dur = (user.selectedPlan.duration || "").toLowerCase();
+                            if (dur.includes("3 month")) pEnd.setMonth(pEnd.getMonth() + 3);
+                            else if (dur.includes("6 month")) pEnd.setMonth(pEnd.getMonth() + 6);
+                            else if (dur.includes("12 month")) pEnd.setFullYear(pEnd.getFullYear() + 1);
+                            else pEnd.setMonth(pEnd.getMonth() + 1);
+                          }
+                          const isExpired = pEnd && new Date() > pEnd;
+
+                          if (isExpired) {
+                            return (
+                              <div className="p-3.5 bg-rose-50/70 border border-rose-200 rounded-none text-left space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-rose-700 font-extrabold text-xs">
+                                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                  <span>Plan Expired (Swap Services Paused)</span>
+                                </div>
+                                <p className="text-[11px] text-rose-900/70 font-semibold leading-relaxed">
+                                  Your subscription cycle ended on {pEnd.toLocaleDateString()}. Automated sheet swap deliveries are currently paused.
+                                </p>
+                                <p className="text-[10px] text-rose-600 font-bold">
+                                  Please renew your subscription to resume automated deliveries.
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div>
+                              <div className="flex justify-between items-baseline mb-2">
+                                <span className="text-charcoal-ink/50 text-xs font-semibold">Next sheets delivery in</span>
+                                <span className="text-lg font-black text-charcoal-ink">{getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType, user.selectedPlan.lastSwapDate)} Days</span>
+                              </div>
+                              
+                              {/* Progress bar */}
+                              <div className="w-full bg-charcoal-ink/08 rounded-none h-2 overflow-hidden">
+                                <div 
+                                  className="bg-linen-gold h-2 rounded-none transition-all duration-500" 
+                                  style={{ width: `${Math.max(10, Math.min(100, ((user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) - getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType, user.selectedPlan.lastSwapDate)) / (user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) * 100))}%` }}
+                                ></div>
+                              </div>
+                              <p className="text-charcoal-ink/40 text-[10px] mt-2 font-medium">
+                                {user.selectedPlan.subscriptionType === "weekly"
+                                  ? "Weekly premium swap is scheduled. Our staff will swap and strip your bedding."
+                                  : "Auto monthly kit swap is scheduled. Leave used sheets in our ClosetRush bags."}
+                              </p>
                             </div>
-                            
-                            {/* Progress bar */}
-                            <div className="w-full bg-charcoal-ink/08 rounded-none h-2 overflow-hidden">
-                              <div 
-                                className="bg-linen-gold h-2 rounded-none transition-all duration-500" 
-                                style={{ width: `${Math.max(10, Math.min(100, ((user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) - getSwapDaysRemaining(user.selectedPlan.startDate, user.selectedPlan.subscriptionType)) / (user.selectedPlan.subscriptionType === "weekly" ? 7 : 30) * 100))}%` }}
-                              ></div>
-                            </div>
-                            <p className="text-charcoal-ink/40 text-[10px] mt-2 font-medium">
-                              {user.selectedPlan.subscriptionType === "weekly"
-                                ? "Weekly premium swap is scheduled. Our staff will swap and strip your bedding."
-                                : "Auto monthly kit swap is scheduled. Leave used sheets in our ClosetRush bags."}
-                            </p>
-                          </div>
-                        ) : (
+                          );
+                        })() : (
                           <div className="py-2 text-center">
                             <Clock className="w-8 h-8 text-charcoal-ink/20 mx-auto mb-2" />
                             <p className="text-charcoal-ink/40 text-2xs leading-relaxed max-w-[200px] mx-auto">
@@ -1108,6 +1207,13 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleSelectPlan(user.selectedPlan.bedType || "single", user.selectedPlan.planName, user.selectedPlan.price, user.selectedPlan.duration || "1 Month")}
+                        className="px-5 py-3 rounded-none bg-linen-gold hover:bg-charcoal-ink text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        Renew Plan (Pay Next Cycle)
+                      </button>
                       {user.selectedPlan.isPaused ? (
                         <button
                           onClick={handleResumeSubscription}

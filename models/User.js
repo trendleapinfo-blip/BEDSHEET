@@ -70,6 +70,8 @@ const UserSchema = new mongoose.Schema(
       gst: { type: Number, default: 0 },
       totalPrice: { type: Number, default: 0 },
       startDate: { type: Date, default: Date.now },
+      endDate: { type: Date },
+      lastSwapDate: { type: Date },
       isCustom: { type: Boolean, default: false },
       color: { type: String },
       fabric: { type: String },

@@ -1939,7 +1939,9 @@ export default function ShopPage() {
 
                 <div className="pt-6 border-t border-[#032026]/10 flex flex-col sm:flex-row gap-4">
                   <a
-                    href={`/api/user/quote/pdf?orderId=${orderId}`}
+                    href={`/api/user/quote/pdf?orderId=${orderId || ""}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     download
                     className="flex-1 py-4 px-6 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 text-center flex items-center justify-center gap-2 shadow-lg shadow-[#05D4B5]/20 cursor-pointer"
                   >

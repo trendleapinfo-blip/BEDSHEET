@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 import dbConnect from "@/lib/db";
 import Quote from "@/models/Quote";
 import Order from "@/models/Order";
+import User from "@/models/User";
 
 // ─── Utility helpers ────────────────────────────────────────
 function esc(str) {
@@ -204,7 +207,6 @@ function buildInvoicePDF({
   const contentStream = streams.join("");
   const streamBytes = Buffer.byteLength(contentStream, "binary");
 
-  // We need 7 objects: catalog, pages, page, content stream, font1 (Helvetica), font2 (Helvetica-Bold), font dictionary
   const objs = [];
   const offsets = [];
   let pdf = "%PDF-1.4\n";
@@ -218,16 +220,16 @@ function buildInvoicePDF({
     return num;
   };
 
-  const catalogRef = addObj("<< /Type /Catalog /Pages 2 0 R >>");
-  const pagesRef = addObj("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-  const pageRef = addObj(
+  addObj("<< /Type /Catalog /Pages 2 0 R >>");
+  addObj("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  addObj(
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>`
   );
-  const streamRef = addObj(
+  addObj(
     `<< /Length ${streamBytes} >>\nstream\n${contentStream}\nendstream`
   );
-  const font1Ref = addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
-  const font2Ref = addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
 
   // Cross-reference table
   const xrefOffset = Buffer.byteLength(pdf, "binary");
@@ -248,11 +250,25 @@ export async function GET(request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
-    const quoteId = searchParams.get("quoteId");
-    const orderId = searchParams.get("orderId");
+    let quoteId = searchParams.get("quoteId");
+    let orderId = searchParams.get("orderId");
 
-    if (!quoteId && !orderId) {
-      return NextResponse.json({ error: "Missing quoteId or orderId parameter." }, { status: 400 });
+    if (quoteId === "undefined" || quoteId === "null" || quoteId === "") quoteId = null;
+    if (orderId === "undefined" || orderId === "null" || orderId === "") orderId = null;
+
+    // Check session token for authenticated user fallback
+    let sessionUser = null;
+    try {
+      const cookieStore = await cookies();
+      const token = cookieStore.get("token")?.value;
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+        if (decoded?.userId) {
+          sessionUser = await User.findById(decoded.userId).select("-password");
+        }
+      }
+    } catch (e) {
+      // Session optional
     }
 
     let pdfBuffer;
@@ -260,27 +276,28 @@ export async function GET(request) {
 
     if (quoteId) {
       // ─── B2B Quotation PDF ──────────────────────────────
-      const quote = await Quote.findById(quoteId);
+      const queryConds = [{ _id: quoteId.match(/^[0-9a-fA-F]{24}$/) ? quoteId : null }, { quoteId }].filter(Boolean);
+      const quote = await Quote.findOne({ $or: queryConds.length ? queryConds : [{ _id: quoteId }] });
       if (!quote) {
         return NextResponse.json({ error: "Quotation request not found." }, { status: 404 });
       }
 
-      const perBedRate = quote.priceQuote ? Math.round(quote.priceQuote / quote.bedsCount) : 250;
-      const totalAmt = quote.priceQuote || (quote.bedsCount * 250);
+      const perBedRate = quote.priceQuote ? Math.round(quote.priceQuote / (quote.bedsCount || 1)) : 250;
+      const totalAmt = quote.priceQuote || ((quote.bedsCount || 1) * 250);
 
       filename = `Quotation_${quote._id.toString().substring(0, 8).toUpperCase()}.pdf`;
       pdfBuffer = buildInvoicePDF({
         docTitle: "QUOTATION PROPOSAL",
         invoiceNo: quote._id.toString().substring(0, 8).toUpperCase(),
         invoiceDate: fmtDate(quote.receivedAt || quote.createdAt),
-        customerName: quote.businessName || quote.contactPerson || "—",
+        customerName: quote.businessName || quote.contactPerson || "Valued Client",
         customerPhone: quote.phone || "—",
         customerEmail: quote.email || "—",
         customerAddress: quote.propertyAddress || "—",
         lineItems: [
           {
-            description: `${quote.bedType} Bed Setup (${quote.roomsCount} rooms, ${quote.bedsCount} beds)`,
-            qty: quote.bedsCount,
+            description: `${quote.bedType || "Standard"} Bed Setup (${quote.roomsCount || 1} rooms, ${quote.bedsCount || 1} beds)`,
+            qty: quote.bedsCount || 1,
             rate: perBedRate,
             amount: totalAmt,
           },
@@ -298,37 +315,80 @@ export async function GET(request) {
       });
     } else {
       // ─── B2C Order Invoice PDF ──────────────────────────
-      const order = await Order.findOne({ bundleOrderId: orderId });
+      let order = null;
+
+      if (orderId) {
+        const queryConds = [
+          { bundleOrderId: orderId },
+          { razorpayOrderId: orderId }
+        ];
+        if (orderId.match(/^[0-9a-fA-F]{24}$/)) {
+          queryConds.push({ _id: orderId });
+        }
+        order = await Order.findOne({ $or: queryConds });
+      }
+
+      // Fallback 1: If order not found by orderId, find latest order for logged-in user
+      if (!order && sessionUser) {
+        order = await Order.findOne({
+          $or: [{ userId: sessionUser._id.toString() }, { email: sessionUser.email }]
+        }).sort({ createdAt: -1 });
+      }
+
+      // Fallback 2: Synthesize order from user.selectedPlan if order document doesn't exist yet
+      if (!order && sessionUser?.selectedPlan?.planName) {
+        const plan = sessionUser.selectedPlan;
+        order = {
+          bundleOrderId: `INV-${Date.now().toString().slice(-6)}`,
+          userName: sessionUser.name,
+          phone: sessionUser.mobile || "—",
+          email: sessionUser.email,
+          deliveryAddress: sessionUser.address || "—",
+          bundleName: `${plan.bedType || "Single"} ${plan.planName || "Subscription"}`,
+          duration: plan.duration || "1 Month",
+          calculatedRent: plan.price || 0,
+          discount: plan.discount || 0,
+          depositCharged: plan.securityDeposit || 0,
+          totalAmount: plan.totalPrice || ((plan.price || 0) + (plan.securityDeposit || 0)),
+          finalPrice: plan.totalPrice || ((plan.price || 0) + (plan.securityDeposit || 0)),
+          status: "ACTIVE",
+          orderType: plan.orderType || "RENT",
+          itemTier: plan.itemTier || "BASIC",
+          couponCode: plan.couponCode || null,
+          startDate: plan.startDate || new Date(),
+        };
+      }
+
       if (!order) {
-        return NextResponse.json({ error: "Order not found." }, { status: 404 });
+        return NextResponse.json({ error: "Order not found or no active subscription." }, { status: 404 });
       }
 
       // Re-derive pricing breakdown from stored values
       const rent = order.calculatedRent || order.finalPrice || 0;
       const discountAmt = order.discount || 0;
-      const discountedBase = rent - discountAmt;
-      const gstAmt = Math.round(discountedBase * 0.18);
-      const depositAmt = order.depositCharged || 0;
+      const discountedBase = Math.max(0, rent - discountAmt);
+      const gstAmt = order.gst || Math.round(discountedBase * 0.18);
+      const depositAmt = order.depositCharged || order.securityDeposit || 0;
       const total = order.totalAmount || order.finalPrice || (discountedBase + gstAmt + depositAmt);
 
       const lineItems = [
         {
-          description: `${order.bundleName} — ${order.duration || "Monthly"} Subscription`,
+          description: `${order.bundleName || "Bedding Subscription"} — ${order.duration || "Monthly"}`,
           qty: 1,
           rate: rent,
           amount: rent,
         },
       ];
 
-      filename = `Invoice_${order.bundleOrderId}.pdf`;
+      filename = `Invoice_${order.bundleOrderId || "ClosetRush"}.pdf`;
       pdfBuffer = buildInvoicePDF({
         docTitle: "SUBSCRIPTION INVOICE",
-        invoiceNo: order.bundleOrderId,
+        invoiceNo: order.bundleOrderId || `INV-${Date.now().toString().slice(-6)}`,
         invoiceDate: fmtDate(order.startDate || order.createdAt),
-        customerName: order.userName || "Customer",
-        customerPhone: order.phone || "—",
-        customerEmail: order.email || "—",
-        customerAddress: order.deliveryAddress || "—",
+        customerName: order.userName || sessionUser?.name || "Valued Customer",
+        customerPhone: order.phone || sessionUser?.mobile || "—",
+        customerEmail: order.email || sessionUser?.email || "—",
+        customerAddress: order.deliveryAddress || sessionUser?.address || "—",
         lineItems,
         subtotal: rent,
         gst: gstAmt,
@@ -352,6 +412,7 @@ export async function GET(request) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     });
   } catch (error) {

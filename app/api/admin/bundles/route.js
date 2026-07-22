@@ -148,7 +148,13 @@ export async function PUT(request) {
       }
 
       // Automatically update parent order status to ACTIVE
-      await Order.findByIdAndUpdate(bundle.orderId, { status: "ACTIVE" });
+      if (bundle.orderId) {
+        if (bundle.orderId.match(/^[0-9a-fA-F]{24}$/)) {
+          await Order.findByIdAndUpdate(bundle.orderId, { status: "ACTIVE" });
+        } else {
+          await Order.findOneAndUpdate({ bundleOrderId: bundle.orderId }, { status: "ACTIVE" });
+        }
+      }
 
       return NextResponse.json({ success: true, bundle });
     }

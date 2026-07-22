@@ -161,7 +161,9 @@ function CheckoutFormContent() {
     );
   }
 
-  const isSingle = plan.bedType === "single";
+  const bedTypeStr = (plan.bedType || "").toLowerCase();
+  const planNameStr = (plan.planName || "").toLowerCase();
+  const isSingle = bedTypeStr.includes("single") || planNameStr.includes("single");
 
   // Calculate pricing breakdown
   const getPricing = () => {
@@ -185,15 +187,26 @@ function CheckoutFormContent() {
     }
 
     // New Pricing Logic for RENT
-    const isSingle = plan.bedType === "single";
-    let baseMonthly = 0;
-    let depositAmt = 0;
+    const bedTypeLower = (plan.bedType || "").toLowerCase();
+    const planNameLower = (plan.planName || "").toLowerCase();
+    const isSingle = bedTypeLower.includes("single") || planNameLower.includes("single");
 
-    if (subscriptionType === "weekly") { // Premium
+    let baseMonthly = 0;
+    if (plan.price && Number(plan.price) > 0) {
+      baseMonthly = Number(plan.price);
+    } else if (subscriptionType === "weekly") { // Premium
       baseMonthly = isSingle ? 750 : 950;
-      depositAmt = 0;
     } else { // Basic
       baseMonthly = isSingle ? 300 : 500;
+    }
+
+    // Check if user already paid deposit or has an existing/expired subscription
+    const alreadyPaidDeposit = !!(user?.hasPaidDeposit || (user?.selectedPlan && user.selectedPlan.planName));
+    
+    let depositAmt = 0;
+    if (subscriptionType === "weekly" || plan.itemTier === "PREMIUM" || alreadyPaidDeposit) {
+      depositAmt = 0;
+    } else {
       depositAmt = isSingle ? 500 : 800;
     }
 
@@ -501,7 +514,9 @@ function CheckoutFormContent() {
                       We deliver a complete bundle once a month. You swap the linens on your own schedule.
                     </p>
                     <p className="text-[9px] text-[#B2905F] font-black mt-1.5 uppercase tracking-wider">
-                      Requires ₹{isSingle ? 500 : 800} Security Deposit
+                      {user?.hasPaidDeposit || (user?.selectedPlan && user?.selectedPlan?.planName)
+                        ? "Security Deposit: ₹0 (Already Paid / Renewal)"
+                        : `Requires ₹${isSingle ? 500 : 800} Security Deposit`}
                     </p>
                   </div>
                 </button>
@@ -734,7 +749,9 @@ function CheckoutFormContent() {
               {plan.orderType !== "BUY" && (
                 <div className="flex justify-between">
                   <span>Refundable Security Deposit:</span>
-                  <span className="text-white">₹{pricing.deposit}</span>
+                  <span className="text-white">
+                    {pricing.deposit > 0 ? `₹${pricing.deposit}` : "₹0 (Already Paid / Renewal)"}
+                  </span>
                 </div>
               )}
 

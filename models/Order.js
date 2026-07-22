@@ -144,6 +144,13 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    lastSwapDate: {
+      type: Date,
+    },
+    swapCount: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
