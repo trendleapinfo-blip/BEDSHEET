@@ -129,12 +129,20 @@ export async function POST(request) {
       }
     }
 
+    // Check if user has already paid a deposit previously
+    const alreadyPaidDeposit = !!user.hasPaidDeposit || !!(await Order.exists({
+      $or: [{ userId: user._id.toString() }, { email: user.email }],
+      depositCharged: { $gt: 0 },
+      status: { $ne: "CANCELLED" }
+    }));
+
     const discountedBase = Number(price) - calculatedDiscount;
     const computedGst = Math.round(discountedBase * 0.18);
-    const computedDeposit = (orderType === "BUY") ? 0 : ((subscriptionType === "weekly") ? 0 : Math.round(baseDeposit * depositMultiplier));
+    const computedDeposit = (orderType === "BUY" || subscriptionType === "weekly" || alreadyPaidDeposit) ? 0 : Math.round(baseDeposit * depositMultiplier);
     const computedTotalPrice = discountedBase + computedGst + computedDeposit;
 
     const updateFields = {
+      hasPaidDeposit: alreadyPaidDeposit || computedDeposit > 0,
       selectedPlan: {
         bedType,
         planName,

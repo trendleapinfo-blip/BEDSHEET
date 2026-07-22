@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -187,7 +187,7 @@ export default function ShopPage() {
     if (isBlanket) {
       return [
         { colorName: "Slate Gray", hexCode: "#64748B", images: ["/cat_blankets.png", "/banner_1.png"] },
-        { colorName: "Deep Teal", hexCode: "#245c77", images: ["/cat_blankets.png", "/banner_1.png"] }
+        { colorName: "Deep Teal", hexCode: "#1A4F54", images: ["/cat_blankets.png", "/banner_1.png"] }
       ];
     } else if (isQuilt) {
       return [
@@ -197,13 +197,13 @@ export default function ShopPage() {
     } else if (isSingle) {
       return [
         { colorName: "Classic White", hexCode: "#FFFFFF", images: ["/cat_single.png", "/banner_1.png"] },
-        { colorName: "Deep Teal", hexCode: "#245c77", images: ["/cat_single.png", "/banner_1.png"] },
-        { colorName: "Linen Gold", hexCode: "#A89276", images: ["/cat_single.png", "/banner_1.png"] }
+        { colorName: "Deep Teal", hexCode: "#1A4F54", images: ["/cat_single.png", "/banner_1.png"] },
+        { colorName: "Turquoise Mist", hexCode: "#05D4B5", images: ["/cat_single.png", "/banner_1.png"] }
       ];
     } else {
       return [
         { colorName: "Classic White", hexCode: "#FFFFFF", images: ["/cat_double.png", "/banner_1.png"] },
-        { colorName: "Deep Teal", hexCode: "#245c77", images: ["/cat_double.png", "/banner_1.png"] }
+        { colorName: "Deep Teal", hexCode: "#1A4F54", images: ["/cat_double.png", "/banner_1.png"] }
       ];
     }
   };
@@ -228,7 +228,6 @@ export default function ShopPage() {
   }, [color]);
 
   const getBedSizeLabel = (type) => {
-    // Category name comes directly from database — display as-is
     return type;
   };
 
@@ -244,17 +243,12 @@ export default function ShopPage() {
     return { displayName, discountText };
   };
 
-
-
-
-
   // Step Tracker State
-  // Steps: 1. Configure/Browse, 2. Registration/Login, 3. Complete Profile, 4. Checkout/RFQ, 5. Order Confirmation
   const [activeStep, setActiveStep] = useState(1);
 
   // Step 2: Auth Form States
-  const [authMode, setAuthMode] = useState("login"); // "login" | "signup"
-  const [authMethod, setAuthMethod] = useState("email"); // "email" | "otp"
+  const [authMode, setAuthMode] = useState("login");
+  const [authMethod, setAuthMethod] = useState("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -295,7 +289,7 @@ export default function ShopPage() {
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState("Pending"); // "Pending" | "Paid" | "Failed"
+  const [paymentStatus, setPaymentStatus] = useState("Pending");
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -326,7 +320,6 @@ export default function ShopPage() {
     const activeStyle = activePaymentStyles.find(s => s.id === planType) || activePaymentStyles[0];
     const depositMultiplier = activeStyle ? (activeStyle.depositMultiplier !== undefined ? activeStyle.depositMultiplier : 1) : 1;
 
-    // Zero deposit implies Premium tier, otherwise Basic
     const expectedTier = depositMultiplier === 0 ? "Premium" : "Basic";
 
     const matchedPlan = plans.find(p =>
@@ -369,8 +362,6 @@ export default function ShopPage() {
   const availableDurationsForBed = plans.length > 0
     ? Array.from(new Set(plans.filter(p => p.bedType === selectedBedType).map(p => p.duration)))
     : ["1 Month", "3 Months", "12 Months"];
-
-
 
   // Send OTP handler
   const handleSendOtp = async () => {
@@ -449,14 +440,13 @@ export default function ShopPage() {
           setProfilePhone(data.user.mobile || "");
           setProfileAddress(data.user.address || "");
           setTimeout(() => {
-            setActiveStep(3); // Go to Profile Completion step
+            setActiveStep(3);
             setAuthSuccess("");
           }, 1000);
         } else {
           setAuthError(data.error || "Authentication failed.");
         }
       } else {
-        // Signup Mode
         const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -523,7 +513,7 @@ export default function ShopPage() {
       const data = await res.json();
       if (res.ok) {
         setUser(data.user);
-        setActiveStep(4); // Go to Checkout/RFQ
+        setActiveStep(4);
       } else {
         setProfileError(data.error || "Failed to save profile.");
       }
@@ -575,7 +565,6 @@ export default function ShopPage() {
     setCheckoutLoading(true);
 
     try {
-      // 1. Create Razorpay order on backend
       const orderRes = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -596,7 +585,6 @@ export default function ShopPage() {
       const activeStyle = activePaymentStyles.find(s => s.id === planType) || activePaymentStyles[0];
       const itemTier = (activeStyle && activeStyle.depositMultiplier === 0) ? "PREMIUM" : "BASIC";
 
-      // 2. Open Razorpay Checkout Modal
       const options = {
         key: orderData.keyId,
         amount: orderData.amount,
@@ -607,7 +595,6 @@ export default function ShopPage() {
         handler: async function (response) {
           try {
             setCheckoutLoading(true);
-            // 3. Verify payment on backend
             const verifyPayload = {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -654,7 +641,7 @@ export default function ShopPage() {
           email: orderData.user.email,
           contact: profilePhone || orderData.user.mobile,
         },
-        theme: { color: "#0F172A" },
+        theme: { color: "#032026" },
         modal: {
           ondismiss: function () {
             setCheckoutLoading(false);
@@ -706,7 +693,7 @@ export default function ShopPage() {
       if (res.ok) {
         setB2bQuoteId(data.quote._id);
         setB2bQuoteStatus("PENDING");
-        setActiveStep(5); // Quote submitted screen
+        setActiveStep(5);
       } else {
         setCheckoutError(data.error || "Failed to submit quotation request.");
       }
@@ -717,50 +704,6 @@ export default function ShopPage() {
     }
   };
 
-  // Simulate Sales/Admin preparing quotation
-  const handleSimulateAdminOffer = async () => {
-    if (!b2bQuoteId) return;
-    try {
-      const mockPrice = b2bBedsCount * 200 + 400; // custom bulk discount price
-      const res = await fetch("/api/admin/quotes", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quoteId: b2bQuoteId,
-          status: "QUOTE SENT",
-          priceQuote: mockPrice
-        })
-      });
-      if (res.ok) {
-        setB2bQuoteStatus("QUOTE SENT");
-        setB2bQuotePrice(mockPrice);
-        alert("Simulated Sales Agent response: quotation generated and sent to B2B user!");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // B2B user accepting proposal
-  const handleB2BAcceptQuote = async () => {
-    try {
-      const res = await fetch("/api/user/quote", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quoteId: b2bQuoteId,
-          status: "ACCEPTED"
-        })
-      });
-      if (res.ok) {
-        setB2bQuoteStatus("ACCEPTED");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // B2B user paying quote
   const handleB2BPayQuote = async () => {
     try {
       const res = await fetch("/api/user/quote", {
@@ -901,45 +844,14 @@ export default function ShopPage() {
 
   if (loadingSession || loadingPlans) {
     return (
-      <div className="min-h-screen bg-[#FCFBF9] text-charcoal-ink flex flex-col items-center justify-center font-sans antialiased">
-        <style dangerouslySetInnerHTML={{__html: `
-          @keyframes waveLiquid {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-          }
-          .liquid-wave {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            width: 220%;
-            height: 220%;
-            background: linear-gradient(to bottom, rgba(197, 163, 118, 0.2), rgba(197, 163, 118, 0.35));
-            border-radius: 38%;
-            animation: waveLiquid 8s infinite linear;
-          }
-          .liquid-wave-secondary {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            width: 210%;
-            height: 210%;
-            background: linear-gradient(to bottom, rgba(13, 21, 24, 0.04), rgba(13, 21, 24, 0.08));
-            border-radius: 40%;
-            animation: waveLiquid 12s infinite linear;
-          }
-        `}} />
+      <div className="min-h-screen bg-[#032026] text-white flex flex-col items-center justify-center font-sans antialiased relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#05D4B5]/10 rounded-full blur-[140px] pointer-events-none" />
 
-        <div className="text-center space-y-10 max-w-md px-6">
-          {/* Circular Liquid Washer Container */}
-          <div className="relative w-36 h-36 mx-auto bg-white border border-[#C5A376]/20 shadow-md rounded-full overflow-hidden flex items-center justify-center">
-            {/* Morphing Liquid Waves */}
-            <div className="liquid-wave" />
-            <div className="liquid-wave-secondary" />
-            
-            {/* Modern Floating Bed Icon */}
+        <div className="text-center space-y-8 max-w-md px-6 relative z-10">
+          <div className="relative w-32 h-32 mx-auto bg-white/5 border border-[#05D4B5]/30 shadow-2xl rounded-full overflow-hidden flex items-center justify-center backdrop-blur-xl">
             <div className="relative z-10 flex flex-col items-center justify-center space-y-2 animate-pulse">
-              <Bed className="w-12 h-12 text-charcoal-ink" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-charcoal-ink/60">Sanitizing</span>
+              <Bed className="w-10 h-10 text-[#05D4B5]" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#05D4B5]">Sanitizing</span>
             </div>
           </div>
 
@@ -947,18 +859,18 @@ export default function ShopPage() {
             <img
               src="/image.png"
               alt="ClosetRush Logo"
-              className="h-14 w-auto mx-auto object-contain shrink-0"
+              className="h-12 w-auto mx-auto object-contain shrink-0"
             />
-            <h1 className="font-serif font-bold text-2xl uppercase tracking-widest text-charcoal-ink">
+            <h1 className="font-serif font-bold text-2xl uppercase tracking-[0.2em] text-white">
               CLOSET RUSH
             </h1>
-            
+
             <div className="space-y-1.5">
-              <span className="text-[11px] text-[#C5A376] font-black uppercase tracking-widest block animate-pulse">
+              <span className="text-[11px] text-[#05D4B5] font-black uppercase tracking-widest block animate-pulse">
                 Thermodynamic Sanitization Active
               </span>
-              <p className="text-xs text-charcoal-ink/50 font-semibold uppercase tracking-widest leading-relaxed">
-                Swapping & washing fresh organic linens...
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest leading-relaxed">
+                Loading luxury linen collections...
               </p>
             </div>
           </div>
@@ -968,19 +880,76 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FCFBF9] text-charcoal-ink font-sans antialiased flex flex-col justify-between">
+    <div className="min-h-screen bg-[#FCFBF9] text-[#0D1518] font-sans antialiased flex flex-col justify-between" id="shop-page">
       {/* Navigation */}
-      <div>
-        <Navbar user={user} loading={loadingSession} handleLogout={handleLogout} />
-        <div className="h-[80px]" />
-      </div>
+      <Navbar user={user} loading={loadingSession} handleLogout={handleLogout} />
+
+      {/* Hero Header Section */}
+      <header className="relative w-full pt-24 md:pt-36 pb-8 sm:pb-16 bg-[#032026] text-white overflow-hidden">
+        {/* Glows and grid backdrop */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-950/20 via-transparent to-transparent pointer-events-none z-0 opacity-50" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#05D4B5]/5 rounded-full blur-[140px] pointer-events-none" />
+
+        <div className="relative z-10 max-w-[1380px] mx-auto px-5 sm:px-12 text-center space-y-3 sm:space-y-6">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 sm:px-5 sm:py-2 bg-[#05D4B5]/10 border border-[#05D4B5]/20 rounded-full backdrop-blur-md shadow-[0_0_20px_rgba(5,212,181,0.15)]">
+            <span className="text-[#05D4B5] text-xs">✦</span>
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-[#05D4B5] font-mono">
+              {customerType === "B2C" ? "Luxury Bedding Subscription" : "Commercial B2B Linen Supply"}
+            </span>
+          </div>
+
+          <h1 className="text-2xl sm:text-6xl font-serif font-medium text-white tracking-tight leading-tight max-w-4xl mx-auto">
+            {customerType === "B2C" ? (
+              <>Choose your plan & <span className="text-[#05D4B5] italic font-normal">sleep in luxury.</span></>
+            ) : (
+              <>Bulk linen supply for <span className="text-[#05D4B5] italic font-normal">Hotels & Hostels.</span></>
+            )}
+          </h1>
+
+          <p className="text-gray-300 max-w-2xl mx-auto text-xs sm:text-base font-light leading-relaxed">
+            {customerType === "B2C"
+              ? "Select your bed size, choose your preferred swap tenure, and get 100% UV-sanitized organic cotton sheets delivered directly to your doorstep."
+              : "Get custom volume-discounted quotes for your commercial property with zero laundry hassle."}
+          </p>
+
+          {/* Channel Selector Pills inside Header */}
+          <div className="pt-2 sm:pt-4 flex justify-center">
+            <div className="inline-flex p-1 sm:p-1.5 bg-white/10 border border-white/15 rounded-full backdrop-blur-xl shadow-inner">
+              <button
+                type="button"
+                onClick={() => setCustomerType("B2C")}
+                className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 cursor-pointer ${
+                  customerType === "B2C"
+                    ? "bg-[#05D4B5] text-[#032026] shadow-lg shadow-[#05D4B5]/20 scale-105"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                Individual (B2C)
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomerType("B2B")}
+                className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 cursor-pointer ${
+                  customerType === "B2B"
+                    ? "bg-[#05D4B5] text-[#032026] shadow-lg shadow-[#05D4B5]/20 scale-105"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                Hotels/PGs (B2B)
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Main Container */}
-      <main className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
+      <main className="max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12 flex-grow w-full">
+
         {/* Step Indicator Header */}
-        <div className="mb-12 max-w-4xl mx-auto px-4">
+        <div className="mb-6 sm:mb-14 max-w-4xl mx-auto px-2 sm:px-4">
           <div className="flex items-center justify-between text-center relative">
-            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-charcoal-ink/10 -translate-y-1/2 z-0" />
+            <div className="absolute top-4 sm:top-1/2 left-0 right-0 h-[2px] bg-[#032026]/10 -translate-y-1/2 z-0" />
 
             {[
               { num: 1, text: "Configure" },
@@ -991,15 +960,23 @@ export default function ShopPage() {
             ].map((s) => (
               <div key={s.num} className="relative z-10 flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-xs uppercase tracking-wider transition-all duration-300 border-2 ${activeStep >= s.num
-                      ? "bg-charcoal-ink text-white border-charcoal-ink shadow-md"
-                      : "bg-[#FCFBF9] text-charcoal-ink/40 border-charcoal-ink/15"
-                    }`}
+                  className={`w-8 h-8 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-extrabold text-[10px] sm:text-xs uppercase tracking-wider transition-all duration-500 border-2 ${
+                    activeStep === s.num
+                      ? "bg-[#05D4B5] text-[#032026] border-[#05D4B5] shadow-[0_0_15px_rgba(5,212,181,0.4)] scale-105 sm:scale-110"
+                      : activeStep > s.num
+                      ? "bg-[#032026] text-[#05D4B5] border-[#032026] shadow-md"
+                      : "bg-[#FCFBF9] text-[#032026]/30 border-[#032026]/15"
+                  }`}
                 >
-                  {activeStep > s.num ? <Check className="w-5 h-5 text-[#C5A376]" /> : s.num}
+                  {activeStep > s.num ? <Check className="w-4 h-4 sm:w-5 sm:h-5 text-[#05D4B5]" /> : s.num}
                 </div>
-                <span className={`text-[9px] uppercase tracking-widest font-black mt-2.5 hidden md:block ${activeStep >= s.num ? "text-charcoal-ink font-bold" : "text-charcoal-ink/30"
-                  }`}>
+                <span className={`text-[8px] sm:text-[10px] uppercase tracking-wider font-extrabold mt-1 sm:mt-2.5 transition-colors ${
+                  activeStep === s.num
+                    ? "text-[#05D4B5] font-black"
+                    : activeStep > s.num
+                    ? "text-[#032026] font-bold"
+                    : "text-[#032026]/30"
+                }`}>
                   {s.text}
                 </span>
               </div>
@@ -1010,23 +987,24 @@ export default function ShopPage() {
         {/* STEP 1: CONFIGURE BEDDING SYSTEM */}
         {activeStep === 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            {/* Left Column: Product Image Gallery */}
-            <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-              <div className="bg-white border border-charcoal-ink/10 p-6 rounded-none shadow-sm space-y-6">
+            
+            {/* Left Column: Product Image Gallery Card */}
+            <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-28">
+              <div className="bg-white border border-[#032026]/10 p-6 sm:p-8 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.03)] space-y-6 transition-all">
                 <div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-[#C5A376] bg-[#C5A376]/10 px-3.5 py-1.5 border border-[#C5A376]/20">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#05D4B5] bg-[#05D4B5]/10 px-4 py-1.5 rounded-full border border-[#05D4B5]/20 inline-block">
                     {customerType === "B2C" ? "Premium Bedding Rentals" : "Bulk B2B Linen Supply"}
                   </span>
-                  <h2 className="font-serif font-bold text-xl sm:text-2xl text-charcoal-ink leading-tight mt-4">
+                  <h2 className="font-serif font-bold text-2xl sm:text-3xl text-[#032026] leading-tight mt-4">
                     {selectedBedType} Linen Set
                   </h2>
                 </div>
 
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#FCFBF9] border border-charcoal-ink/10">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#FCFBF9] border border-[#032026]/10 rounded-2xl shadow-inner">
                   <img
                     src={mainImage}
                     alt="Bed Sheets"
-                    className="w-full h-full object-cover transition-all duration-300"
+                    className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
                   />
                   {(!currentColorObj || !currentColorObj.images || currentColorObj.images.length === 0) && (
                     <div
@@ -1038,14 +1016,17 @@ export default function ShopPage() {
 
                 {/* Image Gallery Thumbnails Row */}
                 {galleryImages.length > 1 && (
-                  <div className="flex gap-2.5 justify-center">
+                  <div className="flex gap-3 justify-center">
                     {galleryImages.map((img, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => setActiveImgIdx(idx)}
-                        className={`w-14 h-11 border overflow-hidden transition-all cursor-pointer ${activeImgIdx === idx ? "border-[#C5A376] ring-1 ring-[#C5A376] scale-105" : "border-charcoal-ink/10 hover:border-charcoal-ink/20"
-                          }`}
+                        className={`w-14 h-11 rounded-xl border overflow-hidden transition-all cursor-pointer ${
+                          activeImgIdx === idx 
+                            ? "border-[#05D4B5] ring-2 ring-[#05D4B5]/30 scale-105 shadow-md" 
+                            : "border-[#032026]/10 hover:border-[#032026]/30"
+                        }`}
                       >
                         <img src={img} className="w-full h-full object-cover" />
                       </button>
@@ -1053,31 +1034,35 @@ export default function ShopPage() {
                   </div>
                 )}
 
-                <div className="space-y-3 pt-6 border-t border-charcoal-ink/10">
-                  <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Linen Kit Package Contents</span>
-                  <div className="bg-[#FCFBF9] p-3.5 border border-charcoal-ink/10 text-3xs text-charcoal-ink/80 space-y-2 uppercase tracking-wider font-extrabold mb-4 font-sans">
+                <div className="space-y-4 pt-6 border-t border-[#032026]/10">
+                  <span className="text-3xs uppercase tracking-widest text-[#032026]/40 font-black block">Linen Kit Package Contents</span>
+                  <div className="bg-[#FCFBF9] p-4 rounded-2xl border border-[#032026]/10 text-3xs text-[#032026]/80 space-y-2 uppercase tracking-wider font-extrabold font-sans">
                     {selectedBedType.toLowerCase().includes("single") ? (
                       <>
-                        <p className="flex justify-between"><span>Premium Bed Sheets:</span> <span className="text-charcoal-ink font-black">4 Single Sheets</span></p>
-                        <p className="flex justify-between"><span>Sanitized Pillow Covers:</span> <span className="text-charcoal-ink font-black">4 Pillow Covers</span></p>
+                        <p className="flex justify-between"><span>Premium Bed Sheets:</span> <span className="text-[#032026] font-black">4 Single Sheets</span></p>
+                        <p className="flex justify-between"><span>Sanitized Pillow Covers:</span> <span className="text-[#032026] font-black">4 Pillow Covers</span></p>
                       </>
                     ) : (
                       <>
-                        <p className="flex justify-between"><span>Premium Bed Sheets:</span> <span className="text-charcoal-ink font-black">4 Double Sheets</span></p>
-                        <p className="flex justify-between"><span>Sanitized Pillow Covers:</span> <span className="text-charcoal-ink font-black">8 Pillow Covers</span></p>
+                        <p className="flex justify-between"><span>Premium Bed Sheets:</span> <span className="text-[#032026] font-black">4 Double Sheets</span></p>
+                        <p className="flex justify-between"><span>Sanitized Pillow Covers:</span> <span className="text-[#032026] font-black">8 Pillow Covers</span></p>
                       </>
                     )}
-                    <p className="flex justify-between"><span>Thread Count (TC):</span> <span className="text-[#C5A376] font-black">400 TC Organic Cotton</span></p>
+                    <p className="flex justify-between"><span>Thread Count (TC):</span> <span className="text-[#05D4B5] font-black">400 TC Organic Cotton</span></p>
                   </div>
 
-                  <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Sanitary and Delivery Inclusions</span>
-                  <ul className="space-y-3.5 text-3xs font-extrabold uppercase tracking-widest text-charcoal-ink/70">
-                    <li className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-[#C5A376]" />
+                  <span className="text-3xs uppercase tracking-widest text-[#032026]/40 font-black block">Sanitary & Delivery Guarantees</span>
+                  <ul className="space-y-3 text-3xs font-extrabold uppercase tracking-widest text-[#032026]/70">
+                    <li className="flex items-center gap-2.5">
+                      <div className="p-1.5 bg-[#05D4B5]/10 text-[#05D4B5] rounded-lg">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
                       <span>Thermodynamic UV-C Sterilized</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-[#C5A376]" />
+                    <li className="flex items-center gap-2.5">
+                      <div className="p-1.5 bg-[#05D4B5]/10 text-[#05D4B5] rounded-lg">
+                        <Truck className="w-4 h-4" />
+                      </div>
                       <span>Free Doorstep Swap Logistics</span>
                     </li>
                   </ul>
@@ -1086,40 +1071,21 @@ export default function ShopPage() {
             </div>
 
             {/* Right Column: Interactive Configurator Panel */}
-            <div className="lg:col-span-7 bg-white border border-charcoal-ink/10 p-6 sm:p-8 shadow-sm space-y-8">
-              {/* Switcher Customer type: B2C vs B2B */}
-              <div className="space-y-2">
-                <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Choose Plan Channel</span>
-                <div className="grid grid-cols-2 bg-[#FCFBF9] p-1 border border-charcoal-ink/10">
-                  <button
-                    onClick={() => setCustomerType("B2C")}
-                    className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${customerType === "B2C" ? "bg-charcoal-ink text-white" : "text-charcoal-ink/40 hover:text-charcoal-ink"
-                      }`}
-                  >
-                    B2C Individual Customer
-                  </button>
-                  <button
-                    onClick={() => setCustomerType("B2B")}
-                    className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${customerType === "B2B" ? "bg-charcoal-ink text-white" : "text-charcoal-ink/40 hover:text-charcoal-ink"
-                      }`}
-                  >
-                    B2B Hotels / PGs / Hostels
-                  </button>
-                </div>
-              </div>
-
-              {/* Bed Sizes */}
-              <div className="space-y-2">
-                <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Type (Select Bed Dimensions)</span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="lg:col-span-7 bg-white border border-[#032026]/10 p-6 sm:p-8 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.03)] space-y-8">
+              
+              {/* Bed Sizes selection */}
+              <div className="space-y-3">
+                <span className="text-3xs uppercase tracking-widest text-[#032026]/50 font-black block">Type (Select Bed Dimensions)</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {uniqueBedTypes.map((type) => (
                     <button
                       key={type}
                       onClick={() => setSelectedBedType(type)}
-                      className={`py-3 px-2 border text-center transition-all cursor-pointer text-[10px] font-black uppercase tracking-widest ${selectedBedType === type
-                          ? "bg-charcoal-ink text-white border-charcoal-ink"
-                          : "bg-[#FCFBF9] border-charcoal-ink/10 hover:border-charcoal-ink/30"
-                        }`}
+                      className={`py-3.5 px-3 border rounded-2xl text-center transition-all duration-300 cursor-pointer text-[10px] font-black uppercase tracking-widest ${
+                        selectedBedType === type
+                          ? "bg-[#032026] text-[#05D4B5] border-[#032026] shadow-lg shadow-[#032026]/10 scale-[1.02]"
+                          : "bg-[#FCFBF9] border-[#032026]/10 hover:border-[#032026]/30 text-[#032026]"
+                      }`}
                     >
                       {getBedSizeLabel(type)}
                     </button>
@@ -1127,29 +1093,29 @@ export default function ShopPage() {
                 </div>
               </div>
 
-
-
-              {/* B2C specific options: Tenure Slider & planType */}
+              {/* B2C specific options: Tenure & Plan Style */}
               {customerType === "B2C" ? (
                 <>
                   {/* Tenure */}
-                  <div className="space-y-2">
-                    <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Subscription Duration Tenure</span>
-                    <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-3">
+                    <span className="text-3xs uppercase tracking-widest text-[#032026]/50 font-black block">Subscription Duration Tenure</span>
+                    <div className="grid grid-cols-3 gap-2.5">
                       {availableDurationsForBed.map((dur) => {
                         const { displayName, discountText } = getTenureDetails(dur);
+                        const isSelected = selectedDuration === dur;
                         return (
                           <button
                             key={dur}
                             onClick={() => setSelectedDuration(dur)}
-                            className={`py-3 px-2 border text-center transition-all cursor-pointer ${selectedDuration === dur
-                                ? "bg-charcoal-ink text-white border-charcoal-ink"
-                                : "bg-[#FCFBF9] border-charcoal-ink/10 hover:border-charcoal-ink/25"
-                              }`}
+                            className={`py-3.5 px-3 border rounded-2xl text-center transition-all duration-300 cursor-pointer ${
+                              isSelected
+                                ? "bg-[#032026] text-[#05D4B5] border-[#032026] shadow-lg shadow-[#032026]/10 scale-[1.02]"
+                                : "bg-[#FCFBF9] border-[#032026]/10 hover:border-[#032026]/30 text-[#032026]"
+                            }`}
                           >
                             <span className="text-[10px] font-black uppercase block tracking-widest">{displayName}</span>
                             {discountText && (
-                              <span className="text-[8px] font-bold text-[#C5A376] block mt-0.5">{discountText}</span>
+                              <span className="text-[9px] font-bold text-[#05D4B5] block mt-0.5">{discountText}</span>
                             )}
                           </button>
                         );
@@ -1157,9 +1123,9 @@ export default function ShopPage() {
                     </div>
                   </div>
 
-                  {/* Plan Type */}
+                  {/* Plan Type Selection */}
                   <div className="space-y-3">
-                    <span className="text-3xs uppercase tracking-widest text-charcoal-ink/40 font-bold block">Plan Payment Style</span>
+                    <span className="text-3xs uppercase tracking-widest text-[#032026]/50 font-black block">Plan Payment Style</span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {(settings?.paymentStyles && settings.paymentStyles.length > 0
                         ? settings.paymentStyles
@@ -1189,33 +1155,34 @@ export default function ShopPage() {
                             key={style.id}
                             type="button"
                             onClick={() => setPlanType(style.id)}
-                            className={`group p-5 border text-left flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] hover:shadow-xs cursor-pointer relative overflow-hidden rounded-none ${isSelected
-                                ? "bg-charcoal-ink text-white border-charcoal-ink"
-                                : "bg-white border-charcoal-ink/10 hover:border-charcoal-ink/25"
-                              }`}
+                            className={`group p-5 border rounded-2xl text-left flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] cursor-pointer relative overflow-hidden ${
+                              isSelected
+                                ? "bg-gradient-to-br from-[#032026] to-[#0D1518] text-white border-[#05D4B5]/40 shadow-xl shadow-[#05D4B5]/10"
+                                : "bg-white border-[#032026]/10 hover:border-[#05D4B5]/30 text-[#032026]"
+                            }`}
                           >
                             {isZeroDeposit && (
                               <div className="absolute top-0 right-0">
-                                <span className="bg-emerald-600 text-white text-[7px] px-2 py-0.5 font-bold uppercase tracking-widest">
+                                <span className="bg-emerald-500 text-white text-[8px] px-2.5 py-1 font-bold uppercase tracking-widest rounded-bl-xl">
                                   Zero Deposit
                                 </span>
                               </div>
                             )}
                             {style.id === "Advance" && !isZeroDeposit && (
                               <div className="absolute top-0 right-0">
-                                <span className="bg-[#C5A376] text-white text-[7px] px-2 py-0.5 font-bold uppercase tracking-widest">
+                                <span className="bg-[#05D4B5] text-[#032026] text-[8px] px-2.5 py-1 font-extrabold uppercase tracking-widest rounded-bl-xl">
                                   Popular
                                 </span>
                               </div>
                             )}
-                            <div className="space-y-1">
-                              <span className={`text-[10px] font-black uppercase tracking-widest block ${isSelected ? "text-[#C5A376]" : "text-charcoal-ink"}`}>
+                            <div className="space-y-1.5">
+                              <span className={`text-xs font-black uppercase tracking-widest block ${isSelected ? "text-[#05D4B5]" : "text-[#032026]"}`}>
                                 {style.name}
                               </span>
-                              <span className={`text-3xs mt-1 font-semibold leading-relaxed block ${isSelected ? "text-white/60" : "text-charcoal-ink/50"}`}>
+                              <span className={`text-3xs font-medium leading-relaxed block ${isSelected ? "text-gray-300" : "text-[#032026]/60"}`}>
                                 {desc}
                               </span>
-                              <span className={`text-3xs font-extrabold uppercase tracking-widest block mt-2 border-t pt-1.5 ${isSelected ? "text-[#C5A376] border-white/10" : "text-[#C5A376] border-charcoal-ink/10"}`}>
+                              <span className={`text-3xs font-extrabold uppercase tracking-widest block mt-3 border-t pt-2.5 ${isSelected ? "text-[#05D4B5] border-white/10" : "text-[#05D4B5] border-[#032026]/10"}`}>
                                 {style.id === "Monthly" || style.name.toLowerCase().includes("monthly")
                                   ? "➔ All 4 sheets delivered together at once"
                                   : "➔ Get 1 new fresh sheet swap every week"}
@@ -1229,60 +1196,60 @@ export default function ShopPage() {
                 </>
               ) : (
                 /* B2B Intro Notice */
-                <div className="p-5 border border-[#C5A376]/20 bg-[#C5A376]/05 text-charcoal-ink space-y-2">
-                  <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-[#C5A376]">
-                    <Building className="w-4 h-4" /> B2B Bulk Proposal Route
+                <div className="p-6 rounded-2xl border border-[#05D4B5]/30 bg-[#05D4B5]/10 text-[#032026] space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-[#032026]">
+                    <Building className="w-5 h-5 text-[#05D4B5]" /> B2B Bulk Proposal Route
                   </div>
-                  <p className="text-3xs text-charcoal-ink/65 leading-relaxed font-semibold">
+                  <p className="text-xs text-[#032026]/80 leading-relaxed font-medium">
                     For businesses like Hostels, PGs, and Hotels. Instead of standard monthly checkout rates, we process corporate applications via RFQ proposals. Provide property counts in next steps to request a volume-based discount quote.
                   </p>
                 </div>
               )}
 
               {/* Footer configurator: Pricing or RFQ button */}
-              <div className="pt-6 border-t border-charcoal-ink/10">
+              <div className="pt-6 border-t border-[#032026]/10 space-y-6">
                 {customerType === "B2C" ? (
                   plans.length === 0 ? (
-                    <div className="bg-amber-50 border border-amber-100 p-5 rounded-none text-xs mb-6 text-amber-800 font-bold uppercase tracking-wider">
+                    <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl text-xs text-amber-800 font-bold uppercase tracking-wider">
                       Subscription plans are currently unavailable. Please check back later.
                     </div>
                   ) : !b2cPricing.planExists ? (
-                    <div className="bg-amber-50 border border-amber-100 p-5 rounded-none text-xs mb-6 text-amber-800 font-bold uppercase tracking-wider">
+                    <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl text-xs text-amber-800 font-bold uppercase tracking-wider">
                       The selected combination ({getBedSizeLabel(selectedBedType)} - {selectedDuration}) is currently unavailable.
                     </div>
                   ) : (
-                    <div className="bg-[#FCFBF9] p-5 rounded-none space-y-3.5 text-xs mb-6 border border-charcoal-ink/10">
-                      <div className="flex justify-between items-baseline font-bold text-charcoal-ink uppercase tracking-widest text-3xs">
+                    <div className="bg-[#FCFBF9] p-6 rounded-2xl border border-[#032026]/10 space-y-3.5 text-xs shadow-inner">
+                      <div className="flex justify-between items-baseline font-bold text-[#032026] uppercase tracking-widest text-3xs">
                         <span>Upfront Plan Cost ({getTenureDetails(selectedDuration).displayName})</span>
                         <span className="text-xs font-black">₹{b2cPricing.subtotal}</span>
                       </div>
                       {b2cPricing.deposit > 0 && (
-                        <div className="flex justify-between text-3xs text-charcoal-ink/75 font-bold uppercase tracking-widest">
+                        <div className="flex justify-between text-3xs text-[#032026]/75 font-bold uppercase tracking-widest">
                           <span>Security Deposit (Refundable)</span>
                           <span>+ ₹{b2cPricing.deposit}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-3xs text-charcoal-ink/40 font-bold uppercase tracking-widest">
+                      <div className="flex justify-between text-3xs text-[#032026]/40 font-bold uppercase tracking-widest">
                         <span>GST flat tax (18%)</span>
                         <span>+ ₹{b2cPricing.gst}</span>
                       </div>
-                      <div className="border-t border-charcoal-ink/10 pt-3.5 flex justify-between items-baseline font-black uppercase text-2xs tracking-widest text-[#C5A376]">
+                      <div className="border-t border-[#032026]/10 pt-4 flex justify-between items-baseline font-black uppercase text-2xs tracking-widest text-[#05D4B5]">
                         <span>Total Checkout Upfront</span>
-                        <span className="text-lg font-black text-charcoal-ink font-serif">₹{b2cPricing.total}</span>
+                        <span className="text-2xl font-black text-[#032026] font-serif">₹{b2cPricing.total}</span>
                       </div>
                     </div>
                   )
                 ) : (
-                  <div className="bg-[#FCFBF9] p-5 border border-charcoal-ink/10 text-3xs mb-6 flex justify-between items-center font-bold text-charcoal-ink uppercase tracking-widest">
+                  <div className="bg-[#FCFBF9] p-5 rounded-2xl border border-[#032026]/10 text-3xs flex justify-between items-center font-bold text-[#032026] uppercase tracking-widest">
                     <span>B2B pricing range</span>
-                    <span className="text-[#C5A376] text-xs font-black">Custom volume quotes</span>
+                    <span className="text-[#05D4B5] text-xs font-black">Custom volume quotes</span>
                   </div>
                 )}
 
                 {customerType === "B2C" && !user && (
-                  <div className="mb-4 flex items-center justify-center gap-1.5 text-center text-rose-650 bg-rose-50 border border-rose-100 p-3 rounded-none">
-                    <Lock className="w-3.5 h-3.5 text-rose-600 shrink-0 animate-pulse" />
-                    <span className="text-[9px] font-black uppercase tracking-widest leading-none">
+                  <div className="flex items-center justify-center gap-2 text-center text-rose-650 bg-rose-50 border border-rose-150 p-3.5 rounded-2xl">
+                    <Lock className="w-4 h-4 text-rose-600 shrink-0 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">
                       Note: User login is required & mandatory to subscribe
                     </span>
                   </div>
@@ -1292,59 +1259,60 @@ export default function ShopPage() {
                   disabled={customerType === "B2C" && (plans.length === 0 || !b2cPricing.planExists)}
                   onClick={() => {
                     if (user) {
-                      setActiveStep(3); // Already logged in, go to Complete Profile
+                      setActiveStep(3);
                     } else {
-                      setActiveStep(2); // Go to Login/Register step
+                      setActiveStep(2);
                     }
                   }}
-                  className="w-full py-4 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-[#FCFBF9] hover:text-[#FCFBF9] font-bold text-xs uppercase tracking-widest transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-4.5 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white font-extrabold text-xs uppercase tracking-[0.15em] transition-all duration-300 rounded-full shadow-xl shadow-[#05D4B5]/20 hover:scale-[1.02] active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {customerType === "B2C" ? "Rent bedding set" : "Request quotation proposal"}
                 </button>
               </div>
             </div>
+
           </div>
         )}
 
         {/* STEP 2: REGISTRATION / LOGIN */}
         {activeStep === 2 && (
-          <div className="max-w-md mx-auto bg-white border border-charcoal-ink/10 p-8 shadow-sm">
-            <div className="mb-6 bg-rose-50 border border-rose-100 p-3.5 flex items-center gap-2 text-rose-650 rounded-none">
+          <div className="max-w-md mx-auto bg-white border border-[#032026]/10 p-8 sm:p-10 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.04)] space-y-6">
+            <div className="bg-rose-50 border border-rose-150 p-4 flex items-center gap-2.5 text-rose-700 rounded-2xl">
               <Lock className="w-4 h-4 text-rose-600 shrink-0" />
-              <span className="text-[9px] font-black uppercase tracking-widest leading-relaxed">
+              <span className="text-[10px] font-black uppercase tracking-widest leading-relaxed">
                 Security Policy: User login is required & mandatory to subscribe to bedding sets.
               </span>
             </div>
 
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-bold font-serif uppercase tracking-tight text-charcoal-ink">
+            <div className="text-center space-y-1">
+              <h2 className="text-2xl font-bold font-serif uppercase tracking-tight text-[#032026]">
                 {authMode === "login" ? "Customer Login" : "Create Account"}
               </h2>
-              <p className="text-3xs text-charcoal-ink/40 uppercase tracking-widest font-black mt-1">
+              <p className="text-3xs text-[#032026]/40 uppercase tracking-widest font-black">
                 Select your credentials to authenticate and finalize subscription
               </p>
             </div>
 
             {authError && (
-              <div className="mb-4 p-3.5 bg-red-50 text-red-650 border border-red-150 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+              <div className="p-3.5 bg-red-50 text-red-650 border border-red-150 text-[10px] font-bold uppercase tracking-wider rounded-2xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                 {authError}
               </div>
             )}
 
             {authSuccess && (
-              <div className="mb-4 p-3.5 bg-emerald-50 text-emerald-650 border border-emerald-150 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+              <div className="p-3.5 bg-emerald-50 text-emerald-650 border border-emerald-150 text-[10px] font-bold uppercase tracking-wider rounded-2xl flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500 shrink-0" />
                 {authSuccess}
               </div>
             )}
 
             {devOtp && (
-              <div className="mb-4 p-3 bg-amber-50/60 border border-amber-250/20 text-[#C5A376] text-3xs font-black flex items-center justify-between">
-                <span>[Dev Mode] Verification Code: <strong className="text-charcoal-ink text-[11px]">{devOtp}</strong></span>
+              <div className="p-3.5 bg-[#05D4B5]/10 border border-[#05D4B5]/20 text-[#032026] text-3xs font-black rounded-2xl flex items-center justify-between">
+                <span>[Dev Mode] Verification Code: <strong className="text-[#032026] text-[11px]">{devOtp}</strong></span>
                 <button
                   onClick={() => setOtpCode(devOtp)}
-                  className="px-2 py-0.5 bg-[#C5A376] text-white text-[9px] uppercase tracking-wider font-extrabold cursor-pointer"
+                  className="px-3 py-1 bg-[#05D4B5] text-[#032026] text-[9px] uppercase tracking-wider font-extrabold rounded-full cursor-pointer hover:scale-105 transition-transform"
                 >
                   Autofill
                 </button>
@@ -1354,9 +1322,9 @@ export default function ShopPage() {
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {authMode === "signup" && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Full Name</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Full Name</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                       <UserIcon className="w-4 h-4" />
                     </span>
                     <input
@@ -1365,18 +1333,18 @@ export default function ShopPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your full name"
-                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] focus:ring-2 focus:ring-[#05D4B5]/20 font-bold transition-all"
                     />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">
+                <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">
                   {authMethod === "email" ? "Email Address" : "Mobile Phone"}
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                     {authMethod === "email" ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
                   </span>
                   <input
@@ -1385,16 +1353,16 @@ export default function ShopPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={authMethod === "email" ? "email@example.com" : "10-digit phone number"}
-                    className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                    className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] focus:ring-2 focus:ring-[#05D4B5]/20 font-bold transition-all"
                   />
                 </div>
               </div>
 
               {authMode === "signup" && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Phone Number</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Phone Number</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                       <Phone className="w-4 h-4" />
                     </span>
                     <input
@@ -1405,7 +1373,7 @@ export default function ShopPage() {
                       value={mobile}
                       onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
                       placeholder="10-digit mobile number"
-                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] focus:ring-2 focus:ring-[#05D4B5]/20 font-bold transition-all"
                     />
                   </div>
                 </div>
@@ -1413,9 +1381,9 @@ export default function ShopPage() {
 
               {authMethod === "email" && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Password</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Password</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                       <Lock className="w-4 h-4" />
                     </span>
                     <input
@@ -1424,7 +1392,7 @@ export default function ShopPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password"
-                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] focus:ring-2 focus:ring-[#05D4B5]/20 font-bold transition-all"
                     />
                   </div>
                 </div>
@@ -1432,7 +1400,7 @@ export default function ShopPage() {
 
               {authMethod === "otp" && otpSent && (
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Enter 6-Digit OTP</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Enter 6-Digit OTP</label>
                   <input
                     type="text"
                     required
@@ -1440,45 +1408,43 @@ export default function ShopPage() {
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="Enter verification code"
-                    className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold text-center tracking-[0.5em]"
+                    className="w-full px-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold text-center tracking-[0.5em]"
                   />
                 </div>
               )}
 
-              {/* Conditional submit/otp actions */}
               {authMethod === "otp" && !otpSent ? (
                 <button
                   type="button"
                   onClick={handleSendOtp}
                   disabled={authLoading}
-                  className="w-full py-3.5 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white font-extrabold text-xs uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#05D4B5]/20"
                 >
-                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : "Send OTP code"}
+                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[#032026]" /> : "Send OTP code"}
                 </button>
               ) : (
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full py-3.5 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white font-extrabold text-xs uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#05D4B5]/20"
                 >
-                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : (authMode === "login" ? "Login to account" : "Complete Registration")}
+                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[#032026]" /> : (authMode === "login" ? "Login to account" : "Complete Registration")}
                 </button>
               )}
             </form>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-charcoal-ink/10"></div>
+                <div className="w-full border-t border-[#032026]/10"></div>
               </div>
-              <div className="relative flex justify-center text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest">
+              <div className="relative flex justify-center text-[10px] font-bold text-[#032026]/40 uppercase tracking-widest">
                 <span className="bg-white px-3">OR</span>
               </div>
             </div>
 
-            {/* Google authentication button */}
             <a
               href="/api/auth/google"
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs uppercase tracking-widest hover:bg-[#FCFBF9] transition-colors shadow-xs cursor-pointer"
+              className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-[#032026]/15 rounded-full text-[#032026] font-bold text-xs uppercase tracking-widest hover:bg-[#FCFBF9] transition-all shadow-xs cursor-pointer"
             >
               <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.354 0 3.373 2.736 1.5 6.71l3.766 3.055z" />
@@ -1489,7 +1455,6 @@ export default function ShopPage() {
               Sign up with Google (Recommended)
             </a>
 
-            {/* Toggle Login vs Register */}
             <div className="text-center mt-6">
               <button
                 onClick={() => {
@@ -1499,7 +1464,7 @@ export default function ShopPage() {
                   setOtpSent(false);
                   setDevOtp("");
                 }}
-                className="text-2xs font-extrabold text-[#C5A376] uppercase tracking-widest hover:underline cursor-pointer"
+                className="text-2xs font-extrabold text-[#05D4B5] uppercase tracking-widest hover:underline cursor-pointer"
               >
                 {authMode === "login" ? "Need an account? Sign up here" : "Already have an account? Sign in"}
               </button>
@@ -1509,18 +1474,18 @@ export default function ShopPage() {
 
         {/* STEP 3: COMPLETE PROFILE */}
         {activeStep === 3 && (
-          <div className="max-w-xl mx-auto bg-white border border-charcoal-ink/10 p-8 shadow-sm">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-bold font-serif uppercase tracking-tight text-charcoal-ink">
+          <div className="max-w-xl mx-auto bg-white border border-[#032026]/10 p-8 sm:p-10 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.04)] space-y-6">
+            <div className="text-center space-y-1">
+              <h2 className="text-2xl font-bold font-serif uppercase tracking-tight text-[#032026]">
                 Complete Customer Profile
               </h2>
-              <p className="text-3xs text-charcoal-ink/40 uppercase tracking-widest font-black mt-1">
+              <p className="text-3xs text-[#032026]/40 uppercase tracking-widest font-black">
                 Provide accurate delivery coordinates and billing identifiers
               </p>
             </div>
 
             {profileError && (
-              <div className="mb-4 p-3.5 bg-red-50 text-red-650 border border-red-155 text-xs font-semibold">
+              <div className="p-3.5 bg-red-50 text-red-650 border border-red-155 text-xs font-semibold rounded-2xl">
                 {profileError}
               </div>
             )}
@@ -1528,9 +1493,9 @@ export default function ShopPage() {
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Full Name</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Full Name</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                       <UserIcon className="w-4 h-4" />
                     </span>
                     <input
@@ -1539,15 +1504,15 @@ export default function ShopPage() {
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
                       placeholder="John Doe"
-                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Email Address</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Email Address</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                       <Mail className="w-4 h-4" />
                     </span>
                     <input
@@ -1556,7 +1521,7 @@ export default function ShopPage() {
                       value={profileEmail}
                       onChange={(e) => setProfileEmail(e.target.value)}
                       placeholder="email@example.com"
-                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold"
                     />
                   </div>
                 </div>
@@ -1564,9 +1529,9 @@ export default function ShopPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Mobile Phone</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Mobile Phone</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                       <Phone className="w-4 h-4" />
                     </span>
                     <input
@@ -1577,34 +1542,34 @@ export default function ShopPage() {
                       value={profilePhone}
                       onChange={(e) => setProfilePhone(e.target.value.replace(/\D/g, ""))}
                       placeholder="10-digit mobile number"
-                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Service Region City</label>
+                  <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Service Region City</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-charcoal-ink/40">
+                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-[#032026]/40">
                       <MapPin className="w-4 h-4" />
                     </span>
                     <select
                       value={profileCity}
                       onChange={(e) => setProfileCity(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold appearance-none cursor-pointer"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold appearance-none cursor-pointer"
                     >
                       <option value="Delhi">Delhi NCR</option>
                       <option value="Gurugram">Gurugram</option>
                       <option value="Noida">Noida</option>
                       <option value="Faridabad">Faridabad</option>
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-ink/40 pointer-events-none" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#032026]/40 pointer-events-none" />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Zip Pincode</label>
+                <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Zip Pincode</label>
                 <input
                   type="text"
                   required
@@ -1613,48 +1578,48 @@ export default function ShopPage() {
                   value={profilePincode}
                   onChange={(e) => setProfilePincode(e.target.value.replace(/\D/g, ""))}
                   placeholder="e.g. 110001 (Must start with 11, 12, or 13)"
-                  className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                  className="w-full px-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold"
                 />
               </div>
 
               <div>
-                <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Linen Delivery Address Details</label>
+                <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Linen Delivery Address Details</label>
                 <textarea
                   required
                   value={profileAddress}
                   onChange={(e) => setProfileAddress(e.target.value)}
                   placeholder="House/Room No, Building Name, Street Address, Landmark..."
                   rows="3"
-                  className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-semibold resize-none"
+                  className="w-full px-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-semibold resize-none"
                 />
               </div>
 
               {/* B2B Commercial Fields */}
               {customerType === "B2B" && (
-                <div className="pt-4 border-t border-charcoal-ink/10 space-y-4">
-                  <h4 className="text-xs font-serif font-bold text-[#C5A376] uppercase tracking-wider">B2B Commercial Properties Details</h4>
+                <div className="pt-4 border-t border-[#032026]/10 space-y-4">
+                  <h4 className="text-xs font-serif font-bold text-[#05D4B5] uppercase tracking-wider">B2B Commercial Properties Details</h4>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Commercial Property/Hotel Name</label>
+                      <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Commercial Property/Hotel Name</label>
                       <input
                         type="text"
                         required={customerType === "B2B"}
                         value={b2bPropertyName}
                         onChange={(e) => setB2bPropertyName(e.target.value)}
                         placeholder="e.g. ClosetRush Inn"
-                        className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                        className="w-full px-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-3xs font-black text-charcoal-ink/50 uppercase tracking-widest mb-1.5">Business GSTIN (Optional)</label>
+                      <label className="block text-3xs font-black text-[#032026]/50 uppercase tracking-widest mb-1.5">Business GSTIN (Optional)</label>
                       <input
                         type="text"
                         value={b2bGSTNumber}
                         onChange={(e) => setB2bGSTNumber(e.target.value)}
                         placeholder="e.g. 07AAAAA1111A1Z1"
-                        className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink text-xs focus:outline-none focus:border-linen-gold font-bold"
+                        className="w-full px-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-2xl text-[#032026] text-xs focus:outline-none focus:border-[#05D4B5] font-bold"
                       />
                     </div>
                   </div>
@@ -1664,9 +1629,9 @@ export default function ShopPage() {
               <button
                 type="submit"
                 disabled={profileSaving}
-                className="w-full py-3.5 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-4 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white font-extrabold text-xs uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#05D4B5]/20"
               >
-                {profileSaving ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : "Save Profile & Continue"}
+                {profileSaving ? <RefreshCw className="w-4 h-4 animate-spin text-[#032026]" /> : "Save Profile & Continue"}
               </button>
             </form>
           </div>
@@ -1675,19 +1640,20 @@ export default function ShopPage() {
         {/* STEP 4: CHECKOUT / REVIEW RFQ */}
         {activeStep === 4 && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            
             {/* Left Side: Order Config Preview */}
-            <div className="lg:col-span-7 bg-white border border-charcoal-ink/10 p-6 sm:p-8 shadow-sm space-y-8">
+            <div className="lg:col-span-7 bg-white border border-[#032026]/10 p-6 sm:p-8 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.03)] space-y-8">
               <div>
-                <h2 className="text-xl font-bold font-serif uppercase tracking-tight text-charcoal-ink">
+                <h2 className="text-2xl font-bold font-serif uppercase tracking-tight text-[#032026]">
                   {customerType === "B2C" ? "Confirm Subscription Setup" : "Review Request for Quotation"}
                 </h2>
-                <p className="text-3xs text-charcoal-ink/40 uppercase tracking-widest font-black mt-1">
+                <p className="text-3xs text-[#032026]/40 uppercase tracking-widest font-black mt-1">
                   Double check selected parameters before initiating transaction
                 </p>
               </div>
 
               {checkoutError && (
-                <div className="p-3.5 bg-red-50 text-red-650 border border-red-150 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                <div className="p-4 bg-red-50 text-red-650 border border-red-150 text-[10px] font-bold uppercase tracking-wider rounded-2xl flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                   {checkoutError}
                 </div>
@@ -1696,41 +1662,41 @@ export default function ShopPage() {
               {customerType === "B2C" ? (
                 /* B2C Preview */
                 <div className="space-y-6">
-                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-5 rounded-none space-y-4">
-                    <h3 className="text-xs font-serif font-bold text-charcoal-ink uppercase tracking-wider border-b border-charcoal-ink/10 pb-2">Subscription Summary</h3>
+                  <div className="bg-[#FCFBF9] border border-[#032026]/10 p-6 rounded-2xl space-y-4 shadow-inner">
+                    <h3 className="text-xs font-serif font-bold text-[#032026] uppercase tracking-wider border-b border-[#032026]/10 pb-2">Subscription Summary</h3>
                     <div className="grid grid-cols-2 gap-4 text-xs">
                       <div>
-                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block">Linen Package</span>
-                        <strong className="text-charcoal-ink font-bold">{selectedBedType}</strong>
+                        <span className="text-[10px] text-[#032026]/40 font-bold uppercase tracking-wider block">Linen Package</span>
+                        <strong className="text-[#032026] font-bold">{selectedBedType}</strong>
                       </div>
 
                       <div>
-                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block">Duration Tenure</span>
-                        <strong className="text-charcoal-ink font-bold">{selectedDuration}</strong>
+                        <span className="text-[10px] text-[#032026]/40 font-bold uppercase tracking-wider block">Duration Tenure</span>
+                        <strong className="text-[#032026] font-bold">{selectedDuration}</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block">Payment Model</span>
-                        <strong className="text-[#C5A376] font-bold uppercase">{planType}</strong>
+                        <span className="text-[10px] text-[#032026]/40 font-bold uppercase tracking-wider block">Payment Model</span>
+                        <strong className="text-[#05D4B5] font-bold uppercase">{planType}</strong>
                       </div>
                     </div>
                   </div>
 
                   {/* Promo Coupons Form */}
-                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-5 rounded-none space-y-4">
-                    <h3 className="text-xs font-serif font-bold text-charcoal-ink uppercase tracking-wider border-b border-charcoal-ink/10 pb-2">Apply Promo Code</h3>
-                    <div className="flex gap-2">
+                  <div className="bg-[#FCFBF9] border border-[#032026]/10 p-6 rounded-2xl space-y-4">
+                    <h3 className="text-xs font-serif font-bold text-[#032026] uppercase tracking-wider border-b border-[#032026]/10 pb-2">Apply Promo Code</h3>
+                    <div className="flex gap-3">
                       <input
                         type="text"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                         placeholder="ENTER COUPON CODE"
-                        className="flex-grow px-4 py-3 bg-white border border-charcoal-ink/15 text-xs text-charcoal-ink focus:outline-none focus:border-linen-gold font-bold uppercase"
+                        className="flex-grow px-4 py-3 bg-white border border-[#032026]/15 rounded-2xl text-xs text-[#032026] focus:outline-none focus:border-[#05D4B5] font-bold uppercase"
                       />
                       <button
                         type="button"
                         onClick={handleApplyCoupon}
                         disabled={validatingCoupon || !couponCode.trim()}
-                        className="px-6 bg-charcoal-ink hover:bg-[#C5A376] text-white hover:text-white text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer disabled:opacity-50"
+                        className="px-6 bg-[#032026] hover:bg-[#05D4B5] text-white hover:text-[#032026] text-xs font-bold uppercase tracking-widest transition-all rounded-2xl cursor-pointer disabled:opacity-50"
                       >
                         {validatingCoupon ? "Checking..." : "Apply"}
                       </button>
@@ -1742,60 +1708,60 @@ export default function ShopPage() {
               ) : (
                 /* B2B Preview */
                 <div className="space-y-6">
-                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-5 rounded-none space-y-6">
-                    <h3 className="text-xs font-serif font-bold text-charcoal-ink uppercase tracking-wider border-b border-charcoal-ink/10 pb-2">Properties & Swaps Requirements</h3>
+                  <div className="bg-[#FCFBF9] border border-[#032026]/10 p-6 rounded-2xl space-y-6 shadow-inner">
+                    <h3 className="text-xs font-serif font-bold text-[#032026] uppercase tracking-wider border-b border-[#032026]/10 pb-2">Properties & Swaps Requirements</h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider flex items-center gap-1">
-                          <Building className="w-3.5 h-3.5 text-[#C5A376]" /> Rooms
+                        <span className="text-[10px] text-[#032026]/40 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Building className="w-3.5 h-3.5 text-[#05D4B5]" /> Rooms
                         </span>
                         <input
                           type="number"
                           min="1"
                           value={b2bRoomsCount}
                           onChange={(e) => setB2bRoomsCount(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full px-4 py-2.5 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs focus:outline-none focus:border-linen-gold"
+                          className="w-full px-4 py-3 bg-white border border-[#032026]/15 rounded-xl text-[#032026] font-bold text-xs focus:outline-none focus:border-[#05D4B5]"
                         />
                       </div>
                       <div className="space-y-2">
-                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider flex items-center gap-1">
-                          <Bed className="w-3.5 h-3.5 text-[#C5A376]" /> Beds
+                        <span className="text-[10px] text-[#032026]/40 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Bed className="w-3.5 h-3.5 text-[#05D4B5]" /> Beds
                         </span>
                         <input
                           type="number"
                           min="1"
                           value={b2bBedsCount}
                           onChange={(e) => setB2bBedsCount(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full px-4 py-2.5 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs focus:outline-none focus:border-linen-gold"
+                          className="w-full px-4 py-3 bg-white border border-[#032026]/15 rounded-xl text-[#032026] font-bold text-xs focus:outline-none focus:border-[#05D4B5]"
                         />
                       </div>
                       <div className="space-y-2">
-                        <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider flex items-center gap-1">
-                          <Maximize className="w-3.5 h-3.5 text-[#C5A376]" /> Bed Type
+                        <span className="text-[10px] text-[#032026]/40 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Maximize className="w-3.5 h-3.5 text-[#05D4B5]" /> Bed Type
                         </span>
                         <div className="relative">
                           <select
                             value={b2bBedType}
                             onChange={(e) => setB2bBedType(e.target.value)}
-                            className="w-full pl-4 pr-10 py-2.5 bg-white border border-charcoal-ink/15 text-charcoal-ink font-bold text-xs focus:outline-none focus:border-linen-gold appearance-none cursor-pointer"
+                            className="w-full pl-4 pr-10 py-3 bg-white border border-[#032026]/15 rounded-xl text-[#032026] font-bold text-xs focus:outline-none focus:border-[#05D4B5] appearance-none cursor-pointer"
                           >
                             <option value="Single">Single</option>
                             <option value="Double">Double</option>
                             <option value="Queen">Queen</option>
                             <option value="King">King</option>
                           </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-ink/40 pointer-events-none" />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#032026]/40 pointer-events-none" />
                         </div>
                       </div>
                     </div>
 
                     {/* Bed Requirement Checklist */}
                     <div className="pt-2">
-                      <span className="text-[10px] text-charcoal-ink/40 font-bold uppercase tracking-wider block mb-3 flex items-center gap-1.5">
-                        <ListChecks className="w-3.5 h-3.5 text-[#C5A376]" /> Configuration Needs
+                      <span className="text-[10px] text-[#032026]/40 font-bold uppercase tracking-wider block mb-3 flex items-center gap-1.5">
+                        <ListChecks className="w-3.5 h-3.5 text-[#05D4B5]" /> Configuration Needs
                       </span>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2.5">
                         {["White Bedsheet", "Premium Cotton", "Pillow Covers", "Comforter"].map((req) => {
                           const isChecked = b2bBedsheetReqs.includes(req);
                           return (
@@ -1809,12 +1775,13 @@ export default function ShopPage() {
                                   setB2bBedsheetReqs([...b2bBedsheetReqs, req]);
                                 }
                               }}
-                              className={`px-3 py-2 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all duration-300 cursor-pointer border ${isChecked
-                                  ? "bg-charcoal-ink text-white border-charcoal-ink shadow-xs"
-                                  : "bg-[#FCFBF9] text-charcoal-ink/50 border-charcoal-ink/15 hover:border-charcoal-ink/20"
-                                }`}
+                              className={`px-4 py-2.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all duration-300 cursor-pointer rounded-full border ${
+                                isChecked
+                                  ? "bg-[#032026] text-[#05D4B5] border-[#032026] shadow-xs"
+                                  : "bg-[#FCFBF9] text-[#032026]/50 border-[#032026]/15 hover:border-[#032026]/20"
+                              }`}
                             >
-                              {isChecked && <Check className="w-3 h-3 text-[#C5A376]" />} {req}
+                              {isChecked && <Check className="w-3 h-3 text-[#05D4B5]" />} {req}
                             </button>
                           );
                         })}
@@ -1828,22 +1795,22 @@ export default function ShopPage() {
             {/* Right Side: Invoice & Summary */}
             <div className="lg:col-span-5 space-y-6">
               {customerType === "B2C" ? (
-                <div className="bg-charcoal-ink text-white p-6 shadow-md space-y-6">
+                <div className="bg-[#032026] text-white p-8 rounded-[28px] shadow-2xl space-y-6 border border-[#05D4B5]/20">
                   <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-[#C5A376]">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-[#05D4B5]">
                       Payment Invoice
                     </h4>
-                    <span className="text-3xs text-white/40 uppercase tracking-widest font-bold">Billing summary</span>
+                    <span className="text-3xs text-white/50 uppercase tracking-widest font-bold">Billing summary</span>
                   </div>
 
-                  <div className="space-y-3.5 text-3xs font-bold uppercase tracking-wider text-white/70">
+                  <div className="space-y-4 text-3xs font-bold uppercase tracking-wider text-white/70">
                     <div className="flex justify-between">
                       <span>Base Rental Amount:</span>
                       <span className="text-white">₹{b2cPricing.subtotal}</span>
                     </div>
 
                     {b2cPricing.couponDiscount > 0 && (
-                      <div className="flex justify-between text-[#C5A376]">
+                      <div className="flex justify-between text-[#05D4B5]">
                         <span>Coupon Discount ({appliedCoupon?.couponCode}):</span>
                         <span>-₹{b2cPricing.couponDiscount}</span>
                       </div>
@@ -1866,7 +1833,7 @@ export default function ShopPage() {
                         Total Upfront Payable:
                       </span>
                       <div className="text-right">
-                        <span className="text-2xl font-black text-[#C5A376] font-serif">
+                        <span className="text-3xl font-black text-[#05D4B5] font-serif">
                           ₹{b2cPricing.total}
                         </span>
                         <span className="text-white/40 text-3xs font-bold uppercase tracking-widest block mt-0.5">
@@ -1879,46 +1846,46 @@ export default function ShopPage() {
                   <button
                     onClick={handleB2CCheckout}
                     disabled={checkoutLoading}
-                    className="w-full py-4 bg-[#C5A376] hover:bg-[#b89569] text-charcoal-ink hover:text-white font-bold text-xs uppercase tracking-widest shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-4.5 bg-[#05D4B5] hover:bg-white text-[#032026] font-extrabold text-xs uppercase tracking-widest rounded-full shadow-xl shadow-[#05D4B5]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {checkoutLoading ? (
-                      <RefreshCw className="w-4 h-4 animate-spin text-charcoal-ink" />
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#032026]" />
                     ) : (
-                      <Lock className="w-4 h-4 text-charcoal-ink" />
+                      <Lock className="w-4 h-4 text-[#032026]" />
                     )}
                     {checkoutLoading ? "Processing transaction..." : "Confirm & Pay Now"}
                   </button>
                 </div>
               ) : (
                 /* B2B Pricing Invoice Mock */
-                <div className="bg-charcoal-ink text-white p-6 shadow-md space-y-6 relative overflow-hidden">
+                <div className="bg-[#032026] text-white p-8 rounded-[28px] shadow-2xl space-y-6 border border-[#05D4B5]/20">
                   <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-[#C5A376] flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-[#C5A376]" /> RFQ Estimate
+                    <h4 className="text-xs font-black uppercase tracking-widest text-[#05D4B5] flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#05D4B5]" /> RFQ Estimate
                     </h4>
-                    <span className="text-[8px] px-2 py-0.5 bg-white/5 border border-white/10 text-white/50 uppercase tracking-widest font-bold">Rate Card</span>
+                    <span className="text-[8px] px-2.5 py-1 bg-white/5 border border-white/10 text-white/50 uppercase tracking-widest font-bold rounded-full">Rate Card</span>
                   </div>
 
                   <div className="space-y-4 text-3xs font-bold uppercase tracking-wider text-white/70">
-                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-none border border-white/5">
+                    <div className="flex justify-between items-center bg-white/5 p-3.5 rounded-2xl border border-white/5">
                       <span>Rate per bed/mo:</span>
                       <span className="text-white font-black font-serif">₹250</span>
                     </div>
-                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-none border border-white/5">
+                    <div className="flex justify-between items-center bg-white/5 p-3.5 rounded-2xl border border-white/5">
                       <span>Properties Count:</span>
                       <span className="text-white font-black font-serif">1</span>
                     </div>
-                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-none border border-white/5">
+                    <div className="flex justify-between items-center bg-white/5 p-3.5 rounded-2xl border border-white/5">
                       <span>Beds/Units Selected:</span>
                       <span className="text-white font-black font-serif">{b2bBedsCount}</span>
                     </div>
 
-                    <div className="my-4 pt-6 flex flex-col items-center justify-center bg-white/5 border border-white/10 p-6">
-                      <span className="text-[9px] font-black text-[#C5A376] uppercase tracking-widest mb-2">
+                    <div className="my-4 pt-6 flex flex-col items-center justify-center bg-white/5 border border-white/10 p-6 rounded-2xl">
+                      <span className="text-[9px] font-black text-[#05D4B5] uppercase tracking-widest mb-2">
                         Estimated Monthly Price
                       </span>
                       <div className="flex items-end gap-1">
-                        <span className="text-3xl font-black text-white font-serif">
+                        <span className="text-4xl font-black text-white font-serif">
                           ₹{b2bBedsCount * 250}
                         </span>
                         <span className="text-white/40 text-[9px] font-bold uppercase tracking-widest pb-1">
@@ -1931,12 +1898,12 @@ export default function ShopPage() {
                   <button
                     onClick={handleB2BQuoteSubmit}
                     disabled={checkoutLoading}
-                    className="w-full py-4 bg-[#C5A376] hover:bg-[#b89569] text-charcoal-ink hover:text-white font-black text-xs uppercase tracking-widest shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-4.5 bg-[#05D4B5] hover:bg-white text-[#032026] font-black text-xs uppercase tracking-widest rounded-full shadow-xl shadow-[#05D4B5]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {checkoutLoading ? (
-                      <RefreshCw className="w-5 h-5 animate-spin text-charcoal-ink" />
+                      <RefreshCw className="w-5 h-5 animate-spin text-[#032026]" />
                     ) : (
-                      <ClipboardList className="w-5 h-5 text-charcoal-ink" />
+                      <ClipboardList className="w-5 h-5 text-[#032026]" />
                     )}
                     {checkoutLoading ? "Submitting RFQ..." : "Submit RFQ Application"}
                   </button>
@@ -1951,35 +1918,35 @@ export default function ShopPage() {
           <div className="max-w-2xl mx-auto py-10">
             {customerType === "B2C" ? (
               /* B2C ORDER CONFIRMATION */
-              <div className="bg-white border border-charcoal-ink/10 p-8 text-center shadow-sm space-y-6">
-                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-250 rounded-full flex items-center justify-center mx-auto shadow-sm">
-                  <Check className="w-8 h-8" />
+              <div className="bg-white border border-[#032026]/10 p-10 text-center rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.04)] space-y-6">
+                <div className="w-20 h-20 bg-[#05D4B5]/10 text-[#05D4B5] border border-[#05D4B5]/30 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-[#05D4B5]/10">
+                  <Check className="w-10 h-10" />
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-emerald-600 text-3xs font-black uppercase tracking-widest">Transaction Successful</span>
-                  <h2 className="text-2xl font-bold font-serif text-charcoal-ink">Order Confirmed!</h2>
-                  <p className="text-3xs text-charcoal-ink/40 font-bold uppercase tracking-wider">Order ID: <strong className="text-charcoal-ink">{orderId}</strong></p>
+                  <span className="text-[#05D4B5] text-3xs font-black uppercase tracking-widest">Transaction Successful</span>
+                  <h2 className="text-3xl font-bold font-serif text-[#032026]">Order Confirmed!</h2>
+                  <p className="text-xs text-[#032026]/50 font-bold uppercase tracking-wider">Order ID: <strong className="text-[#032026]">{orderId}</strong></p>
                 </div>
 
-                <div className="p-4 bg-[#FCFBF9] border border-charcoal-ink/10 text-3xs leading-relaxed font-semibold text-left text-charcoal-ink/80 space-y-2 uppercase tracking-wider">
-                  <p className="font-extrabold uppercase text-charcoal-ink text-[10px] tracking-widest border-b border-charcoal-ink/10 pb-1.5 flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> Dispatch Notifications</p>
+                <div className="p-6 bg-[#FCFBF9] border border-[#032026]/10 rounded-2xl text-3xs leading-relaxed font-semibold text-left text-[#032026]/80 space-y-2.5 uppercase tracking-wider">
+                  <p className="font-extrabold uppercase text-[#032026] text-xs tracking-widest border-b border-[#032026]/10 pb-2 flex items-center gap-2"><Mail className="w-4 h-4 text-[#05D4B5]" /> Dispatch Notifications</p>
                   <p>✔ <strong>Email confirmation sent to:</strong> {profileEmail}</p>
                   <p>✔ <strong>SMS dispatch scheduled for:</strong> {profilePhone}</p>
                   <p>✔ <strong>Invoice PDF prepared for download</strong></p>
                 </div>
 
-                <div className="pt-6 border-t border-charcoal-ink/10 flex flex-col sm:flex-row gap-4">
+                <div className="pt-6 border-t border-[#032026]/10 flex flex-col sm:flex-row gap-4">
                   <a
                     href={`/api/user/quote/pdf?orderId=${orderId}`}
                     download
-                    className="flex-1 py-3 px-6 bg-[#C5A376] hover:bg-charcoal-ink text-charcoal-ink hover:text-white font-bold text-xs uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 py-4 px-6 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 text-center flex items-center justify-center gap-2 shadow-lg shadow-[#05D4B5]/20 cursor-pointer"
                   >
                     <Download className="w-4 h-4" /> Download PDF Invoice
                   </a>
                   <Link
                     href="/dashboard"
-                    className="flex-1 py-3 px-6 bg-charcoal-ink hover:bg-[#C5A376] text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest transition-all text-center"
+                    className="flex-1 py-4 px-6 bg-[#032026] hover:bg-[#05D4B5] text-white hover:text-[#032026] rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 text-center"
                   >
                     Go to User Dashboard
                   </Link>
@@ -1987,21 +1954,21 @@ export default function ShopPage() {
               </div>
             ) : (
               /* B2B RFQ STATUS TRACKER & SIMULATOR */
-              <div className="bg-white border border-charcoal-ink/10 p-8 shadow-sm space-y-6">
+              <div className="bg-white border border-[#032026]/10 p-10 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.04)] space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="w-16 h-16 bg-blue-50 text-blue-600 border border-blue-250 rounded-full flex items-center justify-center mx-auto shadow-sm">
-                    <ClipboardList className="w-8 h-8" />
+                  <div className="w-20 h-20 bg-blue-50 text-blue-600 border border-blue-200 rounded-full flex items-center justify-center mx-auto shadow-md">
+                    <ClipboardList className="w-10 h-10" />
                   </div>
                   <span className="text-blue-600 text-3xs font-black uppercase tracking-widest">RFQ Submitted</span>
-                  <h2 className="text-2xl font-bold font-serif text-charcoal-ink">Quotation Request Filed</h2>
-                  <p className="text-xs text-charcoal-ink/50 leading-relaxed font-medium max-w-md mx-auto">
+                  <h2 className="text-3xl font-bold font-serif text-[#032026]">Quotation Request Filed</h2>
+                  <p className="text-xs text-[#032026]/60 leading-relaxed font-medium max-w-md mx-auto">
                     Your Request for Quotation is stored in the database. Sales and Admin staff will audit details and compile a volume-based discount proposal shortly.
                   </p>
                 </div>
 
                 {/* RFQ Status Tracker Visualizer */}
-                <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-6 space-y-6">
-                  <h4 className="text-3xs uppercase tracking-widest font-black text-charcoal-ink/40 block border-b border-charcoal-ink/10 pb-2">Active RFQ Tracker (Live status: {b2bQuoteStatus})</h4>
+                <div className="bg-[#FCFBF9] border border-[#032026]/10 p-6 rounded-2xl space-y-6">
+                  <h4 className="text-3xs uppercase tracking-widest font-black text-[#032026]/40 block border-b border-[#032026]/10 pb-2">Active RFQ Tracker (Live status: {b2bQuoteStatus})</h4>
 
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
                     {[
@@ -2018,14 +1985,14 @@ export default function ShopPage() {
                       return (
                         <div key={step.st} className="flex flex-col items-center">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] border transition-all ${isDone
-                              ? "bg-charcoal-ink text-white border-charcoal-ink"
-                              : "bg-white text-charcoal-ink/30 border-charcoal-ink/10"
+                            className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs border transition-all ${isDone
+                              ? "bg-[#05D4B5] text-[#032026] border-[#05D4B5] shadow-md shadow-[#05D4B5]/20"
+                              : "bg-white text-[#032026]/30 border-[#032026]/10"
                               }`}
                           >
                             {isDone ? "✔" : idx + 1}
                           </div>
-                          <span className={`text-[9px] uppercase tracking-widest font-extrabold mt-1.5 ${isActive ? "text-[#C5A376]" : (isDone ? "text-charcoal-ink" : "text-charcoal-ink/30")
+                          <span className={`text-[9px] uppercase tracking-widest font-extrabold mt-1.5 ${isActive ? "text-[#05D4B5]" : (isDone ? "text-[#032026]" : "text-[#032026]/30")
                             }`}>
                             {step.label}
                           </span>
@@ -2036,18 +2003,18 @@ export default function ShopPage() {
 
                   {/* Pricing feedback if quote sent */}
                   {b2bQuotePrice > 0 && (
-                    <div className="p-4 bg-charcoal-ink text-white rounded-none border border-slate-800 text-center space-y-2">
+                    <div className="p-6 bg-[#032026] text-white rounded-2xl border border-[#05D4B5]/30 text-center space-y-2">
                       <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest">Prepared B2B Pricing Proposal</p>
-                      <h3 className="text-2xl font-serif font-black text-[#C5A376]">₹{b2bQuotePrice.toLocaleString()}</h3>
+                      <h3 className="text-3xl font-serif font-black text-[#05D4B5]">₹{b2bQuotePrice.toLocaleString()}</h3>
                       <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Includes complete sateen sheets setup for {b2bBedsCount} units</p>
                     </div>
                   )}
 
                   {/* Real Workflow Actions */}
-                  <div className="p-4 bg-[#C5A376]/05 border border-[#C5A376]/20 space-y-3">
+                  <div className="p-4 bg-[#05D4B5]/10 border border-[#05D4B5]/20 rounded-2xl space-y-3">
                     {b2bQuoteStatus === "PENDING" && (
-                      <div className="text-center p-3 border border-dashed border-charcoal-ink/20 rounded bg-white/50">
-                        <p className="text-[10px] font-bold text-charcoal-ink/50 uppercase tracking-widest">
+                      <div className="text-center p-4 border border-dashed border-[#032026]/20 rounded-xl bg-white/50">
+                        <p className="text-[10px] font-bold text-[#032026]/60 uppercase tracking-widest">
                           ⏳ Waiting for Admin to prepare your quotation...
                         </p>
                       </div>
@@ -2056,7 +2023,7 @@ export default function ShopPage() {
                     {b2bQuoteStatus === "QUOTE SENT" && (
                       <button
                         onClick={() => setShowESignModal(true)}
-                        className="w-full py-3 bg-charcoal-ink text-[#C5A376] hover:bg-black font-extrabold text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-[#05D4B5] text-[#032026] hover:bg-[#032026] hover:text-white rounded-full font-extrabold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
                       >
                         <FileText className="w-4 h-4" /> View & E-Sign Quotation Contract
                       </button>
@@ -2065,14 +2032,14 @@ export default function ShopPage() {
                     {b2bQuoteStatus === "ACCEPTED" && (
                       <button
                         onClick={handleB2BPayQuote}
-                        className="w-full py-3 bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 animate-pulse"
+                        className="w-full py-4 bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-widest hover:bg-emerald-600 rounded-full transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 animate-pulse"
                       >
                         <Lock className="w-4 h-4" /> Proceed to Secure Payment
                       </button>
                     )}
 
                     {b2bQuoteStatus === "CONFIRMED" && (
-                      <div className="text-center p-4 bg-emerald-50 text-emerald-700 text-xs font-bold flex flex-col items-center justify-center gap-2 border border-emerald-250">
+                      <div className="text-center p-4 bg-emerald-50 text-emerald-700 text-xs font-bold flex flex-col items-center justify-center gap-2 border border-emerald-200 rounded-xl">
                         <Check className="w-6 h-6 bg-emerald-600 text-white p-1 rounded-full" />
                         <span className="uppercase tracking-widest text-[10px]">B2B Order Confirmed and Dispatched!</span>
                       </div>
@@ -2085,14 +2052,14 @@ export default function ShopPage() {
                     <a
                       href={`/api/user/quote/pdf?quoteId=${b2bQuoteId}`}
                       download
-                      className="flex-1 py-3 px-6 bg-[#C5A376] hover:bg-charcoal-ink text-charcoal-ink hover:text-white font-bold text-xs uppercase tracking-widest transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="flex-1 py-4 px-6 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white rounded-full font-bold text-xs uppercase tracking-widest transition-all text-center flex items-center justify-center gap-2 cursor-pointer shadow-md"
                     >
                       <Download className="w-4 h-4" /> Download signed PDF Contract
                     </a>
                   )}
                   <Link
                     href="/dashboard"
-                    className="flex-1 py-3 px-6 bg-charcoal-ink hover:bg-[#C5A376] text-white hover:text-charcoal-ink font-bold text-xs uppercase tracking-widest text-center"
+                    className="flex-1 py-4 px-6 bg-[#032026] hover:bg-[#05D4B5] text-white hover:text-[#032026] rounded-full font-bold text-xs uppercase tracking-widest text-center transition-all"
                   >
                     Go to B2B Dashboard Hub
                   </Link>
@@ -2106,10 +2073,10 @@ export default function ShopPage() {
       {/* E-SIGN MODAL */}
       {showESignModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-[#FCFBF9] border border-charcoal-ink/10 shadow-2xl w-full max-w-lg overflow-hidden text-charcoal-ink">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-ink/15 bg-charcoal-ink text-white">
+          <div className="bg-[#FCFBF9] border border-[#032026]/10 shadow-2xl w-full max-w-lg rounded-[28px] overflow-hidden text-[#032026]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#032026]/15 bg-[#032026] text-white">
               <div className="flex items-center gap-2.5">
-                <FileText className="h-5 w-5 text-[#C5A376]" />
+                <FileText className="h-5 w-5 text-[#05D4B5]" />
                 <div>
                   <h3 className="text-xs font-extrabold uppercase tracking-widest">E-Sign quotation proposal</h3>
                   <p className="text-[10px] text-white/50 font-semibold">Review terms and sign below</p>
@@ -2117,28 +2084,28 @@ export default function ShopPage() {
               </div>
               <button
                 onClick={() => setShowESignModal(false)}
-                className="p-1.5 hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-white/10 transition-colors cursor-pointer rounded-full"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div className="p-6 space-y-6">
-              <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-4 text-3xs font-semibold leading-relaxed space-y-2 uppercase tracking-wider">
-                <p className="font-extrabold uppercase text-[10px] text-[#C5A376] tracking-widest border-b border-charcoal-ink/10 pb-1.5">Corporate Contract Summary</p>
+              <div className="bg-[#FCFBF9] border border-[#032026]/10 p-5 rounded-2xl text-3xs font-semibold leading-relaxed space-y-2 uppercase tracking-wider">
+                <p className="font-extrabold uppercase text-[10px] text-[#05D4B5] tracking-widest border-b border-[#032026]/10 pb-1.5">Corporate Contract Summary</p>
                 <p><strong>Property Name:</strong> {b2bPropertyName}</p>
                 <p><strong>Items:</strong> {b2bBedType} Bed Setup for {b2bBedsCount} Beds</p>
                 <p><strong>Proposed Monthly Rate:</strong> Rs.{b2bQuotePrice.toLocaleString()}</p>
-                <p className="text-[9px] text-charcoal-ink/50 italic leading-relaxed normal-case">By signing this contract, you authorize ClosetRush to deploy sanitized bedding swaps under commercial rental terms.</p>
+                <p className="text-[9px] text-[#032026]/50 italic leading-relaxed normal-case">By signing this contract, you authorize ClosetRush to deploy sanitized bedding swaps under commercial rental terms.</p>
               </div>
 
               <div className="space-y-4">
                 {/* Switch Sign Type */}
-                <div className="flex border-b border-charcoal-ink/10">
+                <div className="flex border-b border-[#032026]/10">
                   <button
                     type="button"
                     onClick={() => setSignatureType("draw")}
-                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-widest text-center border-b-2 cursor-pointer transition-all ${signatureType === "draw" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
+                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-widest text-center border-b-2 cursor-pointer transition-all ${signatureType === "draw" ? "border-[#032026] text-[#032026]" : "border-transparent text-[#032026]/40"
                       }`}
                   >
                     Draw Signature
@@ -2146,7 +2113,7 @@ export default function ShopPage() {
                   <button
                     type="button"
                     onClick={() => setSignatureType("type")}
-                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-widest text-center border-b-2 cursor-pointer transition-all ${signatureType === "type" ? "border-charcoal-ink text-charcoal-ink" : "border-transparent text-charcoal-ink/40"
+                    className={`flex-1 pb-2 text-[10px] font-black uppercase tracking-widest text-center border-b-2 cursor-pointer transition-all ${signatureType === "type" ? "border-[#032026] text-[#032026]" : "border-transparent text-[#032026]/40"
                       }`}
                   >
                     Type Signature
@@ -2155,12 +2122,12 @@ export default function ShopPage() {
 
                 {signatureType === "draw" ? (
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest">Draw Signature in Canvas</label>
+                    <label className="block text-[10px] font-bold text-[#032026]/40 uppercase tracking-widest">Draw Signature in Canvas</label>
                     <canvas
                       id="sig-canvas"
                       width="450"
                       height="120"
-                      className="border border-dashed border-charcoal-ink/15 w-full h-[120px] bg-white cursor-crosshair touch-none"
+                      className="border border-dashed border-[#032026]/15 rounded-xl w-full h-[120px] bg-white cursor-crosshair touch-none"
                     />
                     <button
                       type="button"
@@ -2172,25 +2139,25 @@ export default function ShopPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest">Type Your Full Name</label>
+                    <label className="block text-[10px] font-bold text-[#032026]/40 uppercase tracking-widest">Type Your Full Name</label>
                     <input
                       type="text"
                       value={signatureName}
                       onChange={(e) => setSignatureName(e.target.value)}
                       placeholder="e.g. Johnathan Doe"
-                      className="w-full px-4 py-3 bg-[#FCFBF9] border border-charcoal-ink/15 text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold font-serif italic"
+                      className="w-full px-4 py-3.5 bg-[#FCFBF9] border border-[#032026]/15 rounded-xl text-[#032026] focus:outline-none focus:border-[#05D4B5] text-xs font-bold font-serif italic"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-charcoal-ink/40 uppercase tracking-widest mb-1.5">Authorized Signatory Name</label>
+                  <label className="block text-[10px] font-bold text-[#032026]/40 uppercase tracking-widest mb-1.5">Authorized Signatory Name</label>
                   <input
                     type="text"
                     value={signatureName}
                     onChange={(e) => setSignatureName(e.target.value)}
                     placeholder="Enter full legal name"
-                    className="w-full px-4 py-3 bg-white border border-charcoal-ink/15 text-charcoal-ink focus:outline-none focus:border-linen-gold text-xs font-bold"
+                    className="w-full px-4 py-3.5 bg-white border border-[#032026]/15 rounded-xl text-[#032026] focus:outline-none focus:border-[#05D4B5] text-xs font-bold"
                   />
                 </div>
               </div>
@@ -2200,14 +2167,14 @@ export default function ShopPage() {
               <button
                 type="button"
                 onClick={() => setShowESignModal(false)}
-                className="flex-1 py-3 px-4 bg-transparent border border-charcoal-ink/20 text-charcoal-ink text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer"
+                className="flex-1 py-3.5 px-4 bg-transparent border border-[#032026]/20 rounded-full text-[#032026] text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleB2BEsignSubmit}
-                className="flex-1 py-3 px-4 bg-charcoal-ink hover:bg-[#C5A376] hover:text-white text-white text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer"
+                className="flex-1 py-3.5 px-4 bg-[#05D4B5] hover:bg-[#032026] text-[#032026] hover:text-white rounded-full text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer shadow-md"
               >
                 Approve & Sign
               </button>
@@ -2217,13 +2184,13 @@ export default function ShopPage() {
       )}
 
       {/* Footer layout */}
-      <footer className="bg-charcoal-ink text-white/40 text-[9px] font-bold uppercase tracking-widest py-8 border-t border-white/05 text-center">
-        <div className="max-w-[1380px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="bg-[#032026] text-white/40 text-[10px] font-bold uppercase tracking-widest py-10 border-t border-white/05 text-center">
+        <div className="max-w-[1380px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="flex items-center gap-3">
-            <img src="/image.png" alt="ClosetRush Logo" className="h-10 w-auto object-contain bg-white p-1 rounded-sm shrink-0" />
-            © 2026 ClosetRush Inc. secure checkout routing.
+            <img src="/image.png" alt="ClosetRush Logo" className="h-10 w-auto object-contain bg-white p-1 rounded-md shrink-0" />
+            <span className="text-white font-serif text-base font-bold">ClosetRush</span> • © {new Date().getFullYear()} ClosetRush Inc.
           </span>
-          <span className="flex items-center gap-1.5 text-[#C5A376]"><ShieldCheck className="w-4 h-4" /> Thermodynamic sanitization standard compliant</span>
+          <span className="flex items-center gap-2 text-[#05D4B5] font-mono"><ShieldCheck className="w-4 h-4" /> Thermodynamic sanitization standard compliant</span>
         </div>
       </footer>
     </div>

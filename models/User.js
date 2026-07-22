@@ -84,6 +84,10 @@ const UserSchema = new mongoose.Schema(
       orderType: { type: String, enum: ["RENT", "BUY"], default: "RENT" },
       itemTier: { type: String, enum: ["BASIC", "PREMIUM"], default: "BASIC" },
     },
+    hasPaidDeposit: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

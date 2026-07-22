@@ -10,44 +10,6 @@ export default function Navbar({ forceSolid = false }) {
   const scrolled = scrolledState || forceSolid;
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("");
-
-  useEffect(() => {
-    const sectionIds = ["home", "how-it-works"];
-    const options = {
-      root: null,
-      rootMargin: "-25% 0px -55% 0px",
-      threshold: 0,
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    }, options);
-
-    sectionIds.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) {
-        observer.observe(element);
-      }
-    });
-
-    const handleScroll = () => {
-      if (window.scrollY < 80) {
-        setActiveSection("home");
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
   useEffect(() => {
     const fetchSession = async () => {
       try {
@@ -94,97 +56,55 @@ export default function Navbar({ forceSolid = false }) {
   }, []);
 
   const navItems = [
-    { name: "Shop", href: "/shop", isRoute: true },
-    { name: "How It Works", href: "#how-it-works" },
-    { name: "About", href: "/about", isRoute: true },
+    { name: "Home", href: "/" },
+    { name: "About", href: "/about" },
+    { name: "Plans & Subscribe", href: "/shop" },
+    { name: "Location", href: "/location" },
+    { name: "For PG/Hostel", href: "/shop?type=B2B" },
   ];
-
-  const handleScrollTo = (e, href, isRoute) => {
-    setIsOpen(false);
-    if (isRoute) {
-      return;
-    }
-    e.preventDefault();
-    const element = document.querySelector(href);
-    if (element) {
-      const offset = 80; // height of fixed navbar
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
-    } else {
-      window.location.href = "/" + href;
-    }
-  };
 
   return (
     <nav
-      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out top-4 w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] md:w-[calc(100%-6rem)] max-w-[1200px] bg-white/95 backdrop-blur-xl border border-charcoal-ink/10 shadow-[0_12px_40px_rgba(13,17,23,0.08)] rounded-full ${
-        scrolled ? "py-3 sm:py-3.5" : "py-4 sm:py-4.5"
+      className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out top-2.5 sm:top-4 w-[calc(100%-1.25rem)] sm:w-[calc(100%-4rem)] md:w-[calc(100%-6rem)] max-w-[1200px] bg-white/95 backdrop-blur-xl border border-charcoal-ink/10 shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-full ${
+        scrolled ? "py-2 sm:py-3.5" : "py-2.5 sm:py-4.5"
       }`}
     >
-      <div className="w-full px-6 sm:px-8">
-        <div className="flex items-center justify-between h-12">
+      <div className="w-full px-4 sm:px-8">
+        <div className="flex items-center justify-between h-9 sm:h-12">
           {/* Logo / Brand */}
           <div className="flex-shrink-0 flex items-center whitespace-nowrap">
-            <a
-              href="#home"
-              onClick={(e) => handleScrollTo(e, "#home")}
-              className={`flex items-center gap-2.5 font-serif text-xl sm:text-2xl font-black tracking-[0.15em] transition-all duration-500 hover:opacity-80 ${
+            <Link
+              href="/"
+              className={`flex items-center gap-2 sm:gap-2.5 font-serif text-lg sm:text-2xl font-black tracking-[0.15em] transition-all duration-500 hover:opacity-80 ${
                 scrolled ? "text-charcoal-ink" : "text-charcoal-ink"
               }`}
             >
-              <img
-                src="/image.png"
-                alt="ClosetRush Logo"
-                className="h-10 w-auto object-contain shrink-0"
-              />
-              <span className="text-charcoal-ink font-serif text-lg sm:text-xl font-bold tracking-[0.05em] capitalize">ClosetRush</span>
-            </a>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-[#032026]/10 shadow-sm bg-white">
+                <img
+                  src="/image.png"
+                  alt="ClosetRush Logo"
+                  className="h-full w-full object-cover scale-110"
+                />
+              </div>
+              <span className="text-charcoal-ink font-serif text-base sm:text-xl font-bold tracking-[0.05em] capitalize">ClosetRush</span>
+            </Link>
           </div>
 
           {/* Desktop Navigation Links */}
           <div className={`hidden md:flex items-center transition-all duration-500 ${
             scrolled ? "space-x-6 lg:space-x-8" : "space-x-8 lg:space-x-10"
           }`}>
-            {navItems.map((item) => {
-              const isActive = item.href === "#" + activeSection;
-              if (item.isRoute) {
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`font-extrabold tracking-widest uppercase transition-colors duration-300 hover:text-linen-gold whitespace-nowrap text-[10px] sm:text-[11px] ${
-                      scrolled ? "text-charcoal-ink/80" : "text-charcoal-ink/70"
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                );
-              }
-              return (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  onClick={(e) => handleScrollTo(e, item.href, false)}
-                  className={`relative font-extrabold tracking-widest uppercase transition-all duration-300 pb-1 whitespace-nowrap text-[10px] sm:text-[11px] ${
-                    isActive 
-                      ? "text-linen-gold" 
-                      : "text-charcoal-ink/70 hover:text-linen-gold"
-                  }`}
-                >
-                  {item.name}
-                  {isActive && (
-                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-linen-gold rounded-full animate-in fade-in zoom-in duration-300" />
-                  )}
-                </a>
-              );
-            })}
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`font-extrabold tracking-widest uppercase transition-colors duration-300 hover:text-linen-gold whitespace-nowrap text-[10px] sm:text-[11px] ${
+                  scrolled ? "text-charcoal-ink/80" : "text-charcoal-ink/70"
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
           </div>
 
           {/* Desktop CTA Button */}
@@ -249,9 +169,9 @@ export default function Navbar({ forceSolid = false }) {
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center px-6 py-3 border border-charcoal-ink text-[10px] font-extrabold uppercase tracking-widest rounded-full text-white bg-charcoal-ink hover:bg-black hover:border-black transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+                  className="inline-flex items-center justify-center px-6 py-3 text-[10px] font-extrabold uppercase tracking-widest rounded-full text-[#032026] bg-[#05D4B5] hover:bg-white hover:text-[#032026] hover:border-[#05D4B5] border border-[#05D4B5] transition-all duration-300 shadow-md shadow-[#05D4B5]/20 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                 >
-                  Subscribe
+                  Subscribe Now
                 </Link>
               </>
             )}
@@ -281,35 +201,16 @@ export default function Navbar({ forceSolid = false }) {
         id="mobile-menu"
       >
         <div className="px-4 pt-4 pb-6 space-y-3 bg-alabaster-linen">
-          {navItems.map((item) => {
-            const isActive = item.href === "#" + activeSection;
-            if (item.isRoute) {
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className="block px-3 py-2 text-xs font-bold uppercase tracking-wider text-charcoal-ink/80 hover:text-linen-gold transition-all"
-                >
-                  {item.name}
-                </Link>
-              );
-            }
-            return (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleScrollTo(e, item.href, false)}
-                className={`block px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all border-l-2 ${
-                  isActive 
-                    ? "text-linen-gold border-linen-gold bg-linen-gold/05 pl-4" 
-                    : "text-charcoal-ink/80 border-transparent hover:text-linen-gold hover:border-linen-gold/30"
-                }`}
-              >
-                {item.name}
-              </a>
-            );
-          })}
+          {navItems.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              onClick={() => setIsOpen(false)}
+              className="block px-3 py-2 text-xs font-bold uppercase tracking-wider text-charcoal-ink/80 hover:text-linen-gold transition-all"
+            >
+              {item.name}
+            </Link>
+          ))}
           <div className="pt-4 border-t border-charcoal-ink/08 px-3 space-y-2">
             {!loading && user ? (
               <div className="flex flex-col space-y-2">
@@ -369,9 +270,9 @@ export default function Navbar({ forceSolid = false }) {
                 <Link
                   href="/signup"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full text-center px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-alabaster-linen bg-charcoal-ink hover:bg-linen-gold transition-all"
+                  className="block text-center px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#032026] bg-[#05D4B5] hover:bg-white hover:text-[#032026] transition-all"
                 >
-                  Subscribe
+                  Subscribe Now
                 </Link>
               </>
             )}

@@ -1350,44 +1350,16 @@ export default function AdminDashboard() {
     );
   }
 
-  // Not authenticated as admin check
+  // Not authenticated as admin check - redirect cleanly to login page
   if (!sessionUser) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/login?redirect=/admin";
+    }
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-alabaster-linen px-4 text-center text-charcoal-ink">
-        <div className="max-w-md bg-white border border-black/10 rounded-none p-8 shadow-sm">
-          <ShieldAlert className="mx-auto h-16 w-16 text-rose-500 mb-4 animate-pulse" />
-          <h1 className="text-2xl font-serif font-bold mb-2 tracking-tight text-charcoal-ink">Access Denied</h1>
-          <p className="text-charcoal-ink/60 text-xs mb-6 leading-relaxed font-semibold">
-            You are not authorized to view the administration panel. Please login using an administrator account.
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={triggerSeeder}
-              disabled={seedingLoading}
-              className="w-full py-3 px-6 rounded-none bg-linen-gold hover:bg-charcoal-ink hover:text-white text-white font-bold text-xs uppercase tracking-widest transition-all cursor-pointer"
-            >
-              {seedingLoading ? "Seeding Database..." : "Seed Admin DB Account"}
-            </button>
-            <div className="flex gap-4">
-              <Link
-                href="/login"
-                className="flex-1 text-center py-3 px-6 rounded-none bg-charcoal-ink hover:bg-charcoal-ink/90 text-white font-bold text-xs uppercase tracking-widest transition-all"
-              >
-                Go to Login
-              </Link>
-              <Link
-                href="/"
-                className="flex-1 text-center py-3 px-6 rounded-none bg-transparent hover:bg-charcoal-ink/05 text-charcoal-ink font-bold text-xs uppercase tracking-widest transition-all border border-black/20"
-              >
-                Back to Home
-              </Link>
-            </div>
-          </div>
-          <div className="mt-6 text-2xs text-left text-charcoal-ink/70 bg-alabaster-linen p-4 rounded-none border border-black/10 leading-relaxed font-semibold">
-            <p className="font-extrabold uppercase mb-1 text-charcoal-ink">Seeded Credentials:</p>
-            <p><strong>Email:</strong> admin@closetrush.com</p>
-            <p><strong>Password:</strong> adminpassword</p>
-          </div>
+      <div className="flex h-screen items-center justify-center bg-[#032026] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCcw className="h-10 w-10 animate-spin text-[#05D4B5]" />
+          <p className="text-xs font-bold tracking-widest uppercase text-gray-300">Redirecting to Admin Login...</p>
         </div>
       </div>
     );
@@ -4065,9 +4037,9 @@ export default function AdminDashboard() {
                                           <button
                                             type="button"
                                             onClick={() => handleUpdateSkus(matchingBundle.bundleId, editingSkus)}
-                                            className="px-2.5 py-1 bg-teal-650 hover:bg-teal-700 text-white text-3xs font-extrabold uppercase rounded-lg transition-colors cursor-pointer"
+                                            className="px-4 py-1.5 bg-[#032026] hover:bg-[#05D4B5] hover:text-[#032026] text-white text-xs font-bold uppercase rounded-lg transition-all shadow-md cursor-pointer"
                                           >
-                                            Save SKUs
+                                            SAVE SKUS
                                           </button>
                                         </>
                                       ) : (

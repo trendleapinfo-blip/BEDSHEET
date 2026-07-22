@@ -5,7 +5,7 @@
   --foreground: #0D1518; /* Obsidian Ink */
   --primary-navy: #0D1518;
   --accent-teal: #1A4F54; /* Thermodynamic Teal */
-  --accent-gold: #C5A376; /* True Linen Gold */
+  --accent-gold: #05D4B5; /* Vibrant Turquoise */
 }
 
 @theme inline {
@@ -17,8 +17,8 @@
   
   --color-alabaster-linen: #FAF9F6;
   --color-chalk-white: #FFFFFF;
-  --color-charcoal-ink: #0B1315;
-  --color-linen-gold: #C5A376;
+  --color-charcoal-ink: #032026;
+  --color-linen-gold: #05D4B5;
   --color-sage-mist: #DCEBEB;
   
   --color-teal-50: #F0F6F6;

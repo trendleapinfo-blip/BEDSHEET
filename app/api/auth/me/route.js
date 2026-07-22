@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
+import Order from "@/models/Order";
 
 export async function GET() {
   try {
@@ -27,6 +28,21 @@ export async function GET() {
       return NextResponse.json({ authenticated: false, error: "User not found" }, { status: 404 });
     }
 
+    // Check if user has already paid a deposit previously
+    let hasPaidDeposit = !!user.hasPaidDeposit;
+    if (!hasPaidDeposit) {
+      const pastDepositOrder = await Order.findOne({
+        $or: [{ userId: user._id.toString() }, { email: user.email }],
+        depositCharged: { $gt: 0 },
+        status: { $ne: "CANCELLED" }
+      });
+      if (pastDepositOrder) {
+        hasPaidDeposit = true;
+        user.hasPaidDeposit = true;
+        await user.save();
+      }
+    }
+
     return NextResponse.json({
       authenticated: true,
       user: {
@@ -38,6 +54,8 @@ export async function GET() {
         accountType: user.accountType,
         role: user.role || "user",
         status: user.status || "ACTIVE",
+        hasPaidDeposit: hasPaidDeposit,
+        selectedPlan: user.selectedPlan || null,
       },
     });
   } catch (error) {

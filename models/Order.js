@@ -50,8 +50,31 @@ const OrderSchema = new mongoose.Schema(
     depositCharged: {
       type: Number,
     },
+    gst: {
+      type: Number,
+      default: 0,
+    },
+    depositStatus: {
+      type: String,
+      default: "PENDING",
+    },
+    subscriptionStatus: {
+      type: String,
+      default: "PENDING",
+    },
     totalAmount: {
       type: Number,
+    },
+    wmsBundleId: {
+      type: String,
+      trim: true,
+    },
+    dispatchedAt: {
+      type: Date,
+    },
+    dispatchStatus: {
+      type: String,
+      default: "DISPATCHED",
     },
     couponCode: {
       type: String,

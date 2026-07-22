@@ -24,6 +24,21 @@ export async function POST(request) {
       user = await User.findOne({ mobile });
     }
 
+    // Auto-seed admin user if admin@closetrush.com is used and user doesn't exist yet
+    if (!user && email && email.toLowerCase() === "admin@closetrush.com" && password === "adminpassword") {
+      const hashedPassword = await bcrypt.hash("adminpassword", 10);
+      user = await User.create({
+        name: "ClosetRush Admin",
+        email: "admin@closetrush.com",
+        mobile: "9999999999",
+        password: hashedPassword,
+        address: "ClosetRush HQ, Delhi NCR",
+        accountType: "Individual User",
+        role: "admin",
+        status: "ACTIVE"
+      });
+    }
+
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials. User not found." },

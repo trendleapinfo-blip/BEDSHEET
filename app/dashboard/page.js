@@ -662,7 +662,7 @@ export default function Dashboard() {
 
                 {/* Active Refund Notification */}
                 {refunds.length > 0 && (
-                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-6 rounded-none shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in border-l-4 border-l-[#C5A376]">
+                  <div className="bg-[#FCFBF9] border border-charcoal-ink/10 p-6 rounded-none shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in border-l-4 border-l-[#05D4B5]">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-0.5 rounded-none text-[9px] font-black uppercase tracking-widest ${
@@ -1112,7 +1112,7 @@ export default function Dashboard() {
                         <button
                           onClick={handleResumeSubscription}
                           disabled={pauseSubmitting}
-                          className="px-5 py-3 rounded-none bg-[#C5A376] hover:bg-charcoal-ink hover:text-white text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          className="px-5 py-3 rounded-none bg-[#05D4B5] hover:bg-charcoal-ink hover:text-white text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
                           <RefreshCw className="w-4 h-4 animate-spin-once" />
                           {pauseSubmitting ? "Resuming..." : "Resume Subscription"}

@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { CheckIcon, StarIcon, SparklesIcon } from "./Icons";
 
 export default function HeroThreeDVisual() {
   const containerRef = useRef(null);
   const cardRef = useRef(null);
-  const leftBadgeRef = useRef(null);
-  const rightBadgeRef = useRef(null);
+  const badgeRef = useRef(null);
   const glowRef = useRef(null);
   const shineRef = useRef(null);
 
@@ -15,12 +13,12 @@ export default function HeroThreeDVisual() {
     const container = containerRef.current;
     if (!container) return;
 
+    const isMobile = window.innerWidth < 640;
+    const baseShift = isMobile ? 0 : -40;
+
     // Set initial 3D transforms for proper depth rendering
-    if (leftBadgeRef.current) {
-      leftBadgeRef.current.style.transform = "translate3d(0px, 0px, 45px) rotateZ(-3deg)";
-    }
-    if (rightBadgeRef.current) {
-      rightBadgeRef.current.style.transform = "translate3d(0px, 0px, 55px) rotateZ(3deg)";
+    if (badgeRef.current) {
+      badgeRef.current.style.transform = `translate3d(${baseShift}px, 0px, 60px) rotateZ(-5deg)`;
     }
     if (glowRef.current) {
       glowRef.current.style.transform = "translate3d(0px, 0px, -20px) scale(1)";
@@ -37,37 +35,32 @@ export default function HeroThreeDVisual() {
       const normX = (x / width) - 0.5;
       const normY = (y / height) - 0.5;
 
-      // Card tilting angles (slightly softer tilt for luxury feel)
-      const rotateX = -normY * 14;
-      const rotateY = normX * 14;
+      const isMob = window.innerWidth < 640;
+      const bShift = isMob ? 0 : -40;
 
-      // Apply rotation & scale to the main card
+      // Card tilting angles
+      const rotateX = -normY * 12;
+      const rotateY = normX * 12;
+
+      // Apply rotation to the main card
       if (cardRef.current) {
-        cardRef.current.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.025, 1.025, 1.025)`;
+        cardRef.current.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
         cardRef.current.style.transition = "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)";
       }
 
-      // Parallax: left badge floats outward and up
-      if (leftBadgeRef.current) {
-        const badgeX = normX * 25 - 6; // base translation shift
-        const badgeY = normY * 25 - 3;
-        leftBadgeRef.current.style.transform = `translate3d(${badgeX}px, ${badgeY}px, 65px) rotateZ(-4deg) scale(1.03)`;
-        leftBadgeRef.current.style.transition = "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)";
-      }
-
-      // Parallax: right badge floats outward and down
-      if (rightBadgeRef.current) {
-        const badgeX = normX * -20 + 6;
-        const badgeY = normY * -20 + 3;
-        rightBadgeRef.current.style.transform = `translate3d(${badgeX}px, ${badgeY}px, 85px) rotateZ(4deg) scale(1.03)`;
-        rightBadgeRef.current.style.transition = "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)";
+      // Parallax: badge floats slightly
+      if (badgeRef.current) {
+        const badgeX = normX * 15 + bShift;
+        const badgeY = normY * 15;
+        badgeRef.current.style.transform = `translate3d(${badgeX}px, ${badgeY}px, 80px) rotateZ(-5deg)`;
+        badgeRef.current.style.transition = "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)";
       }
 
       // Dynamic ambient glow movement behind card
       if (glowRef.current) {
-        const glowX = normX * 30;
-        const glowY = normY * 30;
-        glowRef.current.style.transform = `translate3d(${glowX}px, ${glowY}px, -40px) scale(1.12)`;
+        const glowX = normX * 25;
+        const glowY = normY * 25;
+        glowRef.current.style.transform = `translate3d(${glowX}px, ${glowY}px, -30px) scale(1.08)`;
         glowRef.current.style.opacity = "1";
         glowRef.current.style.transition = "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease";
       }
@@ -76,25 +69,24 @@ export default function HeroThreeDVisual() {
       if (shineRef.current) {
         const shineX = (x / width) * 100;
         const shineY = (y / height) * 100;
-        shineRef.current.style.background = `radial-gradient(circle at ${shineX}% ${shineY}%, rgba(26, 79, 84, 0.15) 0%, rgba(255, 255, 255, 0.25) 30%, rgba(255, 255, 255, 0) 75%)`;
+        shineRef.current.style.background = `radial-gradient(circle at ${shineX}% ${shineY}%, rgba(5, 212, 181, 0.12) 0%, rgba(255, 255, 255, 0.2) 30%, rgba(255, 255, 255, 0) 70%)`;
         shineRef.current.style.opacity = "1";
         shineRef.current.style.transition = "opacity 0.1s ease";
       }
     };
 
     const handleMouseLeave = () => {
-      // Smoothly reset all elements to standard state
+      const isMob = window.innerWidth < 640;
+      const bShift = isMob ? 0 : -40;
+
+      // Smoothly reset all elements
       if (cardRef.current) {
         cardRef.current.style.transform = "rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
         cardRef.current.style.transition = "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)";
       }
-      if (leftBadgeRef.current) {
-        leftBadgeRef.current.style.transform = "translate3d(0px, 0px, 45px) rotateZ(-3deg) scale(1)";
-        leftBadgeRef.current.style.transition = "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)";
-      }
-      if (rightBadgeRef.current) {
-        rightBadgeRef.current.style.transform = "translate3d(0px, 0px, 55px) rotateZ(3deg) scale(1)";
-        rightBadgeRef.current.style.transition = "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)";
+      if (badgeRef.current) {
+        badgeRef.current.style.transform = `translate3d(${bShift}px, 0px, 60px) rotateZ(-5deg)`;
+        badgeRef.current.style.transition = "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)";
       }
       if (glowRef.current) {
         glowRef.current.style.transform = "translate3d(0px, 0px, -20px) scale(1)";
@@ -119,67 +111,25 @@ export default function HeroThreeDVisual() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full max-w-[420px] px-6 select-none cursor-default font-sans"
+      className="relative w-full max-w-[320px] sm:max-w-[500px] aspect-[4/3] select-none cursor-default font-sans mx-auto"
       style={{
         perspective: "1200px",
         transformStyle: "preserve-3d",
       }}
     >
-      {/* Decorative background glow (Teal + Gold accent) */}
+      {/* Decorative background glow (Teal accent) */}
       <div
         ref={glowRef}
-        className="absolute inset-0 bg-gradient-to-tr from-[#1A4F54]/25 via-transparent to-[#C5A376]/15 rounded-[32px] blur-3xl -z-10 opacity-75 pointer-events-none"
+        className="absolute inset-0 bg-gradient-to-tr from-[#05D4B5]/20 via-transparent to-transparent rounded-[32px] blur-3xl -z-10 opacity-75 pointer-events-none"
         style={{
           transformStyle: "preserve-3d",
         }}
       />
 
-      {/* Floating Badge Left (Premium Fabric) */}
-      <div
-        ref={leftBadgeRef}
-        className="absolute left-2 sm:-left-8 top-1/4 bg-white border border-[#0D1518]/08 rounded-2xl p-3 sm:p-4 shadow-xl flex items-center gap-3 z-20 scale-95 sm:scale-100 origin-left pointer-events-none select-none"
-        style={{
-          transformStyle: "preserve-3d",
-        }}
-      >
-        <div className="p-2.5 rounded-xl bg-[#1A4F54]/06 text-[#1A4F54]">
-          <CheckIcon className="w-4 h-4" />
-        </div>
-        <div>
-          <p className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest leading-none mb-1">
-            Premium Fabric
-          </p>
-          <p className="text-xs font-black text-[#0B1315] leading-none font-sans">
-            400 TC Cotton
-          </p>
-        </div>
-      </div>
-
-      {/* Floating Badge Right (Annual Savings) */}
-      <div
-        ref={rightBadgeRef}
-        className="absolute right-2 sm:-right-8 bottom-1/4 bg-[#0B1315] text-[#FAF9F6] border border-white/10 rounded-2xl p-3 sm:p-4 shadow-xl flex items-center gap-3 z-20 scale-95 sm:scale-100 origin-right pointer-events-none select-none"
-        style={{
-          transformStyle: "preserve-3d",
-        }}
-      >
-        <div className="p-2.5 rounded-xl bg-[#C5A376]/20 text-[#C5A376]">
-          <StarIcon className="w-4 h-4 fill-[#C5A376] text-[#C5A376]" />
-        </div>
-        <div>
-          <p className="text-[9px] text-[#FAF9F6]/50 font-extrabold uppercase tracking-widest leading-none mb-1">
-            Annual Value
-          </p>
-          <p className="text-xs font-black text-[#C5A376] leading-none font-sans">
-            Save ₹1200/yr
-          </p>
-        </div>
-      </div>
-
-      {/* Main Card */}
+      {/* Main Card holding Bedding Image */}
       <div
         ref={cardRef}
-        className="bg-white border border-[#0D1518]/08 rounded-[32px] p-6 shadow-2xl relative overflow-hidden"
+        className="w-full h-full bg-[#032026]/40 border border-white/10 rounded-2xl sm:rounded-[32px] p-1.5 sm:p-3 shadow-2xl relative overflow-hidden flex items-center justify-center"
         style={{
           transformStyle: "preserve-3d",
         }}
@@ -193,86 +143,54 @@ export default function HeroThreeDVisual() {
           }}
         />
 
-        {/* Ambient Thermodynamic Waves inside card */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-30">
-          <div className="absolute -right-20 -bottom-20 w-60 h-60 rounded-full bg-[#1A4F54]/10 blur-xl animate-breeze" />
-          <div className="absolute -left-10 top-20 w-40 h-40 rounded-full bg-[#C5A376]/5 blur-lg" />
+        {/* Ambient Waves inside card */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-20">
+          <div className="absolute -right-20 -bottom-20 w-60 h-60 rounded-full bg-[#05D4B5]/10 blur-xl" />
         </div>
 
-        {/* Hologram Clean Tag */}
+        {/* Bedding Graphic Stack */}
         <div 
-          className="bg-[#0B1315] text-[#FAF9F6] flex items-center justify-between p-3.5 rounded-2xl border border-white/05 mb-6 relative z-10"
-          style={{ transform: "translateZ(18px)" }}
-        >
-          <div className="flex items-center gap-2">
-            <SparklesIcon className="w-5 h-5 text-[#C5A376]" />
-            <span className="text-[10px] sm:text-xs font-black tracking-widest uppercase text-[#DCEBEB]">
-              ClosetRush Premium
-            </span>
-          </div>
-          <span className="text-[9px] sm:text-2xs font-extrabold px-2 py-0.5 rounded-full bg-[#C5A376] text-[#0B1315] whitespace-nowrap">
-            ACTIVE SEAL
-          </span>
-        </div>
-
-        {/* Bedding Graphic */}
-        <div 
-          className="relative rounded-[20px] mb-6 overflow-hidden aspect-[4/3] border border-[#0D1518]/06 flex items-center justify-center bg-[#FAF9F6] shadow-inner z-10"
+          className="w-full h-full relative rounded-xl sm:rounded-[24px] overflow-hidden border border-white/5 flex items-center justify-center bg-[#FCFBF9] shadow-inner z-10"
           style={{ transform: "translateZ(12px)" }}
         >
           <img
             src="/hero_bedding.png"
-            alt="Sterile Bedding Bundle"
+            alt="Sterile Bedding Bundle Stack"
             className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
             onError={(e) => {
-              // Fail-safe elegant illustration if image is missing
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
+              // Fallback to Unsplash image of clean folded bedsheets if hero_bedding.png fails
+              e.target.src = "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1000&q=80";
             }}
           />
-          
-          {/* Elegant SVG visual fallback if image doesn't exist */}
-          <div className="absolute inset-0 hidden flex-col items-center justify-center bg-gradient-to-tr from-[#1A4F54]/10 to-[#C5A376]/5 p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#1A4F54]/10 flex items-center justify-center mb-2">
-              <SparklesIcon className="w-8 h-8 text-[#1A4F54] animate-pulse-glow" />
-            </div>
-            <p className="font-serif text-sm font-bold text-[#0B1315]">Premium Sterile Linen</p>
-            <p className="text-[9px] uppercase tracking-wider text-gray-400 mt-1">Ready for Swapping</p>
-          </div>
-
-          {/* Fresh Fragrance Label */}
-          <div className="bg-[#C5A376] text-[#0B1315] rounded-full px-3 py-1 text-2xs font-bold absolute top-4 left-4 shadow-md backdrop-blur-sm bg-opacity-95">
-            Sanitized at 60°C+
-          </div>
         </div>
+      </div>
 
-        {/* Pack Description */}
-        <div className="space-y-3.5 relative z-10" style={{ transform: "translateZ(24px)" }}>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-black text-[#0B1315]">
-              Sterile Bedding Bundle
-            </span>
-            <span className="text-xs font-bold text-[#0B1315]/40 font-mono">Pack #204</span>
-          </div>
-          
-          <div className="h-[1px] bg-[#0D1518]/06 my-2" />
+      {/* Floating Price Badge (Layered above the image card, inside viewport on mobile) */}
+      <div
+        ref={badgeRef}
+        className="absolute -left-2 sm:-left-10 top-2 sm:top-1/2 sm:-translate-y-1/2 bg-white border-[2.5px] sm:border-[3px] border-[#05D4B5] rounded-full w-20 h-20 sm:w-32 sm:h-32 shadow-2xl flex flex-col items-center justify-center z-30 pointer-events-none select-none"
+        style={{
+          transform: "translate3d(0px, 0px, 60px) rotateZ(-5deg)",
+          transformStyle: "preserve-3d",
+        }}
+      >
+        <span className="text-[6.5px] sm:text-[8px] font-black uppercase text-[#032026]/60 tracking-wider mb-0.5 leading-none">
+          AS LOW AS
+        </span>
+        <span className="text-lg sm:text-3.5xl font-black text-[#05D4B5] font-serif leading-none py-0.5 sm:py-1">
+          ₹10
+        </span>
+        <span className="text-[6.5px] sm:text-[8px] font-black text-[#032026]/60 uppercase tracking-widest leading-none">
+          /DAY
+        </span>
 
-          <div className="flex items-center gap-2">
-            <span className="p-0.5 rounded-full bg-[#1A4F54]/10 text-[#1A4F54]">
-              <CheckIcon className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-xs text-[#0D1518]/70 font-semibold">
-              Sealed sterile packaging
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="p-0.5 rounded-full bg-[#1A4F54]/10 text-[#1A4F54]">
-              <CheckIcon className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-xs text-[#0D1518]/70 font-semibold">
-              Zero chemical allergens
-            </span>
-          </div>
+        {/* Decorative sunburst rays at top right */}
+        <div className="absolute -top-2 -right-2 sm:-top-3.5 sm:-right-3.5 text-[#05D4B5] pointer-events-none">
+          <svg className="w-4 h-4 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+            <line x1="12" y1="6" x2="12" y2="2" />
+            <line x1="16.5" y1="7.5" x2="19.5" y2="4.5" />
+            <line x1="18" y1="12" x2="22" y2="12" />
+          </svg>
         </div>
       </div>
     </div>

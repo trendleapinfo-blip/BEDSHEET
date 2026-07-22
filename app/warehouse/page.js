@@ -856,7 +856,7 @@ export default function WarehouseDashboard() {
                         type="button"
                         onClick={() => setScannerAction("scan_dispatch")}
                         className={`py-3.5 text-[10px] font-extrabold uppercase rounded-lg transition-colors cursor-pointer ${
-                          scannerAction === "scan_dispatch" ? "bg-teal-650 text-white" : "text-slate-400 hover:text-slate-200"
+                          scannerAction === "scan_dispatch" ? "bg-[#032026] text-white" : "text-slate-400 hover:text-slate-200"
                         }`}
                       >
                         Scan Out (Dispatch)
