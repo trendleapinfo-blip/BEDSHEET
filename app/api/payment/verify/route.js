@@ -70,7 +70,8 @@ export async function POST(request) {
       couponCode,
       discount,
       orderType,
-      itemTier
+      itemTier,
+      paymentStyleId
     } = orderDetails;
 
     await dbConnect();
@@ -105,6 +106,26 @@ export async function POST(request) {
       }
     }
 
+    // Fetch Brand Settings to check dynamic security deposits and payment style multipliers
+    const settings = await BrandSettings.findOne();
+    const singleDeposit = settings?.singleBedDeposit ?? 500;
+    const doubleDeposit = settings?.doubleBedDeposit ?? 800;
+    
+    const isSingleBed = (bedType || "").toLowerCase().includes("single");
+    const baseDeposit = isSingleBed ? singleDeposit : doubleDeposit;
+
+    let depositMultiplier = 1;
+    if (paymentStyleId) {
+      const matchedStyle = settings?.paymentStyles?.find(s => s.id === paymentStyleId);
+      if (matchedStyle) {
+        depositMultiplier = matchedStyle.depositMultiplier !== undefined ? matchedStyle.depositMultiplier : 1;
+      }
+    } else {
+      if (itemTier === "PREMIUM") {
+        depositMultiplier = 0;
+      }
+    }
+
     // Check if user has already paid a deposit previously
     const alreadyPaidDeposit = !!user.hasPaidDeposit || !!(await Order.exists({
       $or: [{ userId: user._id.toString() }, { email: user.email }],
@@ -112,7 +133,7 @@ export async function POST(request) {
       status: { $ne: "CANCELLED" }
     }));
 
-    const computedDeposit = (orderType === "BUY" || subscriptionType === "weekly" || alreadyPaidDeposit) ? 0 : baseDeposit;
+    const computedDeposit = (orderType === "BUY" || subscriptionType === "weekly" || alreadyPaidDeposit) ? 0 : Math.round(baseDeposit * depositMultiplier);
     const discountedBase = Number(price) - calculatedDiscount;
     const computedGst = Math.round(discountedBase * 0.18);
     const computedTotalPrice = discountedBase + computedGst + computedDeposit;
