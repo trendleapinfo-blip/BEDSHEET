@@ -251,6 +251,22 @@ export default function Home() {
       a: "Yes, absolutely. Every sheets pack goes through our 6-stage clinical sanitization process: washed at exactly 60°C to dissolve cosmetics and body oils, sterilized with high-frequency UV-C rays to neutralize 99.9% of bacteria, and sealed in sterile packaging before delivery."
     },
     {
+      q: "Can dirty bedsheets cause acne or pimples?",
+      a: "Dermatologists agree that sleeping on dirty pillowcases and bedsheets can worsen skin conditions. Sweat, dead skin cells, and bacteria on bedsheets may contribute to blocked pores, which can trigger facial and body acne. Washing your sheets every week is a highly recommended acne hygiene tip."
+    },
+    {
+      q: "Can dirty bedsheets trigger asthma or allergies?",
+      a: "Yes, dirty bedding is a prime breeding ground for dust mites. Dust mites in your mattress and pillow can cause allergic reactions like morning sneezing, itchy skin, and can trigger asthma flare-ups during the night. A clean sleeping environment reduces these bedroom allergens."
+    },
+    {
+      q: "How often should you wash your bedsheets?",
+      a: "For optimal sleep hygiene and to prevent bacteria and dust mite buildup, experts recommend a weekly bedsheet change. If you have sensitive skin, eczema, or sweat often, changing your bedding frequently is crucial for skin health and reducing infections."
+    },
+    {
+      q: "Are there side effects to sleeping on dirty bedding?",
+      a: "Sleeping on unwashed sheets can lead to various skin problems. Long-term exposure to microbes in bedding may contribute to contact dermatitis, fungal skin infections, and poor sleep quality due to allergens. Clean bedding is essential for a healthy bedroom."
+    },
+    {
       q: "Can I cancel or pause anytime?",
       a: "Yes. There are zero long-term commitments or lock-in contracts. You can pause, adjust your exchange cycles, upgrade/downgrade tiers, or cancel your subscription directly from your account dashboard with a single click."
     },
@@ -261,16 +277,21 @@ export default function Home() {
     {
       q: "What bedding sizes are supported?",
       a: "We support standard Single beds (6x3 ft) and Double beds (6x5 ft) for single and double plans. You can select your specific size and details on our plan configurator."
-    },
-    {
-      q: "How often do you replace the linen?",
-      a: "Depending on your selection (Basic or Premium tier), we swap your used sheets for freshly sanitized replacements either monthly or weekly. You can also customize your preferred doorstep pickup/delivery swap dates."
-    },
-    {
-      q: "Is there a security deposit required?",
-      a: "Our Basic plans have a small, fully-refundable security deposit of ₹500 (Single) or ₹800 (Double) to protect the linen swaps. Our Premium plans require ₹0 security deposit."
     }
   ];
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqs.map(faq => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.a
+      }
+    }))
+  };
 
   if (loading) {
     return (
@@ -312,6 +333,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] text-[#0D1518] font-sans antialiased" id="home">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
 
       {/* Navigation Bar */}
       <Navbar user={user} loading={loading} handleLogout={handleLogout} />
@@ -519,6 +544,44 @@ export default function Home() {
 
       {/* 8. OUR CLEANING PROCESS — 6-Stage Trust Facility Wash */}
       <InteractiveScience />
+
+      {/* 8.5 HEALTH & HYGIENE SEO SECTION */}
+      <section className="py-12 sm:py-24 bg-white border-b border-[#0D1518]/05 overflow-hidden" id="health-benefits">
+        <div className="max-w-[1380px] mx-auto px-5 sm:px-12 space-y-10 sm:space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#05D4B5] font-mono">Medical Perspectives</p>
+            <h2 className="font-serif text-3xl sm:text-5xl font-medium text-[#0D1518] leading-tight">
+              Why Clean Bedding Matters For Your Health
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-medium">
+              We spend a third of our lives in bed. Discover how our weekly sanitized bedsheet swaps help create a germ-free sleeping environment, protecting you from common skin and respiratory issues.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-[#FCFBF9] p-6 sm:p-8 rounded-3xl border border-[#0D1518]/05 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-sans font-bold text-lg text-[#0D1518] mb-3">Acne & Skin Health</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Wondering if <strong>dirty pillowcases cause acne</strong>? Bacteria, sweat, and dead skin cells trap in fabric overnight. This contamination may contribute to face acne, back acne, and pimples. Regular swaps are the best bedding habit for acne-prone skin.
+              </p>
+            </div>
+            
+            <div className="bg-[#FCFBF9] p-6 sm:p-8 rounded-3xl border border-[#0D1518]/05 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-sans font-bold text-lg text-[#0D1518] mb-3">Asthma & Allergies</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                <strong>Dust mites in bedding</strong> are a primary trigger for morning allergy symptoms and nighttime asthma flare-ups. Our high-temperature commercial wash destroys allergens that cause allergic rhinitis and sneezing at night, ensuring you breathe easy.
+              </p>
+            </div>
+            
+            <div className="bg-[#FCFBF9] p-6 sm:p-8 rounded-3xl border border-[#0D1518]/05 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-sans font-bold text-lg text-[#0D1518] mb-3">Eczema & Infections</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Sensitive skin requires hygienic bedsheets. Unwashed sheets harbor microbes that can worsen eczema (atopic dermatitis) or lead to fungal skin infections and itchy skin. Trust our clinical sanitization for true bed hygiene.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 9. REAL EMOTIONAL STORIES (Testimonials) */}
       <section className="py-12 sm:py-28 bg-[#032026] text-white border-y border-white/5 overflow-hidden relative" id="testimonials-section">
