@@ -30,6 +30,9 @@ const outfit = Outfit({
 export const metadata = {
   title: "ClosetRush | Premium Bedding & Linen Rental Service",
   description: "Rent clean bed sheets at just ₹10 per day. Clean, fresh organic bedsheets and pillow covers delivered to your doorstep. Free delivery, pause or cancel anytime.",
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }) {
