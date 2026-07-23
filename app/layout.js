@@ -2,6 +2,7 @@ import { Cormorant_Garamond, Plus_Jakarta_Sans, Geist_Mono, Outfit } from "next/
 import "./globals.css";
 import Chatbot from "./components/Chatbot";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-serif",
@@ -56,6 +57,7 @@ export default function RootLayout({ children }) {
         />
         {children}
         <Chatbot />
+        <Analytics />
       </body>
     </html>
   );
