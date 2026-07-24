@@ -3,11 +3,20 @@ import webpush from "web-push";
 import dbConnect from "../../../../lib/db";
 import User from "../../../../models/User";
 
-webpush.setVapidDetails(
-  "mailto:admin@closerush.in",
-  process.env.VAPID_PUBLIC_KEY || "",
-  process.env.VAPID_PRIVATE_KEY || ""
-);
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+if (vapidPublicKey && vapidPrivateKey) {
+  try {
+    webpush.setVapidDetails(
+      "mailto:contat@closerush.in",
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+  } catch (e) {
+    console.warn("Failed to set VAPID details:", e.message);
+  }
+}
 
 export async function POST(req) {
   try {
@@ -36,10 +45,10 @@ export async function POST(req) {
           console.error("Error sending push notification to a sub:", err.statusCode);
           // 410 or 404 means the subscription is no longer valid
           if (err.statusCode === 410 || err.statusCode === 404) {
-             // In a real production environment, you should remove stale subscriptions here
-             failureCount++;
+            // In a real production environment, you should remove stale subscriptions here
+            failureCount++;
           } else {
-             failureCount++;
+            failureCount++;
           }
         }
       }
