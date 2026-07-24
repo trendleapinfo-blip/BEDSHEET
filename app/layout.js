@@ -69,11 +69,22 @@ export default function RootLayout({ children }) {
                   navigator.serviceWorker.register('/sw.js').then(
                     function(registration) {
                       console.log('PWA ServiceWorker registration successful');
+                      // Force check for updates every time the app loads
+                      registration.update();
                     },
                     function(err) {
                       console.log('PWA ServiceWorker registration failed: ', err);
                     }
                   );
+                });
+
+                // Auto-refresh the PWA when a new update (new commit) is detected and activated
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', function() {
+                  if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                  }
                 });
               }
             `,

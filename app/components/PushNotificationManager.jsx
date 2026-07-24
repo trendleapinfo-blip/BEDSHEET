@@ -45,9 +45,15 @@ export default function PushNotificationManager() {
     setMessage("");
     try {
       // 1. Request Permission
+      if (Notification.permission === "denied") {
+        setMessage("Notifications are blocked by your device/browser. Please go to Settings > Site Settings and allow notifications.");
+        setIsLoading(false);
+        return;
+      }
+
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        setMessage("Permission denied for notifications.");
+        setMessage("Permission denied. Please allow notifications in your browser settings.");
         setIsLoading(false);
         return;
       }
