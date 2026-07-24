@@ -245,28 +245,19 @@ export default function AdminDashboard() {
   }, []);
 
   // Generate QR code data URL for an order using canvas
-  const generateQR = async (order) => {
+  const generateQR = async (order, customText = null) => {
     setQrOrder(order);
     setQrDataUrl("");
     setQrLoading(true);
 
     const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-    const text = [
-      "CLOSETRUSH BUNDLE QR",
-      "--------------------",
-      `ORDER ID : ${order.bundleOrderId}`,
-      `CUSTOMER : ${order.userName || "—"}`,
-      `PHONE    : ${order.phone || "—"}`,
-      `EMAIL    : ${order.email || "—"}`,
-      `BUNDLE   : ${order.bundleName}`,
-      `STATUS   : ${order.status}`,
-      `PRICE    : Rs.${order.finalPrice}`,
-      `START    : ${fmt(order.startDate)}`,
-      `END      : ${fmt(order.endDate)}`,
-      `ADDRESS  : ${order.deliveryAddress || "—"}`,
-      "--------------------",
-      "ClosetRush | Clean Sheets, Delivered."
+    const text = customText || [
+      `ORDER ID: ${order.bundleOrderId}`,
+      `BUNDLE: ${order.bundleName}`,
+      `STATUS: ${order.status}`,
+      `CUSTOMER: ${order.userName || "—"}`,
+      `PHONE: ${order.phone || "—"}`
     ].join("\n");
 
     try {
@@ -4241,7 +4232,7 @@ export default function AdminDashboard() {
                                       type="button"
                                       onClick={() => {
                                         // Open print QR modal
-                                        generateQR(order);
+                                        generateQR(order, `CLOSE-WMS-${matchingBundle.bundleId}`);
                                       }}
                                       className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-650 rounded-xl transition-all cursor-pointer"
                                       title="Print Logistics QR label"
