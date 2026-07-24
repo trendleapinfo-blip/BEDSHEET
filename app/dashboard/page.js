@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
+import PushNotificationManager from "../components/PushNotificationManager";
 import { 
   User, 
   CreditCard, 
@@ -675,6 +676,9 @@ export default function Dashboard() {
                 Install PWA App
               </button>
             </div>
+            
+            {/* ENABLE PUSH NOTIFICATIONS */}
+            <PushNotificationManager />
           </div>
 
           {/* Main Dashboard Screen Panel */}
