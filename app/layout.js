@@ -33,7 +33,7 @@ export const metadata = {
   keywords: ["clean bedding", "bedsheet rental", "hygienic bedsheets", "prevent bedsheet acne", "dust mite allergy bedding", "sleep hygiene", "hostel bedding"],
   icons: {
     icon: '/logo.png',
-    apple: '/icon-192x192.png',
+    apple: '/logo.png',
   },
   manifest: "/manifest.json",
   appleWebApp: {

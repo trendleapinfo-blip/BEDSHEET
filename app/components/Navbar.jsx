@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MenuIcon, CloseIcon } from "./Icons";
+import InstallPWA from "./InstallPWA";
 
 export default function Navbar({ forceSolid = false }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -88,7 +89,7 @@ export default function Navbar({ forceSolid = false }) {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className={`hidden md:flex items-center transition-all duration-500 ${scrolled ? "space-x-6 lg:space-x-8" : "space-x-8 lg:space-x-10"
+          <div className={`hidden md:flex items-center transition-all duration-500 ${scrolled ? "space-x-4 lg:space-x-6" : "space-x-5 lg:space-x-8"
             }`}>
             {navItems.map((item) => (
               <Link
@@ -103,42 +104,44 @@ export default function Navbar({ forceSolid = false }) {
           </div>
 
           {/* Desktop CTA Button */}
-          <div className={`hidden md:flex items-center transition-all duration-500 ${scrolled ? "space-x-3" : "space-x-4"
+          <div className={`hidden md:flex items-center transition-all duration-500 ${scrolled ? "space-x-2 lg:space-x-3" : "space-x-3 lg:space-x-4"
             }`}>
             {!loading && user ? (
-              <div className={`flex items-center transition-all duration-500 ${scrolled ? "space-x-3" : "space-x-4"
+              <div className={`flex items-center transition-all duration-500 ${scrolled ? "space-x-2 lg:space-x-3" : "space-x-3 lg:space-x-4"
                 }`}>
-                <span className="text-charcoal-ink/60 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap pr-2">
+                <span className="hidden lg:inline-block text-charcoal-ink/60 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap pr-1 lg:pr-2">
                   Hi, {user.name.split(" ")[0]}
                 </span>
 
                 {user.role === "admin" && (
                   <Link
                     href="/admin"
-                    className="inline-flex items-center justify-center px-5 py-2.5 border border-charcoal-ink/15 text-charcoal-ink hover:bg-charcoal-ink/05 text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2.5 border border-charcoal-ink/15 text-charcoal-ink hover:bg-charcoal-ink/05 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 whitespace-nowrap"
                   >
                     Admin
                   </Link>
                 )}
+                
+                <InstallPWA />
 
                 {user.role === "warehouse" ? (
                   <Link
                     href="/warehouse"
-                    className="inline-flex items-center justify-center px-5 py-2.5 bg-charcoal-ink text-white hover:bg-black text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2.5 bg-charcoal-ink text-white hover:bg-black text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                   >
                     Warehouse
                   </Link>
                 ) : user.role === "logistics" ? (
                   <Link
                     href="/logistics"
-                    className="inline-flex items-center justify-center px-5 py-2.5 bg-charcoal-ink text-white hover:bg-black text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2.5 bg-charcoal-ink text-white hover:bg-black text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                   >
                     Logistics
                   </Link>
                 ) : (
                   <Link
                     href="/dashboard"
-                    className="inline-flex items-center justify-center px-5 py-2.5 bg-charcoal-ink text-white hover:bg-black text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2.5 bg-charcoal-ink text-white hover:bg-black text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest rounded-full transition-all duration-300 shadow-md shadow-charcoal-ink/10 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                   >
                     Dashboard
                   </Link>
@@ -160,9 +163,10 @@ export default function Navbar({ forceSolid = false }) {
                 >
                   Login
                 </Link>
+                <InstallPWA />
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center px-6 py-3 text-[10px] font-extrabold uppercase tracking-widest rounded-full text-[#032026] bg-[#05D4B5] hover:bg-white hover:text-[#032026] hover:border-[#05D4B5] border border-[#05D4B5] transition-all duration-300 shadow-md shadow-[#05D4B5]/20 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+                  className="inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 text-[10px] font-extrabold uppercase tracking-widest rounded-full text-[#032026] bg-[#05D4B5] hover:bg-white hover:text-[#032026] hover:border-[#05D4B5] border border-[#05D4B5] transition-all duration-300 shadow-md shadow-[#05D4B5]/20 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                 >
                   Subscribe Now
                 </Link>
@@ -249,6 +253,9 @@ export default function Navbar({ forceSolid = false }) {
                 >
                   Logout
                 </button>
+                <div className="flex justify-center mt-2">
+                  <InstallPWA />
+                </div>
               </div>
             ) : (
               <>
@@ -266,6 +273,9 @@ export default function Navbar({ forceSolid = false }) {
                 >
                   Subscribe Now
                 </Link>
+                <div className="flex justify-center mt-4 mb-2">
+                  <InstallPWA />
+                </div>
               </>
             )}
           </div>
