@@ -1793,11 +1793,7 @@ export default function Dashboard() {
                   onChange={(e) => setPauseDuration(e.target.value)}
                   className="w-full bg-white border border-charcoal-ink/15 rounded-none py-3 px-4 text-xs text-charcoal-ink focus:outline-none focus:border-linen-gold cursor-pointer font-bold"
                 >
-                  <option value="1 week">1 Week (7 Days)</option>
-                  <option value="2 weeks">2 Weeks (14 Days)</option>
-                  <option value="1 month">1 Month (30 Days)</option>
-                  <option value="2 months">2 Months (60 Days)</option>
-                  <option value="3 months">3 Months (90 Days)</option>
+                  <option value="1 week">1 Week (7 Days Max)</option>
                 </select>
               </div>
 
