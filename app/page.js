@@ -630,55 +630,6 @@ export default function Home() {
       {/* 13. FOOTER & LEAD MAGNET */}
       <Footer showWaitlist={true} />
 
-      {/* GSAP CDN script tags loaded sequentially to ensure Hero fade-in works */}
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
-        strategy="lazyOnload"
-        onLoad={() => setGsapReady(true)}
-      />
-
-      {/* Floating Luxury Audio Widget */}
-      <div className="fixed bottom-6 left-6 z-[9999] flex items-center gap-2 bg-[#032026]/90 border border-[#05D4B5]/30 text-white p-2 rounded-full shadow-2xl backdrop-blur-md transition-all duration-300 hover:border-[#05D4B5]/60 group">
-        {/* Play Button */}
-        <button
-          onClick={() => {
-            if (audio && !isPlaying) {
-              audio.play().then(() => {
-                setIsPlaying(true);
-                audio.muted = false;
-                setIsMuted(false);
-              }).catch(err => console.log(err));
-            }
-          }}
-          className={`p-2.5 rounded-full transition-all cursor-pointer ${isPlaying ? 'bg-white/5 text-gray-500 hover:text-white' : 'bg-[#05D4B5] text-[#032026] shadow-lg shadow-[#05D4B5]/20 scale-105'}`}
-          title="Play Music"
-        >
-          <Play className="w-4 h-4 fill-current translate-x-[0.5px]" />
-        </button>
-
-        {/* Pause Button */}
-        <button
-          onClick={() => {
-            if (audio && isPlaying) {
-              audio.pause();
-              setIsPlaying(false);
-            }
-          }}
-          className={`p-2.5 rounded-full transition-all cursor-pointer ${!isPlaying ? 'bg-white/5 text-gray-500' : 'bg-[#05D4B5] text-[#032026] shadow-lg shadow-[#05D4B5]/20 scale-105'}`}
-          title="Pause Music"
-        >
-          <Pause className="w-4 h-4" />
-        </button>
-
-        {/* Mute Button */}
-        <button
-          onClick={toggleMute}
-          className={`p-2.5 rounded-full transition-all cursor-pointer bg-white/5 hover:bg-[#05D4B5]/20 ${isMuted ? 'text-red-400' : 'text-[#05D4B5]'}`}
-          title={isMuted ? "Unmute" : "Mute"}
-        >
-          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-        </button>
-      </div>
     </div>
   );
 }
