@@ -1,26 +1,29 @@
-import fs from 'fs';
+import { exec } from 'child_process';
+import util from 'util';
 import path from 'path';
+import fs from 'fs';
 
+const execPromise = util.promisify(exec);
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   try {
-    const filePath = path.join(process.cwd(), 'app', 'dashboard', 'page.js');
-    let content = fs.readFileSync(filePath, 'utf8');
+    const cwd = process.cwd();
+    // 1. Install web-push
+    const { stdout: iOut, stderr: iErr } = await execPromise('npm install web-push', { cwd });
     
-    const badStart = '{/* EDIT PROFILE TAB */}';
+    // 2. Generate VAPID keys via code (since it's now installed)
+    const webPush = require('web-push');
+    const vapidKeys = webPush.generateVAPIDKeys();
     
-    const firstIdx = content.indexOf(badStart);
-    const lastIdx = content.lastIndexOf(badStart);
+    // 3. Append to .env.local
+    const envPath = path.join(cwd, '.env.local');
+    const envString = `\n# Web Push VAPID Keys\nNEXT_PUBLIC_VAPID_PUBLIC_KEY="${vapidKeys.publicKey}"\nVAPID_PRIVATE_KEY="${vapidKeys.privateKey}"\n`;
     
-    if (firstIdx !== -1 && lastIdx !== -1 && firstIdx !== lastIdx) {
-      const newContent = content.substring(0, firstIdx) + content.substring(lastIdx);
-      fs.writeFileSync(filePath, newContent);
-      return new Response('Deleted duplicate section!');
-    }
+    fs.appendFileSync(envPath, envString);
     
-    return new Response(`First: ${firstIdx}, Last: ${lastIdx}`);
-  } catch (error) {
-    return new Response('Error: ' + error.message);
+    return new Response(`SUCCESS!\nPublic Key: ${vapidKeys.publicKey}\nPrivate Key: ${vapidKeys.privateKey}\n\nInstall logs:\n${iOut}`);
+  } catch (err) {
+    return new Response(`ERROR: ${err.message}`);
   }
 }

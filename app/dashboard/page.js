@@ -56,6 +56,16 @@ export default function Dashboard() {
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
 
+  // PWA Install Event Listener
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      window.deferredPrompt = e;
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
   // Orders, Quotes, and Bundles States
   const [orders, setOrders] = useState([]);
   const [quotes, setQuotes] = useState([]);
@@ -642,6 +652,29 @@ export default function Dashboard() {
                 </button>
               );
             })}
+
+            {/* DOWNLOAD PWA APP BUTTON */}
+            <div className="pt-4 mt-4 border-t border-charcoal-ink/10">
+              <button
+                onClick={() => {
+                  if (window.deferredPrompt) {
+                    window.deferredPrompt.prompt();
+                    window.deferredPrompt.userChoice.then((choiceResult) => {
+                      if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                      }
+                      window.deferredPrompt = null;
+                    });
+                  } else {
+                    alert("App is already installed or your browser doesn't support PWA installation.");
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+              >
+                <ArrowRight className="w-4 h-4 rotate-90" />
+                Install PWA App
+              </button>
+            </div>
           </div>
 
           {/* Main Dashboard Screen Panel */}

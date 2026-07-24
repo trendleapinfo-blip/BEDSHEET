@@ -60,6 +60,19 @@ export default function AdminDashboard() {
     totalQuotes: 0,
     supportTickets: 0
   });
+  
+  // Custom Analytics State
+  const [analyticsData, setAnalyticsData] = useState({
+    totalVisitors: 0,
+    totalViews: 0,
+    pwaInstalls: 0,
+    pageBreakdown: [],
+    referrers: []
+  });
+
+  // Push Notifications State
+  const [pushForm, setPushForm] = useState({ title: "", message: "", url: "", image: "" });
+  const [pushSending, setPushSending] = useState(false);
 
   // Data lists
   const [usersList, setUsersList] = useState([]);
@@ -464,6 +477,14 @@ export default function AdminDashboard() {
             doubleBedDeposit: settingsData.settings.doubleBedDeposit ?? 800,
             paymentStyles: settingsData.settings.paymentStyles || []
           });
+        }
+      }
+
+      const analyticsRes = await fetch("/api/admin/analytics");
+      if (analyticsRes.ok) {
+        const analyticsJson = await analyticsRes.json();
+        if (analyticsJson.success) {
+          setAnalyticsData(analyticsJson.data);
         }
       }
 
@@ -1397,6 +1418,7 @@ export default function AdminDashboard() {
   const sidebarItems = [
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Analytics", icon: BarChart3 },
+    { name: "Push Notifications", icon: Bell },
     { name: "Categories", icon: Tag },
     { name: "Plans", icon: DollarSign },
     { name: "Coupons", icon: Ticket },
@@ -1671,97 +1693,59 @@ export default function AdminDashboard() {
           {activeTab === "Analytics" && (
             <div className="space-y-8 animate-fadeIn">
               <div>
-                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Analytics Overview</h1>
-                <p className="text-xs text-slate-500">Interactive subscription analysis, retention cohort performance, and billing metrics</p>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Analytics & Usage</h1>
+                <p className="text-xs text-slate-500">Real-time metrics on visitors, page views, and PWA installs</p>
               </div>
 
               {/* KPI metrics row */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Average Order Value (AOV)</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Visitors</span>
                   <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-slate-900">₹{stats.aov || 0}</h3>
+                    <h3 className="text-2xl font-black text-slate-900">{analyticsData?.totalVisitors || 0}</h3>
                   </div>
-                  <p className="text-[9px] text-slate-400 font-medium mt-1">Weighted average across all bundles</p>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Unique device sessions</p>
                 </div>
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lifetime Value (LTV)</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Page Views</span>
                   <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-slate-900">₹{stats.ltv || 0}</h3>
+                    <h3 className="text-2xl font-black text-slate-900">{analyticsData?.totalViews || 0}</h3>
                   </div>
-                  <p className="text-[9px] text-slate-400 font-medium mt-1">Estimated LTV per registered customer</p>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Across all standard pages</p>
                 </div>
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">User Retention Rate</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">PWA Installs</span>
                   <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-teal-650">{stats.retentionRate || 0}%</h3>
+                    <h3 className="text-2xl font-black text-teal-650">{analyticsData?.pwaInstalls || 0}</h3>
                   </div>
-                  <p className="text-[9px] text-slate-400 font-medium mt-1">Average cohort retention (3-month window)</p>
-                </div>
-                <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs relative overflow-hidden">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Monthly Churn Rate</span>
-                  <div className="flex items-baseline gap-1.5 mt-2">
-                    <h3 className="text-2xl font-black text-slate-900">{stats.churnRate || 0}%</h3>
-                  </div>
-                  <p className="text-[9px] text-slate-400 font-medium mt-1">Average user cancellations rate</p>
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Total app installations tracked</p>
                 </div>
               </div>
 
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-                {/* Cohort Retention Table */}
+                {/* Popular Pages Table */}
                 <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
-                  <h3 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-wider">Cohort Retention Analysis</h3>
-                  <p className="text-[10px] text-slate-400 mb-6">Percentage of active subscriber cohorts retained month-over-month</p>
-                  <div className="overflow-x-auto">
+                  <h3 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-wider">Most Visited Pages</h3>
+                  <div className="overflow-x-auto mt-4">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
-                          <th className="p-3 font-bold text-center">Cohort Month</th>
-                          <th className="p-3 font-bold text-center">Size</th>
-                          <th className="p-3 font-bold text-center bg-teal-50/60 text-teal-700">Month 0</th>
-                          <th className="p-3 font-bold text-center">Month 1</th>
-                          <th className="p-3 font-bold text-center">Month 2</th>
-                          <th className="p-3 font-bold text-center">Month 3</th>
-                          <th className="p-3 font-bold text-center">Month 4</th>
+                          <th className="p-3 font-bold">Path</th>
+                          <th className="p-3 font-bold text-right">Views</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {stats.cohorts && stats.cohorts.length > 0 ? (
-                          stats.cohorts.map((c, idx) => {
-                            const getRetentionColorClass = (val) => {
-                              if (val === null || val === undefined) return "bg-slate-50/40 text-slate-400 font-semibold";
-                              if (val >= 95) return "bg-teal-650 text-white font-bold";
-                              if (val >= 85) return "bg-teal-550 text-white font-semibold";
-                              if (val >= 75) return "bg-teal-500/60 text-slate-800 font-medium";
-                              if (val >= 60) return "bg-teal-500/40 text-slate-800";
-                              if (val >= 40) return "bg-teal-500/20 text-slate-800";
-                              return "bg-teal-500/05 text-slate-650";
-                            };
-                            return (
-                              <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/30 transition-all">
-                                <td className="p-3 font-bold text-slate-800 text-center">{c.month}</td>
-                                <td className="p-3 font-semibold text-slate-500 text-center">{c.size}</td>
-                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m0)}`}>{c.m0}%</td>
-                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m1)}`}>
-                                  {c.m1 !== null ? `${c.m1}%` : "—"}
-                                </td>
-                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m2)}`}>
-                                  {c.m2 !== null ? `${c.m2}%` : "—"}
-                                </td>
-                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m3)}`}>
-                                  {c.m3 !== null ? `${c.m3}%` : "—"}
-                                </td>
-                                <td className={`p-3 text-center rounded-xs ${getRetentionColorClass(c.m4)}`}>
-                                  {c.m4 !== null ? `${c.m4}%` : "—"}
-                                </td>
-                              </tr>
-                            );
-                          })
+                        {analyticsData?.pageBreakdown && analyticsData.pageBreakdown.length > 0 ? (
+                          analyticsData.pageBreakdown.map((p, idx) => (
+                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/30">
+                              <td className="p-3 font-bold text-slate-800">{p._id}</td>
+                              <td className="p-3 font-semibold text-slate-500 text-right">{p.count}</td>
+                            </tr>
+                          ))
                         ) : (
                           <tr>
-                            <td colSpan="7" className="text-center p-8 text-slate-400 font-semibold">No cohort retention data available.</td>
+                            <td colSpan="2" className="text-center p-8 text-slate-400 font-semibold">No data available.</td>
                           </tr>
                         )}
                       </tbody>
@@ -1769,42 +1753,88 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Monthly Revenue Trend Chart */}
-                <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-wider">Monthly Revenue Trend</h3>
-                    <p className="text-[10px] text-slate-400">Aggregated plan earnings (₹ in thousands)</p>
-                  </div>
-
-                  <div className="h-44 flex items-end justify-between px-4 mt-6">
-                    {stats.revenueTrend && stats.revenueTrend.length > 0 ? (
-                      (() => {
-                        const maxVal = Math.max(...stats.revenueTrend.map(r => r.amount), 1);
-                        return stats.revenueTrend.map((r, idx) => {
-                          const percentHeight = Math.max(10, Math.round((r.amount / maxVal) * 140));
-                          const isCurrent = idx === stats.revenueTrend.length - 1;
-                          return (
-                            <div key={idx} className="flex flex-col items-center gap-2 w-10">
-                              <span className={`text-[9px] font-bold ${isCurrent ? "text-teal-650" : "text-slate-500"}`}>₹{r.amount}k</span>
-                              <div 
-                                className={`w-6 rounded-t-lg transition-all ${
-                                  isCurrent 
-                                    ? "bg-gradient-to-t from-teal-550 to-emerald-400 shadow-sm" 
-                                    : "bg-slate-200/70 hover:bg-teal-500/40"
-                                }`} 
-                                style={{ height: `${percentHeight}px` }} 
-                              />
-                              <span className={`text-[10px] font-extrabold ${isCurrent ? "text-slate-800" : "text-slate-400"}`}>{r.month}</span>
-                            </div>
-                          );
-                        });
-                      })()
-                    ) : (
-                      <div className="w-full text-center text-slate-400 font-semibold text-xs py-10">No revenue data available.</div>
-                    )}
+                {/* Top Referrers */}
+                <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                  <h3 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-wider">Top Referrers</h3>
+                  <div className="overflow-x-auto mt-4">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/50">
+                          <th className="p-3 font-bold">Source</th>
+                          <th className="p-3 font-bold text-right">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyticsData?.referrers && analyticsData.referrers.length > 0 ? (
+                          analyticsData.referrers.map((r, idx) => (
+                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/30">
+                              <td className="p-3 font-bold text-slate-800 truncate max-w-[200px]" title={r._id}>{r._id || "Direct"}</td>
+                              <td className="p-3 font-semibold text-slate-500 text-right">{r.count}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="2" className="text-center p-8 text-slate-400 font-semibold">No data available.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
 
+          {/* TAB: PUSH NOTIFICATIONS */}
+          {activeTab === "Push Notifications" && (
+            <div className="space-y-8 animate-fadeIn max-w-2xl mx-auto">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 leading-none mb-1">Push Notifications</h1>
+                <p className="text-xs text-slate-500">Send alerts directly to user devices via PWA</p>
+              </div>
+              <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  setPushSending(true);
+                  try {
+                    const res = await fetch("/api/admin/send-push", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(pushForm)
+                    });
+                    const data = await res.json();
+                    if(data.success) {
+                      alert(data.message);
+                      setPushForm({ title: "", message: "", url: "", image: "" });
+                    } else {
+                      alert(data.error || "Failed to send");
+                    }
+                  } catch (err) {
+                    alert("Network error");
+                  } finally {
+                    setPushSending(false);
+                  }
+                }} className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Notification Title</label>
+                    <input required type="text" value={pushForm.title} onChange={e => setPushForm({...pushForm, title: e.target.value})} className="w-full border p-2.5 rounded-xl text-sm font-medium focus:ring-2 focus:ring-teal-500/20" placeholder="e.g. New Bedsheets Arrived!" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Message Body</label>
+                    <textarea required value={pushForm.message} onChange={e => setPushForm({...pushForm, message: e.target.value})} className="w-full border p-2.5 rounded-xl text-sm font-medium focus:ring-2 focus:ring-teal-500/20" rows="3" placeholder="Check out our latest collection..."></textarea>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Action URL (Optional)</label>
+                    <input type="text" value={pushForm.url} onChange={e => setPushForm({...pushForm, url: e.target.value})} className="w-full border p-2.5 rounded-xl text-sm font-medium focus:ring-2 focus:ring-teal-500/20" placeholder="e.g. /shop or https://closerush.in/promo" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Image URL (Optional)</label>
+                    <input type="text" value={pushForm.image} onChange={e => setPushForm({...pushForm, image: e.target.value})} className="w-full border p-2.5 rounded-xl text-sm font-medium focus:ring-2 focus:ring-teal-500/20" placeholder="e.g. https://.../image.jpg" />
+                  </div>
+                  <button type="submit" disabled={pushSending} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
+                    {pushSending ? "Broadcasting..." : <><Bell className="w-4 h-4" /> Broadcast to All Users</>}
+                  </button>
+                </form>
               </div>
             </div>
           )}

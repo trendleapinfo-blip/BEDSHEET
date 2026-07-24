@@ -93,3 +93,50 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+// --- PUSH NOTIFICATIONS ---
+
+self.addEventListener('push', function(event) {
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      const options = {
+        body: data.message,
+        icon: '/logo.png',
+        image: data.image || null,
+        badge: '/logo.png',
+        data: {
+          url: data.url || '/'
+        }
+      };
+      
+      event.waitUntil(
+        self.registration.showNotification(data.title || 'Close Rush', options)
+      );
+    } catch (e) {
+      console.error('Push event error:', e);
+    }
+  }
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.url || '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      // If a window is already open, focus it and navigate
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(urlToOpen);
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
