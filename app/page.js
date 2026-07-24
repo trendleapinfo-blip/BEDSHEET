@@ -53,87 +53,8 @@ export default function Home() {
   // FAQ state
   const [openFaq, setOpenFaq] = useState(null);
 
-  // GSAP script loading states
-  const [gsapReady, setGsapReady] = useState(false);
-
-  // Background relaxing audio states
-  const [audio, setAudio] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [hasScrolled, setHasScrolled] = useState(false);
-
   // B2B Savings Calculator state
   const [b2bBedsCount, setB2bBedsCount] = useState(25);
-
-  // Audio setup and event handling
-  useEffect(() => {
-    // Instantiate background audio object
-    const audioInstance = new Audio("/sounds/relaxing-piano.mp3");
-    audioInstance.loop = true;
-    audioInstance.volume = 0.2; // Set soft ambient volume
-    setAudio(audioInstance);
-
-    return () => {
-      audioInstance.pause();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!audio) return;
-
-    // Attempt immediate autoplay
-    audio.play().then(() => {
-      setIsPlaying(true);
-    }).catch(err => {
-      console.log("Autoplay blocked immediately, waiting for user interaction or scroll:", err);
-    });
-
-    const handleScrollPlay = () => {
-      if (!hasScrolled) {
-        setHasScrolled(true);
-        if (audio.paused) {
-          audio.play().then(() => {
-            setIsPlaying(true);
-          }).catch(err => {
-            console.log("Autoplay blocked on scroll:", err);
-          });
-        }
-      }
-    };
-
-    window.addEventListener("scroll", handleScrollPlay, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScrollPlay);
-    };
-  }, [audio, hasScrolled]);
-
-  const toggleMute = () => {
-    if (!audio) return;
-    if (isMuted) {
-      audio.muted = false;
-      setIsMuted(false);
-      if (!isPlaying) {
-        audio.play().then(() => setIsPlaying(true)).catch(err => console.log(err));
-      }
-    } else {
-      audio.muted = true;
-      setIsMuted(true);
-    }
-  };
-
-  const togglePlay = () => {
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.play().then(() => {
-        setIsPlaying(true);
-        audio.muted = false;
-        setIsMuted(false);
-      }).catch(err => console.log(err));
-    }
-  };
 
   // Fetch session & plans
   useEffect(() => {
@@ -171,21 +92,7 @@ export default function Home() {
     fetchPlans();
   }, []);
 
-  // Set up GSAP hero entry fade-in once loaded
-  useEffect(() => {
-    if (!gsapReady) return;
 
-    if (typeof window !== "undefined" && window.gsap) {
-      const gsap = window.gsap;
-      gsap.from(".gsap-hero-fade", {
-        y: 40,
-        opacity: 0,
-        duration: 0.9,
-        stagger: 0.15,
-        ease: "power3.out"
-      });
-    }
-  }, [gsapReady]);
 
   const handleLogout = async () => {
     try {
@@ -340,7 +247,7 @@ export default function Home() {
 
       {/* Navigation Bar */}
       <Navbar user={user} loading={loading} handleLogout={handleLogout} />
-      <header className="relative w-full min-h-[90vh] md:min-h-screen pt-24 sm:pt-32 pb-16 md:pb-28 flex items-center bg-[#032026] overflow-hidden">
+      <header className="relative w-full min-h-[90vh] md:min-h-screen pt-16 sm:pt-32 pb-16 md:pb-28 flex items-center bg-[#032026] overflow-hidden">
 
         {/* Luxury grid & ambient light glows */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-950/15 via-transparent to-transparent pointer-events-none z-0 opacity-40" />
@@ -362,34 +269,34 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
 
             {/* Left Column: Editorial Typography & Copy */}
-            <div className="lg:col-span-7 text-left space-y-5 sm:space-y-9">
+            <div className="lg:col-span-7 text-left space-y-3 sm:space-y-9">
 
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 sm:px-4 sm:py-1.5 bg-[#05D4B5]/10 border border-[#05D4B5]/20 rounded-full backdrop-blur-sm shadow-inner gsap-hero-fade">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 sm:px-4 sm:py-1.5 bg-[#05D4B5]/10 border border-[#05D4B5]/20 rounded-full backdrop-blur-sm shadow-inner">
                 <span className="text-[#05D4B5] font-semibold text-xs leading-none">✦</span>
                 <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-white">
                   FRESH BED. FRESH YOU.
                 </span>
               </div>
 
-              <h1 className="font-serif text-3.5xl sm:text-6xl md:text-7.5xl text-white font-medium leading-[1.08] tracking-tight gsap-hero-fade">
+              <h1 className="font-serif text-3xl sm:text-6xl md:text-7.5xl text-white font-medium leading-[1.08] tracking-tight">
                 Fresh bedsheets <br />
                 <span className="text-[#05D4B5] italic font-normal font-serif relative">
                   Every week.
                 </span>
               </h1>
 
-              <div className="text-xl sm:text-3xl font-bold text-[#05D4B5] tracking-wide gsap-hero-fade">
+              <div className="text-lg sm:text-3xl font-bold text-[#05D4B5] tracking-wide">
                 At just <span className="text-white font-black text-2xl sm:text-4xl">₹10</span>/day
               </div>
 
-              <div className="gsap-hero-fade inline-block mt-1 sm:mt-2">
+              <div className="inline-block mt-1 sm:mt-2">
                 <p className="text-xs sm:text-base text-white max-w-lg leading-relaxed font-medium bg-[#05D4B5]/10 border border-[#05D4B5]/20 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full shadow-[0_0_20px_rgba(5,212,181,0.15)]">
                   <span className="text-gray-300">We deliver, we wash, we replace.</span> <span className="text-[#05D4B5] font-bold">You enjoy.</span>
                 </p>
               </div>
 
               {/* Features checklist row from design */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-2 sm:pt-4 pb-1 sm:pb-2 gsap-hero-fade max-w-xl">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-2 sm:pt-4 pb-1 sm:pb-2 max-w-xl">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 sm:p-2 bg-[#05D4B5]/10 text-[#05D4B5] rounded-xl shrink-0">
                     <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -421,7 +328,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="pt-2 sm:pt-4 flex flex-wrap gap-4 sm:gap-5 items-center gsap-hero-fade">
+              <div className="pt-2 sm:pt-4 flex flex-wrap gap-3 sm:gap-5 items-center">
                 <a
                   href="/shop"
                   className="inline-flex items-center justify-center px-7 sm:px-9 py-3.5 sm:py-4.5 bg-[#05D4B5] text-[#032026] hover:bg-white hover:text-[#032026] font-sans text-2xs font-extrabold tracking-widest uppercase transition-all duration-300 rounded-full shadow-xl shadow-[#05D4B5]/10 hover:scale-105 active:scale-95"
@@ -444,7 +351,7 @@ export default function Home() {
             </div>
 
             {/* Right Column: Interactive 3D Visual Card (Redesigned folded bedding stack) */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-end w-full">
+            <div className="hidden lg:flex lg:col-span-5 justify-end w-full">
               <HeroThreeDVisual />
             </div>
           </div>
