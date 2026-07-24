@@ -4241,9 +4241,7 @@ export default function AdminDashboard() {
                                       type="button"
                                       onClick={() => {
                                         // Open print QR modal
-                                        setQrOrder(order);
-                                        setQrDataUrl(`CLOSE-WMS-${matchingBundle.bundleId}`);
-                                        setQrLoading(false);
+                                        generateQR(order);
                                       }}
                                       className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-650 rounded-xl transition-all cursor-pointer"
                                       title="Print Logistics QR label"
