@@ -1256,7 +1256,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Available Plans Selector */}
-                {(() => {
+                {!user?.selectedPlan?.planName && (() => {
                   const singlePlans = dbPlans.filter(p => p.bedType === "single").sort((a, b) => a.price - b.price);
                   const doublePlans = dbPlans.filter(p => p.bedType === "double").sort((a, b) => a.price - b.price);
 
@@ -1274,7 +1274,7 @@ export default function Dashboard() {
                     <div>
                       <h4 className="font-bold text-charcoal-ink text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
                         <TrendingUp className="w-4.5 h-4.5 text-charcoal-ink/50" />
-                        Choose / Change Your Plan
+                        Choose Your Plan
                       </h4>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -33,30 +33,46 @@ export const metadata = {
   keywords: ["clean bedding", "bedsheet rental", "hygienic bedsheets", "prevent bedsheet acne", "dust mite allergy bedding", "sleep hygiene", "hostel bedding"],
   icons: {
     icon: '/logo.png',
+    apple: '/icon-192x192.png',
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "ClosetRush",
+    statusBarStyle: "black-translucent",
   },
   verification: {
     google: "0EETb5ay93vXXuJYFgzVq0UXtcKtuZhjMWSQsY0biiw",
   },
 };
 
+export const viewport = {
+  themeColor: "#032026",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${cormorant.variable} ${geistMono.variable} ${outfit.variable} h-full antialiased`}
+      className={`${plusJakarta.variable} ${cormorant.variable} ${geistMono.variable} ${outfit.variable} min-h-screen antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col" suppressHydrationWarning>
         <Script
-          id="service-worker-cleanup"
+          id="pwa-sw-registration"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for(let registration of registrations) {
-                    registration.unregister();
-                  }
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('PWA ServiceWorker registration successful');
+                    },
+                    function(err) {
+                      console.log('PWA ServiceWorker registration failed: ', err);
+                    }
+                  );
                 });
               }
             `,

@@ -257,13 +257,38 @@ export default function AdminDashboard() {
     ].join("\n");
 
     try {
-      // Use qrserver.com public API to generate a clean QR PNG
-      const encoded = encodeURIComponent(text);
-      const url = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encoded}&color=0d1117&bgcolor=ffffff&margin=10&format=png`;
-      setQrDataUrl(url);
+      if (typeof window !== "undefined" && window.QRCode) {
+        // Use client-side QRCode.js
+        const container = document.createElement("div");
+        new window.QRCode(container, {
+          text: text,
+          width: 280,
+          height: 280,
+          colorDark: "#0d1117",
+          colorLight: "#ffffff",
+          correctLevel: window.QRCode.CorrectLevel.M
+        });
+        
+        // Give it a tiny tick to render the canvas
+        setTimeout(() => {
+          const canvas = container.querySelector("canvas");
+          if (canvas) {
+            setQrDataUrl(canvas.toDataURL("image/png"));
+          } else {
+            // Fallback if canvas is not created
+            const encoded = encodeURIComponent(text);
+            setQrDataUrl(`https://quickchart.io/qr?size=280&text=${encoded}&dark=0d1117&margin=1`);
+          }
+          setQrLoading(false);
+        }, 50);
+      } else {
+        // Fallback to reliable public API
+        const encoded = encodeURIComponent(text);
+        setQrDataUrl(`https://quickchart.io/qr?size=280&text=${encoded}&dark=0d1117&margin=1`);
+        setQrLoading(false);
+      }
     } catch (e) {
       console.error("QR generation failed:", e);
-    } finally {
       setQrLoading(false);
     }
   };
@@ -5598,7 +5623,7 @@ export default function AdminDashboard() {
                 ["Address", qrOrder.deliveryAddress || "—"],
               ].map(([label, value]) => (
                 <div key={label} className="flex px-4 py-2.5 gap-3">
-                  <span className="text-charcoal-ink/40 font-extrabold uppercase tracking-wider w-16 shrink-0">{label}</span>
+                  <span className="text-charcoal-ink/40 font-extrabold uppercase tracking-wider w-24 shrink-0">{label}</span>
                   <span className="text-charcoal-ink font-semibold break-all leading-relaxed">
                     {label === "Status" ? (
                       <span className={`font-extrabold uppercase px-1.5 py-0.5 text-[9px] ${

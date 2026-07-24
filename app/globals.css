@@ -40,9 +40,7 @@
 
 /* Custom Scroll Behavior and Layout Tweaks */
 html {
-  scroll-behavior: smooth;
   scroll-padding-top: 80px; /* offset for fixed navbar */
-  height: 100%;
 }
 
 body {

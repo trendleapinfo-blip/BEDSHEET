@@ -1,0 +1,24 @@
+{
+  "name": "ClosetRush",
+  "short_name": "ClosetRush",
+  "description": "Premium Bedding & Linen Rental Service",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FCFBF9",
+  "theme_color": "#032026",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
